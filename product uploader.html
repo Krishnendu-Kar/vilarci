@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Product Upload</title>
-    <link rel="shortcut icon" href="LocaalRapid.ico" type="image/x-icon">
-    <link rel="icon" href="LocaalRapid.ico" type="image/x-icon">
+    <title>Advanced Product Upload - Vilarci</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -27,7 +25,8 @@
             </div>
             <div class="text-right">
                 <p class="text-xs text-slate-400">Seller Mode</p>
-                <p class="font-mono text-sm font-bold text-yellow-400" id="displaySellerId">NOT SET</p>
+                <!-- AUTO FILLED ID -->
+                <p class="font-mono text-sm font-bold text-yellow-400" id="displaySellerId">Loading...</p>
             </div>
         </div>
 
@@ -40,16 +39,9 @@
                 </h3>
                 
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
-                    <!-- Seller ID (Manual for now) -->
-                    <div class="md:col-span-4">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Seller ID (11-12 Digits)</label>
-                        <input type="text" id="manual_seller_id" placeholder="e.g. 10987654321" 
-                            class="w-full p-3 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                            oninput="updateDisplaySeller()">
-                    </div>
-
+                    
                     <!-- Auto-Generated Product ID -->
-                    <div class="md:col-span-8">
+                    <div class="md:col-span-12">
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">
                             Generated Product ID (19 Digits)
                         </label>
@@ -222,6 +214,8 @@
         // ==========================================
         const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_wy4_pxxwFkS63SSL_d5yug_Bgybs85R';
+        
+  
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // ID Architecture Placeholders (To be replaced by Seller Auth later)
@@ -317,6 +311,16 @@
             const select = document.getElementById('catSelect');
             DEMO_CATEGORIES.forEach(c => select.add(new Option(c.name, c.id)));
             
+            // Check for Logged In Seller
+            const sellerId = sessionStorage.getItem('vilarci_seller_id');
+            if(!sellerId) {
+                // If not logged in, force login page
+                window.location.href = 'login.html';
+                return;
+            }
+            // Display Seller ID
+            document.getElementById('displaySellerId').innerText = `ID: ${sellerId}`;
+            
             generateRandomSuffix(); // Init logic
         };
 
@@ -375,11 +379,6 @@
         // 4. UTILITIES (Templates, Slug, Seller Display)
         // ==========================================
 
-        function updateDisplaySeller() {
-            const val = document.getElementById('manual_seller_id').value;
-            document.getElementById('displaySellerId').innerText = val ? `ID: ${val}` : "NOT SET";
-        }
-
         function generateSlug() {
             const name = document.getElementById('name').value;
             const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
@@ -423,9 +422,15 @@
         async function uploadProduct() {
             // 1. Get IDs (CRITICAL: Strings for BigInt)
             const generatedId = document.getElementById('final_product_id').value;
-            const sellerId = document.getElementById('manual_seller_id').value;
+            
+            // Get Seller ID from Session (Previously manual)
+            const sellerId = sessionStorage.getItem('vilarci_seller_id');
 
-            if(!sellerId) { alert("⚠️ Enter Seller ID"); return; }
+            if(!sellerId) { 
+                alert("⚠️ Session Expired. Please login again."); 
+                window.location.href = 'login.html';
+                return; 
+            }
             if(generatedId.length !== 19 || isNaN(generatedId)) { alert("⚠️ Product ID incomplete. Please select all 3 category levels."); return; }
 
             // 2. Gather Data
