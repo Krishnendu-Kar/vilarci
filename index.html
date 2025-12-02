@@ -1,0 +1,636 @@
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <!-- SEO Meta -->
+        <meta name="description" content="LocalRapid - Fast, reliable, and secure e-commerce shopping. Get trusted products with quick delivery and excellent customer support.">
+        <meta name="keywords" content="LocalRapid, online shopping, fast delivery, secure e-commerce, reliable service">
+        <meta name="author" content="Krishnendu Kar">
+        <meta name="robots" content="index, follow">
+
+        <!-- Open Graph (Facebook, LinkedIn, WhatsApp) -->
+        <meta property="og:title" content="LocalRapid - Our Official e-commerce Website">
+        <meta property="og:description" content="Shop faster and safer with LocalRapid – your trusted e-commerce platform for quick delivery, secure shopping, and reliable service.">
+        <meta property="og:image" content="https://krishnendu-kar.github.io/LocalRapid/LocaalRapid.png">
+        <meta property="og:url" content="https://krishnendu-kar.github.io/LocalRapid/">
+        <meta property="og:type" content="website">
+
+        <!-- Twitter Card -->
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="LocalRapid - Our Official e-commerce Website">
+        <meta name="twitter:description" content="Shop faster and safer with LocalRapid – your trusted e-commerce platform for quick delivery, secure shopping, and reliable service.">
+        <meta name="twitter:image" content="https://krishnendu-kar.github.io/LocalRapid/LocaalRapid.png">
+
+        <!-- Preloads -->
+        <link rel="preload" href="style.css" as="style">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+        <!-- Canonical -->
+        <link rel="canonical" href="https://krishnendu-kar.github.io/LocalRapid/">
+
+        <!-- Favicon & Apple Icon -->
+        <link rel="shortcut icon" href="LocaalRapid.ico" type="image/x-icon">
+        <link rel="icon" href="LocaalRapid.ico" type="image/x-icon">
+        <link rel="apple-touch-icon" href="LocaalRapid.ico" sizes="180x180">
+
+        <!-- Styles -->
+        <link rel="stylesheet" href="style.css">
+
+        <!-- Title -->
+        <title>LocalRapid - Fast & Reliable E-commerce Shopping</title>
+    </head>
+    <body>
+            <div class="loader-container" id="page-loader">
+                <div class="loaderout">
+                    <div class="loaderin1">
+                        <div class="loaderin2">
+                            <div class="loaderin3"></div>
+                        </div>
+                    </div>
+                </div>
+                <p class="loader-p" id="loader-text">Please wait...</p>
+            </div>
+        <header>
+            <div class="navbar">
+                <div class="nav-logo border" onclick="window.location.href='index.html'">
+                    <div class="logo-name">LocaalRapid</div>
+                    <div><img class="logo" src="LocaalRapid.png" alt="logo" loading="lazy"> </div>
+                </div>
+                <div class="nav-address border">
+                    <p class="location">location</p>
+                    <div class="address-icon">
+                        <p class="location-name"><i class="fa-solid fa-location-dot"></i>
+                        radhaballavpur</p>
+                    </div>
+                </div>
+                <div>
+                    <a class="border" href="OrderTracking.html"><abbr class="order" title="Track your order">Orders</abbr> </a>
+                </div>
+                <div class="seller border">
+                    <a href="seller home.html" target="_blank" class="feedback-btn">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="15" viewBox="0 0 16 15">
+                            <defs>
+                                <linearGradient id="a" x1="0%" x2="86.876%" y1="0%" y2="80.202%">
+                                <stop offset="0%" stop-color="#FFF6CC"/>
+                                <stop offset="100%" stop-color="#FFD580"/>
+                                </linearGradient>
+                            </defs>
+                            <g fill="none" fill-rule="evenodd">
+                                <path d="M-2-2h20v20H-2z"/>
+                                <path fill="url(#a)" fill-rule="nonzero" d="M15.93 5.614h-2.948V4.14c0-.818-.655-1.473-1.473-1.473H8.56c-.817 0-1.473.655-1.473 1.473v1.474H4.14c-.818 0-1.466.656-1.466 1.474l-.001 8.105c0 .818.655 1.474 1.473 1.474h11.79c.818 0 1.474-.656 1.474-1.474V7.088c0-.818-.656-1.474-1.474-1.474zm-4.421 0H8.56V4.14h2.949v1.474z" transform="translate(-2 -2)"/>
+                            </g>
+                        </svg>
+                        Become a seller
+                    </a>
+                </div>
+                <div class="feedback border">
+                    <a href="https://forms.gle/o6QnsSHPTd5EUZ2q6" class="feedback-btn">
+                     Feedback </a>
+                </div>
+                   
+            </div>
+            <div class="panel">
+                <!-- Hamburger Button -->
+                 <div id="global-sidebar-container"></div>
+                <script src="sidebar.js"></script>
+                    <!-- Search Bar -->
+                <div class="nav-search search-wrapper border">
+                    <input type="search" class="search-input search-boxAni" id="productSearch" onkeyup="searchProducts()" placeholder=" ">
+                    <div class="search-icon" onclick="searchProducts()"><p><i class="fa-solid fa-magnifying-glass" style="color: #d70675;"></i></p></div>
+                </div>
+                <ul>
+                    <li><a class="panel-a1 border" href="lucky winners.html">lucky winners</a></li>
+                    <li><a class="panel-a2 border" href="tutorial video.html">Need help?</a></li>
+                    <li><a class="panel-a3 border" href="about_us.html">About Us</a></li>
+                </ul>
+            </div>
+            <div class="cart border" onclick="window.location.href='cart.html'">
+                    <p class="cart-amount">0</p>
+                    <div class="cart-icon">
+                        <p><i class="fa-solid fa-cart-arrow-down"></i>
+                        </p>
+                    </div>
+                </div>
+            <div class="message-box1 border">
+                <div class="message-box2">
+                    <div class="message-text">
+                       Order Now & Save Big! Lightning-fast delivery at incredible prices – because you are special for us
+                    </div>
+                </div>
+            </div>
+        </header>
+        <main>
+            
+               <div class="category-scroll-container">
+                    <div class="cat-item" onclick="window.location.href='comboCategory.html'">
+                        <i class="bi bi-collection-fill"></i>
+                        <p>Combo Packs</p>
+                    </div>
+
+                    <div class="cat-item" onclick="window.location.href='bestdealCategory.html'">
+                        <i class="bi bi-lightning-charge-fill"></i>
+                        <p>Best Deal</p>
+                    </div>
+
+                    <div class="cat-item" onclick="window.location.href='groceryCategory.html'">
+                        <i class="bi bi-basket2-fill"></i>
+                        <p>Staples</p>
+                    </div>
+
+                    <div class="cat-item" onclick="window.location.href='colddrinkCategory.html'">
+                        <i class="bi bi-cup-straw"></i>
+                        <p>Cold Drinks</p>
+                    </div>
+
+                    <div class="cat-item" onclick="window.location.href='snacksCategory.html'">
+                        <i class="bi bi-bag-heart-fill"></i>
+                        <p>Snacks</p>
+                    </div>
+
+                    <div class="cat-item" onclick="window.location.href='biscuitCategory.html'">
+                        <i class="bi bi-circle-fill"></i>
+                        <p>Biscuits</p>
+                    </div>
+                    <div class="cat-item" onclick="window.location.href='oilCategory.html'">
+                        <i class="bi bi-droplet-fill"></i> <p>Oil</p>
+                    </div>
+
+                    <div class="cat-item" onclick="window.location.href='dailyProductCategory.html'">
+                        <i class="bi bi-house-heart-fill"></i> <p>Daily Needs</p>
+                    </div>
+                </div>
+            </div>
+            <div class="sub-header">
+                <div class="slider-container">
+                    <div class="slider-wrapper">
+                        <div class="slide">
+                            <picture>
+                                <source media="(min-width: 911px)" srcset="soap_slider_pc.png">
+                                <img src="soap slider.png" alt="Description for banner 1" loading="eager">
+                            </picture>
+                        </div>
+                        <div class="slide">
+                            <picture>
+                                <source media="(min-width: 469px)" srcset="YOUR_DESKTOP_IMAGE_2.jpg">
+                                <img src="snacks.png" alt="Description for banner 2" loading="lazy">
+                            </picture>
+                        </div>
+                        <div class="slide">
+                            <picture>
+                                <source media="(min-width: 469px)" srcset="YOUR_DESKTOP_IMAGE_3.jpg">
+                                <img src="cold drink.png" alt="Description for banner 3">
+                            </picture>
+                        </div>
+                        <div class="slide">
+                            <picture>
+                                <source media="(min-width: 469px)" srcset="YOUR_DESKTOP_IMAGE_4.jpg">
+                                <img src="staples.png" alt="Description for banner 4">
+                            </picture>
+                        </div>
+                    </div>
+                    <button class="slider-btn prev"><i class="fa-solid fa-chevron-left"></i></button>
+                    <button class="slider-btn next"><i class="fa-solid fa-chevron-right"></i></button>
+                    <div class="slider-dots"></div>
+                </div>
+
+                </div>
+                <div id="flash-sale-section" class="flash-section-hidden">
+                    <div class="flash-header">
+                        <div class="flash-title">
+                            <i class="fa-solid fa-bolt-lightning"></i> DEAL OF THE HOUR
+                            <span id="flash-status-text">Ends in:</span>
+                        </div>
+                        <div class="flash-timer" id="flash-timer-display">00:00:00</div>
+                    </div>
+
+                    <div class="flash-scroll-container" id="flash-products-container">
+                        </div>
+                </div>
+            </div>
+
+            <div id="addCartMessage" class="cartMessage"></div>
+            
+            <button id="backToTop" onclick="scrollToTop()">
+                <i class="fa-solid fa-arrow-up"></i>
+            </button>
+            
+            <div class="shop-section" id="productList">
+                
+            </div>
+        </main>
+        <footer>
+            ©2025 LocalRapid ; All Right will be reserved
+        </footer>
+        
+
+        <script src="products.js"></script><script src="products_weightable.js"></script> <script src="app.js"></script> 
+        <script>
+           // 1. Select the element and store it in a constant
+            const locationElement = document.querySelector('.location-name');
+
+            // 2. Get the text content and remove extra whitespace (newlines)
+            let text = locationElement.textContent.trim(); 
+
+            // 3. Check length and truncate if necessary
+            // Note: 8 is very short, you might want 10 or 15
+            const truncatedText = text.length > 7 ? text.substring(0, 7) + "..." : text;
+
+            // 4. Update the HTML (Fixing the 'innerHTML' typo)
+            locationElement.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${truncatedText}`;
+
+        // ====== FLASH DEAL LOGIC (WITH AUTO ROTATION) ======
+
+            function addFlashProductToCart(event, productId) {
+                event.preventDefault(); 
+                event.stopPropagation(); 
+                const product = packetProducts.find(p => p.id === productId);
+                if (product) addToCart(product);
+            }
+
+            function initFlashDeal() {
+                const container = document.getElementById("flash-sale-section");
+                const timerDisplay = document.getElementById("flash-timer-display");
+                const productContainer = document.getElementById("flash-products-container");
+                const statusText = document.getElementById("flash-status-text");
+
+                if (!container) return;
+
+                // 1. Get ALL pool of hourdeal products
+                const allFlashProducts = packetProducts.filter(p => p.category === 'hourdeal');
+                
+                // CONFIGURATION
+                const CYCLE_HOURS = 5; 
+                const ACTIVE_HOURS = 1; 
+                const ITEMS_PER_CYCLE = 5; 
+
+                const CYCLE_MS = CYCLE_HOURS * 60 * 60 * 1000;
+                const ACTIVE_MS = ACTIVE_HOURS * 60 * 60 * 1000;
+
+                function update() {
+                    const now = new Date();
+                    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const msSinceMidnight = now - startOfDay;
+                    
+                    const msInCurrentCycle = msSinceMidnight % CYCLE_MS;
+                    
+                    // --- NEW LOGIC: PREVENT DUPLICATES ---
+                    let currentCycleProducts = [];
+
+                    // If we have fewer products than 5, just show what we have (Don't rotate/repeat)
+                    if (allFlashProducts.length <= ITEMS_PER_CYCLE) {
+                        currentCycleProducts = allFlashProducts;
+                    } else {
+                        // Only rotate if we have plenty of products
+                        const globalCycleIndex = Math.floor(now.getTime() / CYCLE_MS);
+                        const startIndex = (globalCycleIndex * ITEMS_PER_CYCLE) % allFlashProducts.length;
+                        
+                        for (let i = 0; i < ITEMS_PER_CYCLE; i++) {
+                            const index = (startIndex + i) % allFlashProducts.length;
+                            currentCycleProducts.push(allFlashProducts[index]);
+                        }
+                    }
+
+                    const formatTime = (ms) => {
+                        const totalSeconds = Math.floor(ms / 1000);
+                        const h = Math.floor(totalSeconds / 3600);
+                        const m = Math.floor((totalSeconds % 3600) / 60);
+                        const s = totalSeconds % 60;
+                        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                    };
+
+                    // --- SCENARIO 1: ACTIVE DEAL ---
+                    if (msInCurrentCycle < ACTIVE_MS) {
+                        container.className = "flash-section-active";
+                        statusText.innerHTML = "Hurry! Ends in:";
+                        
+                        // Check if we need to update the display
+                        const firstCard = productContainer.querySelector('.flash-card');
+                        const currentFirstId = firstCard ? firstCard.getAttribute('data-id') : null;
+                        
+                        // Render only if content changed or if we are unlocking
+                        if ((currentCycleProducts.length > 0 && currentFirstId != currentCycleProducts[0].id) || productContainer.classList.contains("blurred-content")) {
+                            
+                            productContainer.classList.remove("blurred-content");
+                            const existingOverlay = container.querySelector('.locked-overlay');
+                            if(existingOverlay) existingOverlay.remove();
+
+                            if (currentCycleProducts.length === 0) {
+                                productContainer.innerHTML = "<p style='padding:20px; width:100%; text-align:center;'>No deals available right now.</p>";
+                            } else {
+                                productContainer.innerHTML = currentCycleProducts.map(p => {
+                                    const discount = p.originalPrice ? Math.round(((p.originalPrice - p.price)/p.originalPrice)*100) : 0;
+                                    return `
+                                    <div class="flash-card" data-id="${p.id}">
+                                        ${discount > 0 ? `<div class="discount-percent" style="position:absolute; top:5px; left:5px; z-index:1;">${discount}% OFF</div>` : ''}
+                                        <img src="${p.image}" alt="${p.name}" loading="lazy">
+                                        <h4>${p.name}</h4>
+                                        <div class="price">₹${p.price} ${p.originalPrice ? `<del>₹${p.originalPrice}</del>` : ''}</div>
+                                        <button class="flash-add-btn" onclick="addFlashProductToCart(event, ${p.id})">
+                                            Add to Cart
+                                        </button>
+                                    </div>                                    
+                                `}).join('');
+                            }
+                        }
+                        const timeLeft = ACTIVE_MS - msInCurrentCycle;
+                        timerDisplay.innerText = formatTime(timeLeft);
+                    } 
+                    
+                    // --- SCENARIO 2: WAITING PERIOD ---
+                    else {
+                        container.className = "flash-section-waiting";
+                        statusText.innerText = "Next Deal Starts In:";
+                        
+                        if (!productContainer.classList.contains("blurred-content")) {
+                            productContainer.classList.add("blurred-content");
+                            if(!container.querySelector('.locked-overlay')) {
+                                const overlay = document.createElement('div');
+                                overlay.className = 'locked-overlay';
+                                overlay.innerHTML = '<i class="fa-solid fa-lock"></i> Deals Locked';
+                                container.appendChild(overlay);
+                            }
+                            
+                            // Show mystery cards (use actual count, or max 5)
+                            const mysteryCount = currentCycleProducts.length > 0 ? currentCycleProducts.length : 5;
+                            
+                            let mysteryHTML = '';
+                            for(let i=0; i<mysteryCount; i++) {
+                                mysteryHTML += `
+                                    <div class="flash-card">
+                                        <img src="https://via.placeholder.com/150?text=?" alt="Mystery">
+                                        <h4>???</h4>
+                                        <div class="price">₹???</div>
+                                        <button class="flash-add-btn" disabled>Locked</button>
+                                    </div>`;
+                            }
+                            productContainer.innerHTML = mysteryHTML;
+                        }
+
+                        const timeLeft = CYCLE_MS - msInCurrentCycle;
+                        timerDisplay.innerText = formatTime(timeLeft);
+                    }
+                }
+
+                update();
+                setInterval(update, 1000);
+            }
+
+            document.addEventListener("DOMContentLoaded", initFlashDeal);
+
+
+            // Show button when user scrolls down 300px
+            window.onscroll = function() {scrollFunction()};
+
+            function scrollFunction() {
+            const btn = document.getElementById("backToTop");
+            // Check if btn exists to avoid errors
+            if (!btn) return; 
+
+            if (document.body.scrollTop > 400 || document.documentElement.scrollTop > 400) {
+                btn.style.display = "block";
+            } else {
+                btn.style.display = "none";
+            }
+            }
+
+            function scrollToTop() {
+            window.scrollTo({top: 0, behavior: 'smooth'});
+            }
+            // --- Slider Functionality (Unchanged) ---
+            document.addEventListener('DOMContentLoaded', function () {
+                // ... all your slider code is perfect ...
+            });
+
+            // --- Loading and Search Logic (MODIFIED) ---
+            
+            // This holds the *full* 20k random list for the page
+            let pageSpecificProducts = []; 
+
+            // This function prepares the random list and starts the infinite scroll
+            function initializeHomePage() {
+                // 1. Create a shuffled copy of all products
+                pageSpecificProducts = [...packetProducts].sort(() => 0.5 - Math.random());
+                
+                // 2. Tell app.js to start loading them (74 initially, 14 on scroll)
+                // We also pass 'packetProducts' as the searchFallback
+                initInfiniteScroll(pageSpecificProducts, 24, 14);
+            }
+
+            // This runs when the page is fully loaded
+            document.addEventListener("DOMContentLoaded", function() {
+                initializeHomePage();
+            });
+
+            // This function is called every time the user types
+            function searchProducts() {
+                const query = document.getElementById("productSearch").value.toLowerCase();
+                
+                if (query === '') {
+                    // 1. If search is empty, RESTART the infinite scroll
+                    initializeHomePage();
+                } else {
+                    // 2. If user is searching, STOP infinite scroll
+                    isSearchActive = true; 
+                    
+                    // 3. Filter the FULL list of products
+                    const filteredProducts = packetProducts.filter(product =>
+                        product.name.toLowerCase().includes(query)
+                    );
+                    
+                    // 4. Call displayProducts to REPLACE HTML with search results
+                    displayProducts(filteredProducts, 'productList', 'search');
+                }
+            }
+        </script>
+        <script>
+     
+        const messages = [
+            "Fetching the best deals for you...",
+            "Getting the latest products...",
+            "Almost there, don’t go anywhere...",
+            "Loading happiness to your doorstep..."
+        ];
+
+        let i = 0;
+        const loaderText = document.getElementById("loader-text");
+
+        // Rotate messages every 2s
+        setInterval(() => {
+            loaderText.textContent = messages[i];
+            i = (i + 1) % messages.length;
+        }, 2000);
+
+    // Remove loader as soon as DOM is ready (much faster)
+        document.addEventListener("DOMContentLoaded", function() {
+            setTimeout(() => {
+                const loader = document.getElementById("page-loader");
+                if(loader) {
+                    loader.style.opacity = "0"; 
+                    setTimeout(() => {
+                        loader.style.display = "none";
+                    }, 10); 
+                }
+            }, 10); // Small 0.5s delay to make animation smooth
+        });
+        
+       
+
+
+
+            const searchInput = document.querySelector(".search-boxAni");
+
+                // Full texts for big screens
+                const fullTexts = [
+                " Search products...",
+                " Search categories...",
+                " Search offers..."
+                ];
+
+                // Short texts for small screens
+                const shortTexts = [
+                " Products...",
+                " Categories...",
+                " Offers..."
+                ];
+
+                let texts = []; // will update depending on screen size
+                let textIndex = 0;
+                let charIndex = 0;
+                let currentText = "";
+                let typing = true;
+
+                function updateTexts() {
+                if (window.matchMedia("(max-width: 475px)").matches) {
+                    texts = shortTexts;
+                } else {
+                    texts = fullTexts;
+                }
+                }
+
+                function typeAnimation() {
+                if (typing) {
+                    // Typing characters
+                    currentText = texts[textIndex].slice(0, ++charIndex);
+                    searchInput.setAttribute("placeholder", currentText);
+
+                    if (charIndex === texts[textIndex].length) {
+                    typing = false;
+                    setTimeout(typeAnimation, 1500); // pause before deleting
+                    return;
+                    }
+                } else {
+                    // Deleting characters
+                    currentText = texts[textIndex].slice(0, --charIndex);
+                    searchInput.setAttribute("placeholder", currentText);
+
+                    if (charIndex === 0) {
+                    typing = true;
+                    textIndex = (textIndex + 1) % texts.length;
+                    }
+                }
+
+                setTimeout(typeAnimation, typing ? 70 : 60);
+                }
+
+                // Initialize texts once
+                updateTexts();
+
+                // Also update texts dynamically when screen resizes
+                window.addEventListener("resize", updateTexts);
+
+                // Start animation
+                typeAnimation();
+
+
+            // This function is called every time the user types in the search bar
+            function searchProducts() {
+                const query = document.getElementById("productSearch").value.toLowerCase();
+                
+                // 3. BUG FIX: Check if the search bar is empty
+                if (query === '') {
+                    // If it's empty, show the initial 78 products and stop
+                    displayInitialProducts();
+                    return;
+                }
+
+                // If there is a query, filter and show the results
+                const filteredProducts = packetProducts.filter(product =>
+                    product.name.toLowerCase().includes(query)
+                );
+                
+                displayProducts(filteredProducts, 'productList', 'search');
+            }
+            // --- Slider Functionality ---
+document.addEventListener('DOMContentLoaded', function () {
+    const sliderWrapper = document.querySelector('.slider-wrapper');
+    // Check if the slider exists on the page before running the script
+    if (!sliderWrapper) return;
+
+    const slides = document.querySelectorAll('.slide');
+    const prevBtn = document.querySelector('.slider-btn.prev');
+    const nextBtn = document.querySelector('.slider-btn.next');
+    const dotsContainer = document.querySelector('.slider-dots');
+    
+    let currentIndex = 0;
+    let slideInterval;
+    const totalSlides = slides.length;
+
+    
+    // Create navigation dots
+    for (let i = 0; i < totalSlides; i++) {
+        const dot = document.createElement('div');
+        dot.classList.add('dot');
+        dot.addEventListener('mouseover', () => {
+            goToSlide(i);
+            resetInterval();
+        });
+        dotsContainer.appendChild(dot);
+    }
+    const dots = document.querySelectorAll('.dot');
+
+    // Function to update the slider
+    function goToSlide(index) {
+        sliderWrapper.style.transform = `translateX(-${index * 100}%)`;
+        dots.forEach(dot => dot.classList.remove('active'));
+        dots[index].classList.add('active');
+        currentIndex = index;
+    }
+
+    // Event listeners for next/prev buttons
+    nextBtn.addEventListener('click', () => {
+        const nextIndex = (currentIndex + 1) % totalSlides;
+        goToSlide(nextIndex);
+        resetInterval();
+    });
+
+    prevBtn.addEventListener('click', () => {
+        const prevIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+        goToSlide(prevIndex);
+        resetInterval();
+    });
+
+    // Auto-play functionality
+    function startInterval() {
+        slideInterval = setInterval(() => {
+            const nextIndex = (currentIndex + 1) % totalSlides;
+            goToSlide(nextIndex);
+        }, 5000); // Change slide every 5 seconds
+    }
+
+    function resetInterval() {
+        clearInterval(slideInterval);
+        startInterval();
+    }
+
+    // Initialize slider
+    goToSlide(0);
+    startInterval();
+});
+        </script>
+    </body>
+</html>
