@@ -134,7 +134,7 @@
         async function initPage() {
             // 1. Get ID from URL (e.g., ?id=1010011200100012345)
             const urlParams = new URLSearchParams(window.location.search);
-            const productId = urlParams.get('id');
+            const productId = urlParams.get('slug'); // Changed to 'slug' for universal PDP
 
             if (!productId) {
                 showError();
@@ -146,7 +146,7 @@
             const { data, error } = await supabase
                 .from('products')
                 .select('*')
-                .eq('id', productId) // Supabase handles the BigInt query
+                .eq('slug', productId) // Supabase handles the BigInt query
                 .single();
 
             if (error || !data) {

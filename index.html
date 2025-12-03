@@ -100,8 +100,8 @@
                 <script src="sidebar.js"></script>
                     <!-- Search Bar -->
                 <div class="nav-search search-wrapper border">
-                    <input type="search" class="search-input search-boxAni" id="productSearch" onkeyup="searchProducts()" placeholder=" ">
-                    <div class="search-icon" onclick="searchProducts()"><p><i class="fa-solid fa-magnifying-glass" style="color: #d70675;"></i></p></div>
+                    <input type="search" class="search-input search-boxAni" id="productSearch" onclick="window.location.href='universal search.html'" placeholder=" ">
+                    <div class="search-icon" onclick="window.location.href='universal search.html'"><p><i class="fa-solid fa-magnifying-glass" style="color: #d70675;"></i></p></div>
                 </div>
                 <ul>
                     <li><a class="panel-a1 border" href="lucky winners.html">lucky winners</a></li>
@@ -228,7 +228,7 @@
         </footer>
         
 
-        <script src="products.js"></script><script src="products_weightable.js"></script> <script src="app.js"></script> 
+
         <script>
            // 1. Select the element and store it in a constant
             const locationElement = document.querySelector('.location-name');
@@ -427,25 +427,7 @@
             });
 
             // This function is called every time the user types
-            function searchProducts() {
-                const query = document.getElementById("productSearch").value.toLowerCase();
-                
-                if (query === '') {
-                    // 1. If search is empty, RESTART the infinite scroll
-                    initializeHomePage();
-                } else {
-                    // 2. If user is searching, STOP infinite scroll
-                    isSearchActive = true; 
-                    
-                    // 3. Filter the FULL list of products
-                    const filteredProducts = packetProducts.filter(product =>
-                        product.name.toLowerCase().includes(query)
-                    );
-                    
-                    // 4. Call displayProducts to REPLACE HTML with search results
-                    displayProducts(filteredProducts, 'productList', 'search');
-                }
-            }
+
         </script>
         <script>
      
@@ -547,24 +529,7 @@
                 typeAnimation();
 
 
-            // This function is called every time the user types in the search bar
-            function searchProducts() {
-                const query = document.getElementById("productSearch").value.toLowerCase();
-                
-                // 3. BUG FIX: Check if the search bar is empty
-                if (query === '') {
-                    // If it's empty, show the initial 78 products and stop
-                    displayInitialProducts();
-                    return;
-                }
 
-                // If there is a query, filter and show the results
-                const filteredProducts = packetProducts.filter(product =>
-                    product.name.toLowerCase().includes(query)
-                );
-                
-                displayProducts(filteredProducts, 'productList', 'search');
-            }
             // --- Slider Functionality ---
 document.addEventListener('DOMContentLoaded', function () {
     const sliderWrapper = document.querySelector('.slider-wrapper');
@@ -632,5 +597,143 @@ document.addEventListener('DOMContentLoaded', function () {
     startInterval();
 });
         </script>
+        <!-- 1. SUPABASE & CONFIG -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_wy4_pxxwFkS63SSL_d5yug_Bgybs85R';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Global Product Array (Replaces your products.js array)
+        let packetProducts = []; 
+
+        // 2. FETCH FROM DB
+        async function fetchAndDisplayProducts() {
+            const loader = document.getElementById('page-loader');
+            if(loader) loader.style.display = 'flex';
+
+            // Fetch active products
+            const { data, error } = await supabase
+                .from('products')
+                .select('*')
+                .eq('is_active', true)
+                .order('created_at', { ascending: false })
+                .limit(50); // Load 50 newest first
+
+            if (error) {
+                console.error("Error fetching products:", error);
+                alert("Failed to load products. Please refresh.");
+                return;
+            }
+
+            // 3. MAP DB COLUMNS TO FRONTEND FORMAT
+            // Your DB uses 'base_price', your HTML expects 'price'
+            packetProducts = data.map(p => ({
+                id: p.id, // 19-digit ID
+                name: p.name,
+                slug: p.slug,
+                price: p.base_price,
+                originalPrice: p.original_price,
+                image: (p.images && p.images.length > 0) ? p.images[0] : 'https://via.placeholder.com/200',
+                category: p.category_id, // ID (e.g., 12)
+                rating: 4.5, // Default for now
+                delivery_time: "2 Days" // Default or fetch from shipping_zones later
+            }));
+
+            // 4. RENDER
+            displayProducts(packetProducts, 'productList');
+            
+            if(loader) loader.style.display = 'none';
+        }
+
+        // 5. RENDER FUNCTION (Standard E-commerce Card)
+        function displayProducts(products, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            if (products.length === 0) {
+                container.innerHTML = '<p class="text-center w-full p-10 text-gray-500">No products found.</p>';
+                return;
+            }
+
+            products.forEach(product => {
+                // Calculate Discount
+                let discountBadge = '';
+                if (product.originalPrice > product.price) {
+                    const off = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+                    discountBadge = `<div class="discount-badge">${off}% OFF</div>`;
+                }
+
+                const card = `
+                    <div class="product-card" onclick="window.location.href='universal pdp.html?slug=${product.slug}'">
+                        ${discountBadge}
+                        <div class="img-box">
+                            <img src="${product.image}" alt="${product.name}" loading="lazy">
+                        </div>
+                        <div class="details">
+                            <h4 class="product-name">${product.name}</h4>
+                            <div class="price-area">
+                                <span class="price">₹${product.price}</span>
+                                ${product.originalPrice ? `<span class="mrp">₹${product.originalPrice}</span>` : ''}
+                            </div>
+                            <button class="add-btn" onclick="addToCart(event, '${product.id}')">
+                                Add <i class="fa-solid fa-cart-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += card;
+            });
+        }
+
+        // 6. SIMPLE CART LOGIC (Placeholder)
+        function addToCart(event, id) {
+            event.stopPropagation(); // Don't trigger the card click
+            alert(`Added Product ${id} to Cart!`);
+            // You can connect your existing cart logic here
+        }
+
+        // Init
+        document.addEventListener("DOMContentLoaded", fetchAndDisplayProducts);
+    </script>
+
+    <!-- Add some basic CSS for the cards if missing -->
+    <style>
+        .shop-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px;
+            padding: 15px;
+        }
+        .product-card {
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .product-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .discount-badge {
+            position: absolute; top: 8px; left: 8px;
+            background: #22c55e; color: white;
+            font-size: 10px; font-weight: bold;
+            padding: 2px 6px; border-radius: 4px;
+        }
+        .img-box { height: 160px; padding: 10px; display: flex; justify-content: center; align-items: center; }
+        .img-box img { max-height: 100%; max-width: 100%; }
+        .details { padding: 10px; }
+        .product-name { font-size: 13px; margin: 0 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .price-area { display: flex; align-items: baseline; gap: 5px; margin-bottom: 8px; }
+        .price { font-weight: bold; font-size: 15px; }
+        .mrp { text-decoration: line-through; font-size: 11px; color: #999; }
+        .add-btn {
+            width: 100%; background: white; border: 1px solid #2874f0;
+            color: #2874f0; padding: 5px; border-radius: 4px; font-weight: bold;
+            cursor: pointer;
+        }
+        .add-btn:hover { background: #2874f0; color: white; }
+    </style>
     </body>
 </html>

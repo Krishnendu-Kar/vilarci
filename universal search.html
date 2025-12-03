@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results - Vilarci</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .product-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        /* Search History Dropdown */
+#historyBox {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    max-height: 250px;
+    overflow-y: auto;
+    display: none;
+    z-index: 100;
+}
+.history-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.history-item:hover {
+    background: #f5f5f5;
+}
+.history-clear {
+    padding: 10px;
+    text-align: center;
+    font-weight: bold;
+    cursor: pointer;
+    background: #f8f8f8;
+}
+.history-clear:hover {
+    background: #e0e0e0;
+}
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <!-- Navbar (Simplified for Search Page) -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50 border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center gap-4">
+            <!-- Logo -->
+            <a href="index.html" class="flex items-center gap-2 flex-shrink-0">
+                <div class="bg-indigo-600 text-white font-bold text-xl px-2 py-1 rounded">V</div>
+                <div class="text-2xl font-extrabold text-indigo-900 tracking-tight hidden sm:block">Vilarci</div>
+            </a>
+
+            <!-- Big Search Bar -->
+            <div class="flex-grow max-w-2xl relative">
+                <input type="text" id="searchInput" placeholder="Search products, categories, or IDs..." 
+                    class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm transition-all"
+                    onkeypress="handleEnter(event)">
+                    <div id="historyBox"></div>
+
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <i data-lucide="search" class="w-5 h-5"></i>
+                </div>
+                <button onclick="triggerSearch()" class="absolute inset-y-1 right-1 bg-indigo-600 text-white px-4 rounded-lg text-sm font-bold hover:bg-indigo-700 transition">
+                    Search
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        
+        <!-- Header / Stats -->
+        <div class="flex items-end gap-2 mb-6">
+            <h1 class="text-2xl font-bold text-slate-800">Search Results</h1>
+            <p class="text-slate-500 pb-1 text-sm" id="result-stats">Searching...</p>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loader" class="flex justify-center py-20">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        </div>
+
+        <!-- Results Grid -->
+        <div id="results-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 hidden">
+            <!-- Products injected here -->
+        </div>
+
+        <!-- No Results State -->
+        <div id="empty-state" class="hidden text-center py-20">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-slate-100 rounded-full mb-4 text-slate-400">
+                <i data-lucide="search-x" class="w-10 h-10"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800">No matches found</h3>
+            <p class="text-slate-500 mt-2">Try checking your spelling or use different keywords.</p>
+            <button onclick="window.location.href='index.html'" class="mt-6 bg-white border border-slate-300 text-slate-700 px-6 py-2 rounded-lg font-bold hover:bg-slate-50 transition">
+                Back to Home
+            </button>
+        </div>
+
+    </main>
+
+    <script>
+        // CONFIGURATION
+        const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_wy4_pxxwFkS63SSL_d5yug_Bgybs85R';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        lucide.createIcons();
+
+        // --------------------------
+// SEARCH HISTORY (Option A)
+// --------------------------
+function loadHistory() {
+    return JSON.parse(localStorage.getItem("search_history") || "[]");
+}
+
+function saveToHistory(term) {
+    let history = loadHistory();
+    history = history.filter(h => h !== term); // remove duplicate
+    history.unshift(term);                     // add on top
+    history = history.slice(0, 8);             // keep max 8 items
+    localStorage.setItem("search_history", JSON.stringify(history));
+}
+
+function showHistoryDropdown() {
+    const box = document.getElementById("historyBox");
+    const history = loadHistory();
+
+    if (history.length === 0) {
+        box.style.display = "none";
+        return;
+    }
+
+    box.innerHTML = history
+        .map(h => `<div class="history-item" onclick="selectHistory('${h}')">${h}</div>`)
+        .join("") +
+        `<div class="history-clear" onclick="clearHistory()">Clear All</div>`;
+
+    box.style.display = "block";
+}
+
+function hideHistoryDropdown() {
+    setTimeout(() => {
+        document.getElementById("historyBox").style.display = "none";
+    }, 150);
+}
+
+function selectHistory(text) {
+    document.getElementById("searchInput").value = text;
+    triggerSearch();
+}
+
+function clearHistory() {
+    localStorage.removeItem("search_history");
+    hideHistoryDropdown();
+}
+
+// ---------------------------------------
+// AUTO SEARCH WHILE TYPING (300ms Delay)
+// ---------------------------------------
+let typeTimer;
+
+document.getElementById("searchInput").addEventListener("input", function () {
+    const text = this.value.trim();
+
+    showHistoryDropdown(); // show history on typing
+
+    clearTimeout(typeTimer);
+    typeTimer = setTimeout(() => {
+        if (text.length > 0) {
+            triggerSearch(); 
+        }
+    }, 300);
+});
+
+document.getElementById("searchInput").addEventListener("focus", showHistoryDropdown);
+document.getElementById("searchInput").addEventListener("blur", hideHistoryDropdown);
+
+        // --- 1. SEARCH LOGIC ---
+        async function performSearch() {
+            // Get query from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const query = urlParams.get('q') || '';
+            
+            // Set input value
+            document.getElementById('searchInput').value = query;
+
+            if (!query) {
+                showEmpty("Please enter a search term");
+                return;
+            }
+
+            document.getElementById('result-stats').innerText = `for "${query}"`;
+
+            // FETCH DATA (Joining Categories)
+            // We fetch EVERYTHING active, then filter in JS. 
+            // Why? Because searching joined tables ("categories.name") inside Supabase queries is complex for simple setups.
+            // Fetching 100-500 products text data is very fast and allows perfect filtering.
+            
+            const { data, error } = await supabase
+                .from('products')
+                .select(`
+                    *,
+                    categories (name),
+                    sub_categories (name),
+                    super_sub_categories (name)
+                `)
+                .eq('is_active', true);
+
+            if (error) {
+                console.error(error);
+                alert("Search failed. See console.");
+                return;
+            }
+
+            // CLIENT-SIDE FILTERING (The "Universal" Logic)
+            const searchLower = query.toLowerCase();
+            
+            const results = data.filter(p => {
+                // 1. Search by Name
+                if (p.name.toLowerCase().includes(searchLower)) return true;
+                // 2. Search by ID (Exact or partial)
+                if (String(p.id).includes(searchLower)) return true;
+                // 3. Search by Slug
+                if (p.slug.includes(searchLower)) return true;
+                
+                // 4. Search by Category Name (Requires the Join)
+                if (p.categories && p.categories.name.toLowerCase().includes(searchLower)) return true;
+                // 5. Search by Sub Category
+                if (p.sub_categories && p.sub_categories.name.toLowerCase().includes(searchLower)) return true;
+                // 6. Search by Super Sub Category
+                if (p.super_sub_categories && p.super_sub_categories.name.toLowerCase().includes(searchLower)) return true;
+
+                return false;
+            });
+
+            renderResults(results);
+        }
+
+        // --- 2. RENDER RESULTS ---
+        function renderResults(products) {
+            const grid = document.getElementById('results-grid');
+            const loader = document.getElementById('loader');
+            const empty = document.getElementById('empty-state');
+            const stats = document.getElementById('result-stats');
+
+            loader.classList.add('hidden');
+
+            if (products.length === 0) {
+                empty.classList.remove('hidden');
+                grid.classList.add('hidden');
+                stats.innerText += ` (0 found)`;
+                return;
+            }
+
+            stats.innerText += ` (${products.length} found)`;
+            grid.classList.remove('hidden');
+            empty.classList.add('hidden');
+
+            grid.innerHTML = products.map(p => {
+                const img = (p.images && p.images.length > 0) ? p.images[0] : 'https://via.placeholder.com/300?text=No+Image';
+                
+                // Calculate Discount
+                let discountBadge = '';
+                if (p.original_price && p.base_price < p.original_price) {
+                    const off = Math.round(((p.original_price - p.base_price) / p.original_price) * 100);
+                    discountBadge = `<span class="absolute top-2 left-2 bg-green-600 text-white text-[10px] font-bold px-2 py-1 rounded">${off}% OFF</span>`;
+                }
+
+                return `
+                <div onclick="window.location.href='universal pdp.html?slug=${p.slug}'" 
+                     class="product-card bg-white border border-slate-200 rounded-xl overflow-hidden cursor-pointer transition-all relative group">
+                    
+                    ${discountBadge}
+                    
+                    <div class="aspect-square bg-slate-50 flex items-center justify-center overflow-hidden p-4">
+                        <img src="${img}" class="object-contain w-full h-full mix-blend-multiply group-hover:scale-110 transition-transform duration-500" loading="lazy">
+                    </div>
+                    
+                    <div class="p-4">
+                        <div class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1 truncate">
+                            ${p.categories?.name || 'General'} • ${p.super_sub_categories?.name || ''}
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-sm line-clamp-2 mb-2 h-10 leading-tight">
+                            ${p.name}
+                        </h3>
+                        
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-lg font-bold text-slate-900">₹${p.base_price}</span>
+                            ${p.original_price ? `<span class="text-xs text-slate-400 line-through">₹${p.original_price}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function showEmpty(msg) {
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('result-stats').innerText = msg;
+        }
+
+        // --- 3. UI HANDLERS ---
+        function handleEnter(e) {
+            if (e.key === 'Enter') triggerSearch();
+        }
+
+       function triggerSearch() {
+    const val = document.getElementById('searchInput').value.trim();
+    if (val) {
+        saveToHistory(val);
+        window.history.pushState({}, '', `?q=${encodeURIComponent(val)}`);
+        performSearch();
+    }
+}
+
+
+        // Init
+        performSearch();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <!-- SEO Meta -->
+        <meta name="description" content="LocaalRapid - Fast, reliable, and secure e-commerce shopping. Get snacks biscuits cake at very low price.">
+        <meta name="keywords" content="LocaalRapid, online shopping, fast delivery, secure e-commerce, reliable service, chips, noddles, cake">
+        <meta name="author" content="Krishnendu Kar">
+        <meta name="robots" content="index, follow">
+        <!-- Open Graph (Facebook, LinkedIn, WhatsApp) -->
+        <meta property="og:title" content="Cart - LocaalRapid Official e-commerce website">
+        <meta property="og:description" content="Shop snacks faster and safer with LocaalRapid – your trusted e-commerce platform for quick delivery, secure shopping, and reliable service.">
+        <meta property="og:image" content="https://krishnendu-kar.github.io/LocalRapid/LocaalRapid.png">
+        <meta property="og:url" content="https://krishnendu-kar.github.io/LocalRapid/cart.html">
+        <meta property="og:type" content="e-commerce website">
+        <!-- Twitter Card -->
+        <meta name="twitter:card" content="https://krishnendu-kar.github.io/LocalRapid/LocaalRapid.png">
+        <meta name="twitter:title" content="Snacks - LocaalRapid Official e-commerce websitee">
+        <meta name="twitter:description" content="LocaalRapid - Fast, reliable, and secure e-commerce shopping. Get snacks biscuits cake at very low price.">
+        <meta name="twitter:image" content="https://krishnendu-kar.github.io/LocalRapid/LocaalRapid.png">
+        <!-- Preloads -->
+        <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" as="style">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <!-- Canonical -->
+        <link rel="canonical" href="https://krishnendu-kar.github.io/LocalRapid/cart.html">
+        <!-- Favicon & Apple Icon -->
+        <link rel="shortcut icon" href="https://krishnendu-kar.github.io/LocalRapid/LocaalRapid.ico" type="image/x-icon">
+        <link rel="icon" href="https://krishnendu-kar.github.io/LocalRapid/LocaalRapid.ico" type="image/x-icon">
+        <link rel="apple-touch-icon" href="https://krishnendu-kar.github.io/LocalRapid/LocaalRapid.ico" sizes="180x180">
+
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+        <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+        <title>Cart- LocaalRapid Fast & Reliable E-commerce Shopping</title>
+        <style>
+            .navbar{
+                background: linear-gradient(180deg, #ff2a1f, #1c2333) !important;
+            }
+            .body{
+                background-color: white  !important;
+            }
+        @media (min-width: 769px) and (max-width: 991px) {
+        .my-box {
+            width: 300px;
+             position: absolute;
+         right: 0;
+        }
+        }
+        a{
+        color:#3683ff;
+        text-decoration:none;
+        }</style>
+    </head>
+    <body>
+        <header>
+            <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+                <div class="container">
+                    <a class="navbar-brand" href="index.html">
+                        <i class="bi bi-shop me-2"></i>LocaalRapid
+                    </a>
+                    <div class="navbar-nav ms-auto">
+                        <a class="nav-link text-white me-3" href="index.html">
+                            <i class="bi bi-house me-1"></i>Home
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </header>
+        <div class="container mt-4">
+            <div class="row">
+                <div class="col-12">
+                    <h2 class="mb-4">
+                        <i class="bi bi-cart me-2"></i>Shopping Cart
+                    </h2>
+                </div>
+            </div>
+            <div class="checkout-progress">
+                <div class="step active">
+                    <div class="circle">1</div>
+                    <p style="color:rgb(60, 109, 255);">Review</p>
+                </div>
+                <div class="line"></div>
+                <div class="step">
+                    <div class="circle">2</div>
+                    <p>Checkout</p>
+                </div>
+            </div>
+
+                <div class="discount-banner">
+                <p>You will save <span class="currency">₹</span><span class="amount" id="you-save1">0</span> on this order</p>
+                </div>
+            <style>/* Progress bar */
+                .checkout-progress {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 30px;
+                margin: 20px auto;
+                position: relative;
+                }
+
+                .step {
+                text-align: center;
+                color: #aaa;
+                }
+
+                .step.active {
+                color: #000;
+                }
+
+                .circle {
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                font-weight:600;
+                border: 2px solid #999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 5px;
+                font-weight: 600;
+                color: #999;
+                background: #fff;
+                }
+
+                .step.active .circle {
+                    border:4px solid;
+                border-color: rgb(20, 20, 241);
+                color: rgb(26, 26, 252);
+                }
+
+                .line {
+                flex-grow: 1;
+                height: 2px;
+                background: #ddd;
+                margin-top: -40px;
+                }
+                del, .mrp {
+                    color: #f25050;
+                    font-weight: 500;
+                }
+                /* Discount banner */
+                .discount-banner {
+                    border-radius:9px;
+                text-align: center;
+                font-size: 1.2rem;
+                background: linear-gradient(-210deg, blue, rgb(199, 50, 50));
+                padding: 14px 0;
+                color: #333;
+                font-weight: 500;
+                position: relative;
+                overflow: hidden;
+                }
+                p{
+                    color:#ddd;
+                }
+                /* Wavy bottom */
+                .discount-banner::after {
+                content: "";
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 12px;
+                background: radial-gradient(circle at 10px -4px, transparent 12px, #1c2333 13px);
+                background-size: 24px 24px;
+                }
+
+                .currency, .discount-banner .amount{
+                font-weight: 700;
+                color: #ffd600;
+                font-size: 1.3rem;
+                }
+
+                  /* Text trigger */
+  
+                    .info-text {
+                        cursor: pointer;
+                        margin-right: 15px;
+                    }
+
+                    /* Common overlay */
+                    .popup-overlay {
+                        display: none;
+                        position: fixed;
+                        inset: 0;
+                        background-color: rgba(0,0,0,0.3);
+                        backdrop-filter: blur(3px);
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 1000;
+                    }
+
+                    /* Popup content box */
+                    .popup-box {
+                        background: rgba(255, 255, 255, 0.848);
+                        border-radius: 16px;
+                        width: 90%;
+                        max-width: 500px;
+                        padding: 24px 32px;
+                        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                        text-align: left;
+                        position: relative;
+                        animation: fadeIn 0.25s ease;
+                    }
+
+                    @keyframes fadeIn {
+                        from { opacity: 0; transform: scale(0.95); }
+                        to { opacity: 1; transform: scale(1); }
+                    }
+
+                    .popup-box h2 {
+                        font-size: 22px;
+                        margin-top: 0;
+                    }
+
+                    .popup-box p {
+                        color: #5f6368;
+                        margin: 8px 0;
+                    }
+
+                    .check {
+                        color: #1a73e8;
+                        margin-right: 8px;
+                    }
+
+                    .close-btn {
+                        position: absolute;
+                        right: 16px;
+                        top: 12px;
+                        background: none;
+                        border: none;
+                        font-size: 16px;
+                        color: #051b38;
+                        cursor: pointer;
+                    } 
+                    
+                    /* --- NEW PREMIUM UI STYLES --- */
+                    /* Custom SweetAlert Glass Effect */
+                    .glass-popup {
+                        backdrop-filter: blur(5px) !important;
+                        -webkit-backdrop-filter: blur(5px) !important;
+                        background: rgba(255, 255, 255, 0.877);
+                    }
+
+                    /* Toastify Container */
+                    .undo-toast {
+                        display: flex;
+                        align-items: center;
+                        gap: 15px;
+                        font-family: 'Poppins', sans-serif;
+                    }
+                    
+                    /* Force the Toastify container to allow interaction */
+                    .toastify {
+                        pointer-events: auto !important; 
+                    }
+
+                    /* Ensure the button sits on top of everything */
+                    .undo-btn {
+                        /* Your existing styles... */
+                        padding: 6px 14px;
+                        background: #27cc5b; 
+                        color: white;
+                        border-radius: 6px;
+                        font-size: 13px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        border: none;
+                        
+                        /* CRITICAL NEW LINES */
+                        pointer-events: auto !important;
+                        position: relative;
+                        z-index: 1000;
+                    }
+                    .undo-btn:hover { background: #20a84b; }
+
+                    /* The Timer Bar Animation */
+                    .timer-bar {
+                        height: 3px;
+                        background: #27cc5b;
+                        animation: timer 4s linear forwards;
+                        border-radius: 3px;
+                        margin-top: 6px;
+                    }
+                    @keyframes timer {
+                        from { width: 100%; }
+                        to   { width: 0%; }
+                    }
+            </style>
+            <div id="cart-container">
+                </div>
+
+            <div id="cart-summary" class="card mt-4 d-none">                     
+                <div style="font-size:0.7em;color:#AAAAAA;font-weight:lighter;">By continuing with the order, you confirm that you are 18 years of age or older. If you are under 18, you may use LocaalRapid only with the involvement, consent, and supervision of a parent or legal guardian who agrees to be bound by these LocaalRapid's <a href="terms and condition.html">Terms & Conditions</a> and <a href="privacy policy.html">Privacy Policy</a>. </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5>Total Items: <span id="total-items">0</span></h5>
+                        </div>
+                        <div class="col-md-4 text-end my-box">
+                            <h4>Listing price: ₹<span id="listing-price">0</span></h4>
+                            <h4 class="text-success" >Discount: - ₹<span id="you-save2">0</span></h4>
+                            <h4 id="delivery-charge-row" class="text-muted" style="display: none;"></h4>
+                            <h4><span id="platform-fee" style="cursor: pointer;"> Platform Fee<i style="color:#ffd900;font-size:0.5em;position:relative;top:-7px;" class="fa-solid fa-circle-info"></i> : <span style="color:orangered;">Free</span></span></h4>
+
+
+        <!-- Popup 2 -->
+        <div class="popup-overlay" id="popup2">
+        <div class="popup-box">
+            <button class="close-btn" id="close2"><i class="fa-solid fa-xmark"></i></button>
+            <h2 style="color:#010445;">Platform Fee</h2>
+            <p>Fee levied by LocaalRapid to sustain the efficient operations and continuous improvement of the platform, for a hassle-free app experience.</p>
+            <p>Have a question? Contact us <a href="about_us.html">here</a>.</p>
+        </div>
+        </div>
+
+                            <h4>Total: ₹<span id="total-price">0</span></h4>
+                            <button class="btn btn-success btn-lg w-100" id="checkout-btn">
+                                <i class="bi bi-credit-card me-2"></i>Proceed to Checkout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // --- NEW GLOBAL VARIABLE (Trash Buffer) ---
+            // This holds the items you delete so they can be restored.
+            let deletedItemsMap = {};
+            function getCart() {
+                return JSON.parse(localStorage.getItem('cart')) || [];
+            }
+
+            function saveCart(cart) {
+                localStorage.setItem('cart', JSON.stringify(cart));
+            }
+
+            // --- MODIFIED FUNCTION ---
+            // Now accepts a uniqueId (like 'productID-amount') instead of just productId
+            // --- MODIFIED FUNCTION ---
+            function updateQuantity(uniqueId, change) {
+                let cart = getCart();
+                const item = cart.find(i => (i.cartItemId || i.id) == uniqueId);
+
+                if (item) {
+                    // CASE 1: REMOVAL SCENARIO
+                    // If quantity is 1 and we try to decrease, we treat it as a "Delete" action
+                    if (item.quantity === 1 && change < 0) {
+                        
+                        // We pass the job to removeItem. 
+                        // It handles the Alert, Trash Buffer, Removal, and Undo Toast.
+                        removeItem(uniqueId); 
+                        
+                        // STOP HERE. Do not continue to the math part below.
+                        return; 
+                    }
+
+                    // CASE 2: NORMAL UPDATE
+                    // If we are just adding (+1) or subtracting from a higher number (e.g. 5 -> 4)
+                    item.quantity += change;
+                    saveCart(cart);
+                    loadCart();
+                }
+            }
+
+           
+            // --- MODIFIED FUNCTION ---
+            // --- NEW PREMIUM REMOVE FUNCTION ---
+            function removeItem(uniqueIdToRemove) {
+                let cart = getCart();
+                
+                // 1. Find the item SAFELY using your Unique ID logic
+                const item = cart.find(i => (i.cartItemId || i.id) == uniqueIdToRemove);
+
+                 item.name = item.name
+                .split(" ")
+                .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                .join(" ");
+
+
+                if (!item) return; // Safety check
+                
+
+                // 2. Trigger SweetAlert (The Glass Modal)
+                Swal.fire({
+                    title: "Remove Item?",
+                    iconColor: '#ff4444',
+                    // We use HTML to show the image and details nicely
+                   html: `
+    <img src="${item.image}" style="width:80px;border-radius:8px;margin-bottom:10px;">
+    <br>
+    <b>${item.name}</b><br>
+
+    <span style="color:#666">
+        ₹${item.price} 
+        ${item.originalPrice != item.price ? `<del>₹${item.originalPrice}</del>` : ""}
+        (${item.quantity})
+    </span>
+`,
+
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#ff4444", // Red for delete
+                    cancelButtonColor: "#3085d6", // Blue for cancel
+                    confirmButtonText: "Yes, remove",
+                    cancelButtonText: "Cancel",
+                    // Glass effect class we added in CSS
+                    customClass: { popup: "glass-popup" }
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        
+                        // 3. Save to Trash Buffer (The "One Product" Logic)
+                        // We use the uniqueId as the key so we don't mix up weights
+                        deletedItemsMap[uniqueIdToRemove] = item;
+
+                        // 4. Remove from Cart (Your Original Logic)
+                        cart = cart.filter(i => (i.cartItemId || i.id) != uniqueIdToRemove);
+                        saveCart(cart);
+                        loadCart(); // Refresh UI
+
+                        // 5. Show the Undo Toast
+                        showUndoToast(item, uniqueIdToRemove);
+                    }
+                });
+            }
+
+            // --- HELPER: SHOW THE UNDO TOAST ---
+            // --- HELPER: SHOW THE UNDO TOAST ---
+            function showUndoToast(item, uniqueId) {
+                Toastify({
+                    close: false, // We handle closing manually
+                    gravity: "bottom",
+                    position: "right",
+                    duration: 4000, 
+                    stopOnFocus: true,
+                    escapeMarkup: false, 
+                    style: {
+                        background: "white",
+                        color: "#111",
+                        borderRadius: "12px",
+                        boxShadow: "0 8px 30px rgba(0,0,0,0.15)",
+                        border: "1px solid #eee",
+                        padding: "0",
+                        minWidth: "300px",
+                        // Fix for stacking context issues
+                        zIndex: "99999" 
+                    },
+                    // FIX: We use onclick="restoreItem(...)" directly. 
+                    // We accept the uniqueId as a string safe parameter.
+                    text: `
+                        <div style="padding: 12px 15px;">
+                            <div class="undo-toast">
+                                <div style="flex:1">
+                                    <b style="font-size:14px;">${item.name}</b><br>
+                                    <small style="color:#888;">Removed from cart</small>
+                                </div>
+                                
+                                <button class="undo-btn" onclick="restoreItem('${uniqueId}')">
+                                    Undo
+                                </button>
+                            </div>
+                            <div class="timer-bar"></div>
+                        </div>
+                    `
+                }).showToast();
+            }
+
+            // --- HELPER: RESTORE ITEM (UNDO LOGIC) ---
+            function restoreItem(uniqueId) {
+                // 1. Find in Trash
+                const itemToRestore = deletedItemsMap[uniqueId];
+
+                if (itemToRestore) {
+                    let cart = getCart();
+                    
+                    // 2. Add back to cart
+                    cart.push(itemToRestore);
+                    saveCart(cart);
+                    loadCart(); // Update Screen
+                    
+                    // 3. Clear from Trash
+                    delete deletedItemsMap[uniqueId];
+
+                    // 4. Success Message
+                    Toastify({
+                        text: "✨ Item restored!",
+                        duration: 2500,
+                        gravity: "bottom",
+                        position: "right",
+                        style: { background: "#27cc5b", borderRadius: "8px" }
+                    }).showToast();
+                }
+            }
+
+            function loadCart() {
+                const cart = getCart();
+                const cartContainer = document.getElementById('cart-container');
+                const cartSummary = document.getElementById('cart-summary');
+
+                if (cart.length === 0) {
+                    cartContainer.innerHTML = `
+                        <div class="text-center py-5">
+                            <i class="bi bi-cart-x text-muted" style="font-size: 4rem;"></i>
+                            <h4 class="mt-3 text-muted">Your cart is empty</h4>
+                            <p class="text-muted">Add some products to get started</p>
+                            <a href="index.html" class="btn btn-primary">
+                                <i class="bi bi-shop me-1"></i>Continue Shopping
+                            </a>
+                        </div>
+                    `;
+                    cartSummary.classList.add('d-none');
+                    return;
+                }
+
+                let totalItems = 0;
+                let totaloriginalPrice = 0; // Total MRP
+                let itemsSubtotal = 0; // Total price after discounts, before delivery
+                let cartHTML = '';
+
+                const freeDeliveryThreshold = 300;
+                const deliveryCharge = 5;
+
+                cart.forEach(item => {
+                    const detailPage = (item.available_weights && Array.isArray(item.available_weights))
+                        ? 'product-details_weightable.html'
+                        : 'product-details.html';
+
+                    item.name = item.name
+                .split(" ")
+                .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                .join(" ");
+
+                    const uniqueId = item.cartItemId || item.id;
+                    const price = Number(item.price) || 0;
+                    const originalPrice = Number(item.originalPrice) || price;
+                    const itemMrpTotal = originalPrice * item.quantity;
+                    const itemTotal = price * item.quantity;
+
+                    totalItems += item.quantity;
+                    itemsSubtotal += itemTotal;
+                    totaloriginalPrice += itemMrpTotal;
+
+                    let priceHTML;
+                    if (itemTotal === itemMrpTotal) {
+                        priceHTML = `₹${itemTotal.toFixed(2)}`;
+                    } else {
+                        priceHTML = `<span class="text-success">₹${itemTotal.toFixed(2)}</span> <del class="mrp">₹${itemMrpTotal.toFixed(2)}</del>`;
+                    }
+
+                    cartHTML += `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-2">
+                                        <img src="${item.image}" class="img-fluid rounded" alt="${item.name}" loading="lazy" width="100" height="100" style="max-height: 100px; object-fit: contain; cursor: pointer;" onclick="window.location.href='${detailPage}?id=${item.id}'">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h5 onclick="window.location.href='${detailPage}?id=${item.id}'" style="text-transform:capitalize;"><abbr style="text-decoration: none;cursor:context-menu; cursor: pointer;" title="${item.name}">${item.name}</abbr></h5>
+                                        <p class="text-success mb-0" style="color:red;">₹${price.toFixed(2)} (${item.amount})</p>
+                                        ${price !== originalPrice
+                                            ? `<p class="text-muted  small mb-0"><del>₹${originalPrice.toFixed(2)}</del></p>`
+                                            : ""}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="d-flex align-items-center">
+                                            <button class="btn btn-outline-secondary btn-sm" onclick="updateQuantity('${uniqueId}', -1)">
+                                                <i class="bi bi-dash"></i>
+                                            </button>
+                                            <span class="mx-3 fw-bold">${item.quantity}</span>
+                                            <button class="btn btn-outline-secondary btn-sm" onclick="updateQuantity('${uniqueId}', 1)">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2 text-center">
+                                        <h6>${priceHTML}</h6>
+                                    </div>
+                                    <div class="col-md-1 text-end">
+                                        <button class="btn btn-outline-danger btn-sm" onclick="removeItem('${uniqueId}')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+               let finalTotalPrice = itemsSubtotal;
+if (itemsSubtotal < freeDeliveryThreshold && itemsSubtotal > 0) {
+    finalTotalPrice += deliveryCharge;
+}
+
+let deliveryMessageHTML = '';
+const amountNeeded = freeDeliveryThreshold - itemsSubtotal;
+
+if (amountNeeded > 0) {
+    deliveryMessageHTML = `
+        <div class="alert alert-warning shadow-sm p-3 rounded" style="position:relative;">
+            <div id="free-delivery-info" style="cursor:pointer; font-weight:600;">
+                Add item(s) worth 
+                <span style="color:#d9534f;">₹${amountNeeded.toFixed(2)}</span> more for 
+                <b style="color:green;">FREE Delivery</b> 
+                <i style="color:blue;font-size:0.7em;position:relative;top:-7px;" class="fa-solid fa-circle-info"></i>
+            </div>
+        </div>
+
+        <!-- Popup for delivery info -->
+        <div class="popup-overlay" id="popup-delivery" 
+             style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3);
+                    backdrop-filter:blur(3px); justify-content:center; align-items:center;
+                    z-index:9999;">
+            <div class="popup-box"
+                 style="background: rgba(255, 255, 255, 0.788); border-radius:16px; max-width:450px; width:90%; padding:20px 28px;
+                        box-shadow:0 4px 20px rgba(0,0,0,0.15); position:relative; animation:fadeIn 0.25s ease;">
+                <button id="close-delivery"
+                        style="position:absolute; top:10px; right:16px; background:none; border:none;
+                               color:black; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+                <h5 style="margin-top:0; color:black">Delivery Charge Information</h5>
+                <p style="font-size:14px; line-height:1.6;">
+                    💡 Otherwise, <b>₹5 - ₹15</b> delivery charge may apply depending on your location.<br>
+                    For now, we are assuming <b style="color:#d9534f;">₹5</b> as delivery charge.<br>
+                    <i>(This may increase or decrease later. Final amount will be confirmed by the shopkeeper after order placement.)</i>
+                </p>
+            </div>
+        </div>
+
+        <style>
+          @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+          }
+        </style>
+    `;
+} else {
+    deliveryMessageHTML = `
+        <div class="alert alert-success shadow-sm p-3 rounded">
+            🎉 You have grabbed the free delivery offer!
+        </div>`;
+}
+
+// Append your cart + message
+cartContainer.innerHTML = cartHTML + deliveryMessageHTML;
+
+// Handle popup logic
+setTimeout(() => {
+    const infoTrigger = document.getElementById("free-delivery-info");
+    const popupDelivery = document.getElementById("popup-delivery");
+    const closeDelivery = document.getElementById("close-delivery");
+
+    if (infoTrigger && popupDelivery && closeDelivery) {
+        infoTrigger.onclick = () => popupDelivery.style.display = "flex";
+        closeDelivery.onclick = () => popupDelivery.style.display = "none";
+        popupDelivery.onclick = (e) => {
+            if (e.target === popupDelivery) popupDelivery.style.display = "none";
+        };
+    }
+}, 100);
+
+const totalSave = totaloriginalPrice - itemsSubtotal;
+                document.getElementById('total-items').textContent = totalItems;
+                document.getElementById('total-price').textContent = finalTotalPrice.toFixed(2);
+
+                const listingPriceElement = document.getElementById('listing-price').parentElement;
+                const youSaveElement = document.getElementById('you-save1').parentElement;
+                const youSaveElement2 = document.getElementById('you-save2').parentElement;
+
+                if (totalSave > 0) {
+                    document.getElementById('listing-price').textContent = totaloriginalPrice.toFixed(2);
+                    document.getElementById('you-save1').textContent = totalSave.toFixed(2);
+                    document.getElementById('you-save2').textContent = totalSave.toFixed(2);
+                    listingPriceElement.style.display = 'block';
+                    youSaveElement.style.display = 'block';
+                } else {
+                    listingPriceElement.style.display = 'none';
+                    youSaveElement2.style.display = 'none';
+                }
+
+                let deliveryRow = document.getElementById('delivery-charge-row');
+
+                if (itemsSubtotal < freeDeliveryThreshold && itemsSubtotal > 0) {
+                    deliveryRow.style.display = 'block';
+                    deliveryRow.innerHTML = `
+                        <span id="delivery-fee" class="info-text">
+                            Delivery Charge<i style="color:#ff8000;font-size:0.5em;position:relative;top:-7px;" class="fa-solid fa-circle-info"></i> :₹<span>${deliveryCharge.toFixed(2)}</span>
+                        </span>
+
+                        <!-- Popup HTML -->
+                        <div id="deliveryPopup" class="popup-overlay">
+                            <div class="popup-box">
+                                <button class="close-btn" id="closeDeliveryPopup"><i class="fa-solid fa-xmark"></i></button>
+                                <h2 style="color:#010445;">Why We Charge for Delivery</h2>
+                                <p style="font-size:14px; line-height:1.6;">
+                                    At <strong>LocaalRapid</strong>, a small delivery charge (₹5-₹15) helps us maintain 
+                                    <strong>fast and secure <i style="color:brown;font-size:16px" class="fa-solid fa-truck-fast"></i> express deliveries</strong>, often completed 
+                                    <strong>within just a few minutes</strong>. This fee supports our commitment to 
+                                    <strong>timely service</strong>, <strong>trusted delivery agents</strong>, and 
+                                    <strong>safe handling</strong> of every package. Delivery times may occasionally vary 
+                                    depending on location and demand, but we always strive to bring your order 
+                                    <strong>quickly and safely right to your doorstep</strong>.
+                                    <br>Have a question? Contact us <a href="about_us.html">here</a>.
+                                </p>
+                            </div>
+                        </div>
+                    `;
+
+                    // Popup functionality
+                    const popup = document.getElementById('deliveryPopup');
+                    const closeBtn = document.getElementById('closeDeliveryPopup');
+                    const deliveryFee = document.getElementById('delivery-fee');
+
+                    deliveryFee.addEventListener('click', () => {
+                        popup.style.display = 'flex';
+                    });
+
+                    closeBtn.addEventListener('click', () => {
+                        popup.style.display = 'none';
+                    });
+
+                    popup.addEventListener('click', (e) => {
+                        if (e.target === popup) popup.style.display = 'none';
+                    });
+
+                } else {
+                    deliveryRow.style.display = 'none';
+                }
+
+
+                cartSummary.classList.remove('d-none');
+            }
+
+            function proceedToCheckout() {
+            const cart = getCart();
+            if (cart.length === 0) {
+                alert('Your cart is empty!');
+                return;
+            }
+
+            // --- KEY CHANGES START HERE ---
+
+            // 1. Recalculate all price components to ensure they are current
+            let itemsSubtotal = 0;
+            let totalOriginalPrice = 0;
+            cart.forEach(item => {
+                const price = Number(item.price) || 0;
+                const originalPrice = Number(item.originalPrice) || price;
+                itemsSubtotal += price * item.quantity;
+                totalOriginalPrice += originalPrice * item.quantity;
+            });
+
+            const totalSave = totalOriginalPrice - itemsSubtotal;
+            
+            const freeDeliveryThreshold = 300;
+            const deliveryCharge = (itemsSubtotal < freeDeliveryThreshold && itemsSubtotal > 0) ? 5 : 0;
+            
+            const finalTotalPrice = itemsSubtotal + deliveryCharge;
+
+            // 2. Save ALL price components to sessionStorage
+            sessionStorage.setItem('checkoutCart', JSON.stringify(cart));
+            sessionStorage.setItem('checkoutSubtotal', itemsSubtotal.toFixed(2));
+            sessionStorage.setItem('checkoutListingPrice', totalOriginalPrice.toFixed(2));
+            sessionStorage.setItem('checkoutDiscount', totalSave.toFixed(2));
+            sessionStorage.setItem('checkoutDeliveryCharge', deliveryCharge.toFixed(2));
+            sessionStorage.setItem('checkoutTotalPrice', finalTotalPrice.toFixed(2)); // Still useful for initial display
+
+            // --- KEY CHANGES END HERE ---
+
+            window.location.href = 'checkout.html';
+        }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                loadCart();
+                document.getElementById('checkout-btn').addEventListener('click', proceedToCheckout);
+            });
+
+            // Replace the old, simple addToCart function with this one.
+function addToCart(productToAdd) {
+    let cart = getCart(); // Use existing helper function
+
+    // For standard products (no cartItemId), check if one already exists to update its quantity.
+    const existingItem = !productToAdd.cartItemId
+        ? cart.find(item => !item.cartItemId && item.id === productToAdd.id)
+        : null; // Custom items are never "existing" since their ID is always unique.
+
+    if (existingItem) {
+        // If a standard item exists, increase its quantity.
+        existingItem.quantity++;
+    } else {
+        // If it's a new standard item OR any custom-weight item, add it to the cart.
+        if (!productToAdd.quantity) {
+            productToAdd.quantity = 1; // Default quantity to 1 if not set
+        }
+        cart.push(productToAdd);
+    }
+
+    saveCart(cart); // Use existing helper function
+    loadCart();     // Refresh the cart display immediately
+}
+
+
+// Elements for Popup 2
+const popup2 = document.getElementById("popup2");
+const show2 = document.getElementById("platform-fee");
+const close2 = document.getElementById("close2");
+
+// Check if elements exist before trying to use them (good practice!)
+if (popup2 && show2 && close2) {
+    // Open popup 2
+    show2.onclick = () => popup2.style.display = "flex";
+
+    // Close popup 2
+    close2.onclick = () => popup2.style.display = "none";
+
+    // Close popup 2 when clicking outside the box
+    window.onclick = (e) => {
+        if (e.target === popup2) popup2.style.display = "none";
+    };
+}
+        </script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    </body>
+</html>
