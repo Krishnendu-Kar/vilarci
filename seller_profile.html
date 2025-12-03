@@ -21,7 +21,7 @@
                     <div class="text-2xl font-extrabold text-indigo-900 tracking-tight">Vilarci Partner</div>
                 </div>
                 <div class="flex items-center gap-4">
-                    <button onclick="logout()" class="text-slate-500 hover:text-red-600 font-medium text-sm flex items-center gap-2">
+                    <button onclick="logout()" class="text-slate-500 hover:text-red-600 font-medium text-sm flex items-center gap-2 transition-colors">
                         <i data-lucide="log-out" class="w-4 h-4"></i> Logout
                     </button>
                 </div>
@@ -41,7 +41,7 @@
             
             <!-- Header Section -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-10 relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-4 opacity-10">
+                <div class="absolute top-0 right-0 p-4 opacity-5">
                     <i data-lucide="store" class="w-64 h-64 text-indigo-600"></i>
                 </div>
                 
@@ -58,9 +58,10 @@
                         </div>
                         
                         <div class="flex flex-col sm:flex-row gap-3">
-                            <a href="product uploader.html" class="flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">
+                            <a href="upload_product.html" class="flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 hover:shadow-indigo-300">
                                 <i data-lucide="package-plus" class="w-5 h-5"></i> Add Products
                             </a>
+                            <!-- Settings Button (Placeholder) -->
                             <button class="flex items-center justify-center gap-2 bg-white border border-slate-300 text-slate-700 px-6 py-3 rounded-xl font-bold hover:bg-slate-50 transition">
                                 <i data-lucide="settings" class="w-5 h-5"></i> Settings
                             </button>
@@ -91,7 +92,7 @@
                 
                 <!-- Left Column: Personal & Contact -->
                 <div class="space-y-8">
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition">
                         <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                             <i data-lucide="contact" class="w-5 h-5 text-indigo-500"></i> Contact Details
                         </h3>
@@ -111,7 +112,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition">
                         <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                             <i data-lucide="landmark" class="w-5 h-5 text-indigo-500"></i> Bank Information
                         </h3>
@@ -126,7 +127,7 @@
                             </div>
                             <div>
                                 <p class="text-slate-400 text-xs uppercase font-bold">IFSC Code</p>
-                                <p class="text-slate-700 font-medium" id="bank_ifsc">...</p>
+                                <p class="text-slate-700 font-medium font-mono" id="bank_ifsc">...</p>
                             </div>
                         </div>
                     </div>
@@ -136,21 +137,27 @@
                 <div class="lg:col-span-2 space-y-8">
                     <!-- Quick Stats -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                            <p class="text-slate-400 text-xs uppercase font-bold">Total Products</p>
-                            <p class="text-2xl font-bold text-slate-800 mt-1">0</p>
+                        <!-- TOTAL PRODUCTS CARD (Updated to be Clickable) -->
+                        <div onclick="window.location.href='seller product manage.html'" class="cursor-pointer bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-500 hover:shadow-md hover:bg-indigo-50 transition group">
+                            <div class="flex justify-between items-start">
+                                <p class="text-slate-400 text-xs uppercase font-bold group-hover:text-indigo-500">Total Products</p>
+                                <i data-lucide="arrow-up-right" class="w-4 h-4 text-slate-300 group-hover:text-indigo-500"></i>
+                            </div>
+                            <p class="text-3xl font-bold text-slate-800 mt-2 group-hover:text-indigo-700" id="product_count">0</p>
+                            <p class="text-[10px] text-slate-400 mt-1">Click to Manage</p>
                         </div>
-                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-200 transition">
                             <p class="text-slate-400 text-xs uppercase font-bold">Total Orders</p>
-                            <p class="text-2xl font-bold text-slate-800 mt-1">0</p>
+                            <p class="text-3xl font-bold text-slate-800 mt-2">0</p>
                         </div>
-                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-200 transition">
                             <p class="text-slate-400 text-xs uppercase font-bold">Pending Payout</p>
-                            <p class="text-2xl font-bold text-green-600 mt-1">₹0.00</p>
+                            <p class="text-3xl font-bold text-green-600 mt-2">₹0.00</p>
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition">
                         <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                             <i data-lucide="briefcase" class="w-5 h-5 text-indigo-500"></i> Business Profile
                         </h3>
@@ -181,10 +188,9 @@
 
     <script>
         // CONFIGURATION
-        const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
+  const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_wy4_pxxwFkS63SSL_d5yug_Bgybs85R';
-        
-      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         lucide.createIcons();
 
         // --- AUTH CHECK & DATA FETCH ---
@@ -209,14 +215,23 @@
                 return;
             }
 
-            // 3. Populate UI
+            // 3. Fetch PRODUCT COUNT (New Logic)
+            const { count, error: countError } = await supabase
+                .from('products')
+                .select('*', { count: 'exact', head: true })
+                .eq('seller_id', seller.seller_numeric_id);
+            
+            if (!countError) {
+                document.getElementById('product_count').innerText = count || 0;
+            }
+
+            // 4. Populate UI (Existing logic)
             document.getElementById('shop_name').innerText = seller.shop_name;
             document.getElementById('full_name').innerText = seller.full_name;
             document.getElementById('seller_id').innerText = seller.seller_numeric_id;
             document.getElementById('biz_type').innerText = seller.business_type;
             document.getElementById('pincode').innerText = seller.pincode;
             
-            // Status Badge
             const badge = document.getElementById('status_badge');
             if (seller.is_verified) {
                 badge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-green-100 text-green-700 border border-green-200";
@@ -226,25 +241,18 @@
                 badge.innerText = "Pending Verification";
             }
 
-            // Contact
             document.getElementById('email').innerText = seller.email;
             document.getElementById('mobile').innerText = seller.mobile_primary;
             document.getElementById('whatsapp').innerText = seller.mobile_whatsapp;
-
-            // Bank
             document.getElementById('bank_name').innerText = seller.bank_name;
             document.getElementById('bank_ifsc').innerText = seller.bank_ifsc;
-            // Show only last 4 digits
             const acc = seller.bank_account_num;
             document.getElementById('bank_acc').innerText = acc ? acc.slice(-4) : "N/A";
-
-            // Business
             document.getElementById('entity_type').innerText = seller.seller_entity_type;
             document.getElementById('gstin').innerText = seller.gstin || "Not Provided";
             document.getElementById('id_type').innerText = seller.id_type;
             document.getElementById('id_number').innerText = seller.id_number;
 
-            // Show Content
             document.getElementById('loader').classList.add('hidden');
             document.getElementById('dashboard-content').classList.remove('hidden');
         }

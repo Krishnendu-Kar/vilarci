@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seller Registration - Vilarci</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -12,6 +14,11 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
+        /* Remove arrows from number inputs */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; margin: 0; 
+        }
     </style>
 </head>
 <body class="font-sans bg-slate-50 text-slate-800 min-h-screen flex flex-col">
@@ -223,7 +230,7 @@
                     </div>
                 </section>
 
-                <!-- 5. BANK & PAYOUT INFO (ADDED BACK) -->
+                <!-- 5. BANK & PAYOUT INFO -->
                 <section class="bg-slate-50 p-6 rounded-xl border border-slate-200">
                     <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
                         <span class="bg-indigo-600 text-white text-xs px-2 py-1 rounded-full">5</span> Bank & Payout Information
@@ -269,8 +276,8 @@
     </main>
 
     <script>
-        // CONFIGURATION
-        const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
+        // CONFIGURATION (REPLACE THESE KEYS!)
+   const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_wy4_pxxwFkS63SSL_d5yug_Bgybs85R';
  
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -306,8 +313,6 @@
             // 1. Password Match & Strength
             const pass = document.getElementById('password').value;
             const confirmPass = document.getElementById('confirm_password').value;
-            
-            // Regex: Min 8 chars, 1 Upper, 1 Lower, 1 Number, 1 Symbol
             const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
             if (!strongRegex.test(pass)) {
@@ -346,7 +351,7 @@
 
             const email = document.getElementById('email').value;
 
-            // 4. Prepare Data Object (We save this in memory for Step 2)
+            // 4. Prepare Data
             pendingSellerData = {
                 email: email,
                 password: pass,
@@ -365,7 +370,7 @@
                 id_type: document.getElementById('id_type').value,
                 id_number: document.getElementById('id_number').value,
                 
-                // Banking (Added Back)
+                // Banking
                 bank_holder_name: document.getElementById('bank_holder_name').value,
                 bank_name: document.getElementById('bank_name').value,
                 bank_account_num: document.getElementById('bank_account_num').value,
@@ -375,6 +380,11 @@
                 dob: document.getElementById('dob').value,
             };
 
+            // Remove password from object
+            const { password, ...sellerProfileData } = pendingSellerData;
+            pendingSellerData = sellerProfileData;
+            pendingSellerData.email = email; 
+
             submitBtn.disabled = true;
             submitBtn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin inline mr-2"></i> Sending OTP...`;
             lucide.createIcons();
@@ -383,7 +393,7 @@
             const { data, error } = await supabase.auth.signUp({
                 email: email,
                 password: pass,
-                options: { emailRedirectTo: null } // Forces code/link flow
+                options: { emailRedirectTo: null }
             });
 
             if (error) {
@@ -404,7 +414,6 @@
             verifyBtn.disabled = true;
             verifyBtn.innerText = "Verifying...";
 
-            // 1. Verify OTP
             const { data, error } = await supabase.auth.verifyOtp({
                 email: pendingSellerData.email,
                 token: otp,
@@ -418,18 +427,16 @@
                 return;
             }
 
-            // 2. OTP Valid! Now Insert Data into 'sellers' table
             const { error: dbError } = await supabase.from('sellers').insert([{
-                id: data.user.id, // The authenticated User ID
-                ...pendingSellerData, // All the form fields
-                is_verified: false // Admin must approve later
+                id: data.user.id,
+                ...pendingSellerData,
+                is_verified: false
             }]);
 
             if (dbError) {
                 console.error(dbError);
                 alert("Database Error: " + dbError.message);
             } else {
-                // Success!
                 otpModal.classList.add('hidden');
                 form.innerHTML = `
                     <div class="text-center py-12">

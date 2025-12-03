@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Inventory - Vilarci</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <a href="seller_profile.html" class="text-slate-400 hover:text-indigo-600 transition">
+                        <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                    </a>
+                    <div class="text-xl font-bold text-slate-800">Inventory Manager</div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="upload_product_v2.html" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 transition flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i> New Item
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        
+        <div id="loader" class="flex justify-center mt-20">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+        </div>
+
+        <!-- Product Table -->
+        <div id="product-table-container" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-600">
+                    <thead class="bg-slate-50 text-slate-700 uppercase font-bold text-xs border-b border-slate-200">
+                        <tr>
+                            <th class="px-6 py-4">Product Details</th>
+                            <th class="px-6 py-4">Price</th>
+                            <th class="px-6 py-4">Stock</th>
+                            <th class="px-6 py-4">Category</th>
+                            <th class="px-6 py-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="product-list" class="divide-y divide-slate-100">
+                        <!-- JS Injects rows here -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="empty-state" class="hidden p-12 text-center">
+                <div class="mx-auto w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-400">
+                    <i data-lucide="box" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800">No Products Found</h3>
+                <p class="text-slate-500 mt-1">Start selling by adding your first item.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- EDIT MODAL -->
+    <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden transform transition-all">
+            <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                <h3 class="font-bold text-lg text-slate-800">Edit Product</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <form id="edit-form" class="p-6 space-y-4">
+                <input type="hidden" id="edit_id">
+                
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Product Name</label>
+                    <input type="text" id="edit_name" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Price (₹)</label>
+                        <input type="number" id="edit_price" class="w-full p-2 border border-slate-300 rounded-lg font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">MRP (₹)</label>
+                        <input type="number" id="edit_mrp" class="w-full p-2 border border-slate-300 rounded-lg">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Stock Quantity</label>
+                    <input type="number" id="edit_stock" class="w-full p-2 border border-slate-300 rounded-lg">
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition shadow-lg">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURATION
+  const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_wy4_pxxwFkS63SSL_d5yug_Bgybs85R';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        lucide.createIcons();
+
+        async function loadProducts() {
+            // 1. Check Auth (Session ID)
+            const sellerId = sessionStorage.getItem('vilarci_seller_id');
+            if (!sellerId) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // 2. Fetch Products from DB
+            const { data: products, error } = await supabase
+                .from('products')
+                .select('*')
+                .eq('seller_id', sellerId)
+                .order('created_at', { ascending: false });
+
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('product-table-container').classList.remove('hidden');
+
+            if (error) {
+                alert("Error loading products: " + error.message);
+                return;
+            }
+
+            const list = document.getElementById('product-list');
+            list.innerHTML = '';
+
+            if (products.length === 0) {
+                document.getElementById('empty-state').classList.remove('hidden');
+                return;
+            }
+
+            // 3. Render Rows
+            products.forEach(p => {
+                const image = (p.images && p.images[0]) ? p.images[0] : 'https://via.placeholder.com/100';
+                
+                const row = `
+                    <tr class="hover:bg-slate-50 transition group">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-4">
+                                <img src="${image}" class="w-12 h-12 rounded-lg object-cover border border-slate-200 bg-white">
+                                <div>
+                                    <div class="font-bold text-slate-900 line-clamp-1">${p.name}</div>
+                                    <div class="text-xs text-slate-400 font-mono">${p.id}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 font-bold text-slate-800">₹${p.base_price}</td>
+                        <td class="px-6 py-4">
+                            <span class="${p.stock_quantity > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} px-2 py-1 rounded-full text-xs font-bold">
+                                ${p.stock_quantity} Units
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-xs uppercase font-bold text-slate-500">${p.category_id || 'Standard'}</td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex justify-end gap-2">
+                                <button onclick='openEditModal(${JSON.stringify(p)})' class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteProduct('${p.id}')" class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                list.innerHTML += row;
+            });
+            lucide.createIcons();
+        }
+
+        // --- EDIT LOGIC ---
+        function openEditModal(product) {
+            document.getElementById('edit_id').value = product.id;
+            document.getElementById('edit_name').value = product.name;
+            document.getElementById('edit_price').value = product.base_price;
+            document.getElementById('edit_mrp').value = product.original_price || '';
+            document.getElementById('edit_stock').value = product.stock_quantity;
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+
+        document.getElementById('edit-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit_id').value;
+            
+            const updates = {
+                name: document.getElementById('edit_name').value,
+                base_price: document.getElementById('edit_price').value,
+                original_price: document.getElementById('edit_mrp').value || null,
+                stock_quantity: document.getElementById('edit_stock').value
+            };
+
+            // Update Database
+            const { error } = await supabase.from('products').update(updates).eq('id', id);
+
+            if (error) alert("Update failed: " + error.message);
+            else {
+                closeModal();
+                loadProducts(); // Refresh table
+            }
+        });
+
+        // --- DELETE LOGIC ---
+        async function deleteProduct(id) {
+            if (!confirm("Are you sure you want to delete this product? This cannot be undone.")) return;
+            
+            const { error } = await supabase.from('products').delete().eq('id', id);
+            
+            if (error) alert("Delete failed: " + error.message);
+            else loadProducts();
+        }
+
+        // Start
+        loadProducts();
+    </script>
+</body>
+</html>
