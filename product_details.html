@@ -8,11 +8,30 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" xintegrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <!-- Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style> body { font-family: 'Inter', sans-serif; } </style>
+    <style> body { font-family: 'Inter', sans-serif; } 
+        .rating_avg{
+    display:inline-flex;
+    justify-content:center;
+    align-items:center;
+    font-size: 1rem;
+    font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    background-color:#038D63;
+    color:rgb(246, 249, 246);
+    padding: 2px 5px 2px 7px;
+    border-radius: 8px;
+}
+.rating_count{
+    font-size: .8rem;
+    font-weight: 600;
+    color:#999999;
+}
+    </style>
 </head>
 <body class="bg-slate-50 font-sans min-h-screen">
 
@@ -73,9 +92,6 @@
                         <p>Product ID: <span id="display-id" class="text-slate-600 font-bold select-all">...</span></p>
                         <p>Seller ID: <span id="display-seller" class="text-slate-600 select-all">...</span></p>
                     </div>
-                    <div class="flex items-center bg-green-50 px-2 py-1 rounded text-green-700 text-xs font-bold border border-green-100">
-                        4.5 <i data-lucide="star" class="w-3 h-3 ml-1 fill-current"></i>
-                    </div>
                 </div>
 
                 <!-- Title & Price -->
@@ -90,8 +106,10 @@
                     </div>
                     <p class="text-xs text-slate-400 mt-1">Inclusive of all taxes</p>
                 </div>
-
-                <!-- DYNAMIC LOGIC CONTAINER -->
+                <div  class="rating_avg">
+                    <span  id="rating_avg"></span> <i style="font-size:0.6em; margin-left:2px;" class="fa-solid fa-star"></i>
+                </div>
+               <!-- DYNAMIC LOGIC CONTAINER -->
                 <div id="dynamic-logic-container" class="bg-white p-4 rounded-xl border-2 border-indigo-50 shadow-sm">
                     <!-- Injected via JS -->
                 </div>
@@ -195,8 +213,53 @@
         // ==========================================
 
         function renderUniversalData(product) {
+            document.getElementById('rating_avg').innerText= product.rating_avg;
             document.getElementById('display-id').innerText = product.id;
-            document.getElementById('display-seller').innerText = product.seller_id;
+            // In renderUniversalData() function
+            const sellerLink = document.getElementById('display-seller');
+            sellerLink.innerText = product.seller_id; // Keep ID visible
+            sellerLink.style.cursor = 'pointer';
+            sellerLink.style.color = '#4f46e5'; // Indigo color
+            sellerLink.style.textDecoration = 'underline';
+
+            // Assuming product object also has shop_slug (You need to join sellers table in query to get slug easily, 
+            // OR just fetch the seller details using the ID to get the slug)
+            // For now, you can query seller info:
+            fetchSellerSlug(product.seller_id, sellerLink);
+
+            // Helper function inside product_details.html script
+            // Helper function inside product_details.html script
+            async function fetchSellerSlug(numericId, element) {
+                console.log("1. Looking for seller with numeric_id:", numericId);
+
+                const { data, error } = await supabase
+                    .from('sellers')
+                    .select('shop_slug, seller_numeric_id') // Select ID too just to be sure
+                    .eq('seller_numeric_id', numericId)
+                    .single();
+                
+                if (error) {
+                    console.error("2. Supabase Error:", error);
+                    return;
+                }
+
+                if (data && data.shop_slug) {
+                    console.log("3. Found Seller Slug:", data.shop_slug);
+                    
+                    // Apply the click listener
+                    element.onclick = () => {
+                        console.log("Redirecting to:", data.shop_slug);
+                        window.location.href = `shop_profile.html?slug=${data.shop_slug}`;
+                    };
+                    
+                    // Optional: Visual cue that it's clickable
+                    element.style.cursor = 'pointer';
+                    element.style.color = 'blue';
+                    element.style.textDecoration = 'underline';
+                } else {
+                    console.warn("4. No seller found or no slug for ID:", numericId);
+                }
+            }
             document.getElementById('product-title').innerText = product.name;
             document.getElementById('product-description').innerText = product.description || "No description available.";
             

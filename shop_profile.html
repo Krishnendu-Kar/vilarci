@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop Profile - Vilarci</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" xintegrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Added Toastify for Cart Notifications -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+    <style>body { font-family: 'Inter', sans-serif; }
+         .discount-percent {
+    display:flex;
+    z-index: 20;
+    position:absolute;
+    right: 0px;
+    background-color:rgb(0, 21, 255);
+    font-size:12px;
+    padding: 4px 4px 6px 8px;
+    color:rgb(246, 246, 244);
+    border: 1px solid rgb(113, 4, 150);
+    border-top-right-radius: 5.5px;
+    
+    clip-path: polygon(
+        0 0, 100% 0, 100% 80%, 
+        95% 100%, 85% 80%, 75% 100%, 
+        65% 80%, 55% 100%, 45% 80%, 
+        35% 100%, 25% 80%, 15% 100%, 
+        5% 80%, 0 100%
+      );        
+} 
+
+.rating_avg{
+    font-size: 0.9rem;
+    background-color:#1b9d76;
+    color:rgb(246, 249, 246);
+    padding: 2px 5px 2px 7px;
+    border-radius: 8px;
+}
+.rating_count{
+    padding: 3px;
+    font-size: .8rem;
+    font-weight: 600;
+    color:#999999;
+}
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm border-b sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='index.html'">
+                <div class="bg-indigo-600 text-white font-bold text-xl px-2 py-1 rounded">V</div>
+                <h1 class="text-xl font-bold text-indigo-900">Vilarci</h1>
+            </div>
+            <div class="flex-1 max-w-md mx-4 hidden md:block">
+                <div class="relative">
+                    <input type="text" id="shop-search" placeholder="Search in this shop..." 
+                        class="w-full pl-10 pr-4 py-2 bg-slate-100 border-0 rounded-full text-sm focus:ring-2 focus:ring-indigo-500 transition outline-none"
+                        oninput="filterShopProducts(this.value)">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                </div>
+            </div>
+            <!-- Cart Icon added for context -->
+            <div class="relative cursor-pointer" onclick="window.location.href='cart.html'">
+                <i data-lucide="shopping-cart" class="w-6 h-6 text-slate-600"></i>
+                <span id="cart-count-badge" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">0</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- LOADING STATE -->
+    <div id="loader" class="flex flex-col items-center justify-center h-[60vh]">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-4"></div>
+        <p class="text-slate-500 text-sm">Visiting Shop...</p>
+    </div>
+
+    <!-- ERROR STATE -->
+    <div id="error-screen" class="hidden flex flex-col items-center justify-center h-[60vh] text-center px-4">
+        <div class="bg-slate-100 p-4 rounded-full mb-4">
+            <i data-lucide="store-off" class="w-10 h-10 text-slate-400"></i>
+        </div>
+        <h2 class="text-xl font-bold text-slate-800" id="error-title">Shop Not Found</h2>
+        <p class="text-slate-500 mt-2 mb-6" id="error-msg">The shop link might be incorrect or the seller has closed their store.</p>
+        <a href="index.html" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-indigo-700 transition">Back to Vilarci</a>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="shop-container" class="hidden">
+        
+        <!-- Shop Header (Banner Style) -->
+        <div class="bg-white border-b border-slate-200">
+            <div class="max-w-7xl mx-auto px-4 py-8 sm:py-12">
+                <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
+                    <!-- Shop Icon -->
+                    <div class="w-20 h-20 bg-indigo-50 rounded-2xl flex items-center justify-center border border-indigo-100 shadow-sm shrink-0">
+                        <span class="text-3xl font-bold text-indigo-600" id="shop-initial">S</span>
+                    </div>
+                    
+                    <!-- Info -->
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900" id="shop-name">...</h1>
+                            <span id="verified-badge" class="hidden" title="Verified Seller">
+                                <i data-lucide="badge-check" class="w-6 h-6 text-blue-500 fill-blue-100"></i>
+                            </span>
+                        </div>
+                        <p class="text-slate-500 flex items-center gap-2 text-sm mb-4">
+                            <i data-lucide="map-pin" class="w-4 h-4"></i> <span id="shop-location">...</span>
+                            <span class="text-slate-300">|</span>
+                            <span id="product-count">0 Products</span>
+                        </p>
+                        
+                        <!-- Stats / Tags -->
+                        <div class="flex gap-2">
+                            <span class="px-3 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-full border border-green-100 flex items-center gap-1">
+                                4.8 <i data-lucide="star" class="w-3 h-3 fill-current"></i>
+                            </span>
+                            <span class="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full border border-slate-200" id="shop-category">General Store</span>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="w-full md:w-auto mt-4 md:mt-0">
+                        <button class="w-full md:w-auto bg-slate-900 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-slate-800 transition shadow-md flex items-center justify-center gap-2">
+                            <i data-lucide="message-circle" class="w-4 h-4"></i> Contact Seller
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Grid Section -->
+        <main class="max-w-7xl mx-auto px-4 py-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-bold text-slate-800">All Products</h2>
+                
+                <!-- FIX: Added ID and onchange event -->
+                <select id="sort-dropdown" onchange="sortProducts(this.value)" class="bg-white border border-slate-300 text-slate-700 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2 outline-none">
+                    <option value="newest">Newest First</option>
+                    <option value="low_high">Price: Low to High</option>
+                    <option value="high_low">Price: High to Low</option>
+                </select>
+            </div>
+
+            <!-- Grid -->
+            <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
+                <!-- Products injected here -->
+            </div>
+            
+            <!-- Empty State for Products -->
+            <div id="empty-products" class="hidden py-20 text-center bg-white rounded-2xl border border-dashed border-slate-300">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-slate-50 rounded-full mb-4">
+                    <i data-lucide="package-open" class="w-8 h-8 text-slate-400"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-700">No products yet</h3>
+                <p class="text-sm text-slate-500">This seller hasn't listed any items publicly.</p>
+            </div>
+        </main>
+
+    </div>
+
+    <script>
+        // CONFIGURATION
+        const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_wy4_pxxwFkS63SSL_d5yug_Bgybs85R';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        lucide.createIcons();
+
+        let allShopProducts = []; // Store for local filtering
+
+        // INIT
+        async function initShopPage() {
+            // 1. Get Shop Slug from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const slug = urlParams.get('slug');
+
+            if (!slug) {
+                showError("Invalid Link", "No shop ID was provided in the URL.");
+                return;
+            }
+
+            console.log("Fetching seller for slug:", slug);
+
+            // 2. Fetch Seller Details
+            // Note: Removed 'primary_category' as per previous fix
+            const { data: seller, error } = await supabase
+                .from('sellers')
+                .select('seller_numeric_id, shop_name, is_verified, pincode, created_at') 
+                .eq('shop_slug', slug)
+                .single();
+
+            if (error) {
+                console.error("Shop Fetch Error:", error);
+                showError("Shop Unavailable", "We couldn't load this shop. It may be closed or the link is incorrect.");
+                return;
+            }
+            
+            if (!seller) {
+                showError("Shop Not Found", "No seller found with this ID.");
+                return;
+            }
+
+            // 3. Render Shop Header
+            renderShopHeader(seller);
+
+            // 4. Fetch Products for this Seller
+            const { data: products, error: prodError } = await supabase
+                .from('products')
+                .select('*')
+                .eq('seller_id', seller.seller_numeric_id)
+                .eq('is_active', true)
+                .order('created_at', { ascending: false }); // Default: Newest
+
+            if (prodError) console.error("Product Error:", prodError);
+            
+            allShopProducts = products || [];
+
+            // 5. Render Grid
+            renderProductGrid(allShopProducts);
+            updateCartCount(); // Update badge on load
+
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('shop-container').classList.remove('hidden');
+        }
+
+        function renderShopHeader(seller) {
+            document.getElementById('shop-name').innerText = seller.shop_name;
+            const initial = seller.shop_name ? seller.shop_name.charAt(0).toUpperCase() : 'S';
+            document.getElementById('shop-initial').innerText = initial;
+            document.getElementById('shop-location').innerText = `Pincode: ${seller.pincode}`;
+            // Handle missing category gracefully
+            document.getElementById('shop-category').innerText = 'General Store';
+            
+            if(seller.is_verified) {
+                document.getElementById('verified-badge').classList.remove('hidden');
+            }
+        }
+
+        function renderProductGrid(products) {
+            document.getElementById('product-count').innerText = `${products.length} Products`;
+            const grid = document.getElementById('products-grid');
+            const empty = document.getElementById('empty-products');
+            
+            grid.innerHTML = ''; // Clear previous
+
+            if (products.length === 0) {
+                grid.classList.add('hidden');
+                empty.classList.remove('hidden');
+                return;
+            }
+            
+            grid.classList.remove('hidden');
+            empty.classList.add('hidden');
+
+            grid.innerHTML = products.map(p => {
+                const img = (p.images && p.images.length > 0) ? p.images[0] : 'https://via.placeholder.com/300?text=Vilarci';
+                
+                let discountBadge = '';
+                if (p.original_price && p.base_price < p.original_price) {
+                    const off = Math.round(((p.original_price - p.base_price) / p.original_price) * 100);
+                    discountBadge = `<span class="discount-percent">${off}% OFF</span>`;
+                }
+
+                return `
+                <div onclick="window.location.href='product_details.html?slug=${p.slug}'" 
+                     class="bg-white border border-slate-200 rounded-xl overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 relative group">
+                    ${discountBadge}
+                    <div class="aspect-square bg-slate-50 flex items-center justify-center p-4 overflow-hidden">
+                        <img src="${img}" class="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500" loading="lazy">
+                    </div>
+                    <div class="p-3">
+                        <h3 class="text-sm font-bold text-slate-800 leading-tight line-clamp-2 h-10 mb-1">${p.name}</h3>
+                        <div class="deatils">
+                            <p><span class="rating_avg">${p.rating_avg} <i style="font-size:0.6em; position: relative;top: -2px;" class="fa-solid fa-star"></i></span> <span class="rating_count"> ${p.rating_count} Ratings</span> </p>
+                            <span class="text-lg font-bold text-slate-900">₹${p.base_price}</span>
+                            ${p.original_price ? `<span class="text-xs text-slate-400 line-through">₹${p.original_price}</span>` : ''}
+                        </div>
+                        
+                        <!-- FIX: Add to Cart Button (Always Visible) -->
+                        <button onclick="addToCart(event, '${p.id}')" class="w-full mt-3 bg-white border border-indigo-600 text-indigo-600 text-xs font-bold py-2 rounded-lg hover:bg-indigo-50 transition flex items-center justify-center gap-2">
+                             Add <i class="fa-solid fa-cart-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+            
+            lucide.createIcons();
+        }
+
+        // --- FILTERING ---
+        function filterShopProducts(query) {
+            const lowerQ = query.toLowerCase();
+            const filtered = allShopProducts.filter(p => 
+                p.name.toLowerCase().includes(lowerQ)
+            );
+            // Re-apply current sort to filtered results
+            const sortMode = document.getElementById('sort-dropdown').value;
+            sortAndRender(filtered, sortMode);
+        }
+
+        // --- SORTING LOGIC ---
+        function sortProducts(mode) {
+            // Get current text from search box to maintain filter
+            const query = document.getElementById('shop-search').value.toLowerCase();
+            let list = allShopProducts.filter(p => p.name.toLowerCase().includes(query));
+            
+            sortAndRender(list, mode);
+        }
+
+        function sortAndRender(list, mode) {
+            if (mode === 'low_high') {
+                list.sort((a, b) => a.base_price - b.base_price);
+            } else if (mode === 'high_low') {
+                list.sort((a, b) => b.base_price - a.base_price);
+            } else {
+                // Newest (using created_at string comparison works for ISO dates)
+                list.sort((a, b) => (a.created_at < b.created_at) ? 1 : -1);
+            }
+            renderProductGrid(list);
+        }
+
+
+        // --- CART LOGIC (Ported from index.html) ---
+        function addToCart(event, id) {
+            event.stopPropagation(); // Stop card click (so it doesn't go to details page)
+            
+            // 1. Find product
+            const product = allShopProducts.find(p => String(p.id) === String(id));
+            if (!product) return;
+
+            // 2. CHECK FOR FASHION PRODUCT (Code 12)
+            const idString = String(product.id);
+            const fashionCode = idString.substring(6, 8); // Check indices 6 and 7
+
+            if (fashionCode === '12') {
+                // IT IS FASHION: Redirect to details page to pick a size
+                Toastify({
+                    text: "Please select a size first",
+                    duration: 3000,
+                    gravity: "top", 
+                    position: "center", 
+                    style: { background: "#3b82f6", borderRadius: "8px", fontSize: "14px" }
+                }).showToast();
+                
+                setTimeout(() => {
+                    window.location.href = `product_details.html?slug=${product.slug}`;
+                }, 1000);
+                return; 
+            }
+
+            // 3. STANDARD PRODUCT LOGIC
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            
+            // Generate standard cart item structure
+            const cartItem = {
+                id: product.id,
+                slug: product.slug,
+                name: product.name,
+                price: product.base_price,
+                originalPrice: product.original_price,
+                amount: product.amount || "1 Unit", // Default if missing
+                image: (product.images && product.images.length > 0) ? product.images[0] : "",
+                quantity: 1,
+                cartItemId: String(product.id) // Simple ID for standard items
+            };
+
+            const existingIndex = cart.findIndex(item => String(item.id) === String(id));
+
+            if (existingIndex > -1) {
+                cart[existingIndex].quantity += 1;
+            } else {
+                cart.push(cartItem);
+            }
+
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartCount();
+            
+            // Success Notification
+            Toastify({
+                text: "Added to Cart!",
+                duration: 3000,
+                gravity: "top", 
+                position: "center", 
+                style: { background: "#22c55e", borderRadius: "8px", fontSize: "14px" }
+            }).showToast();
+        }
+
+        function updateCartCount() {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            let count = cart.reduce((acc, item) => acc + item.quantity, 0);
+            const badge = document.getElementById('cart-count-badge');
+            if(badge) badge.innerText = count;
+        }
+
+        function showError(title, msg) {
+            document.getElementById('loader').classList.add('hidden');
+            if(title) document.getElementById('error-title').innerText = title;
+            if(msg) document.getElementById('error-msg').innerText = msg;
+            document.getElementById('error-screen').classList.remove('hidden');
+        }
+
+        // Start
+        initShopPage();
+    </script>
+</body>
+</html>

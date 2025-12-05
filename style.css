@@ -86,14 +86,14 @@ header{
 }
 
 .border:hover {
-    border: 2px solid rgb(79, 9, 70);
+    border: 2px solid white;
     border-radius: 5px;
 }
 .navbar{
     height: 54px;
     width: 100%;
-    background-color: #f9efb6;
-    color:#9b0303;
+    background-color: #f72585;
+    color:#efedf1;
     font-size: 1.1rem;
     display:flex;
     align-items:center;
@@ -125,7 +125,7 @@ header{
     
 }
 .location{
-    color:rgb(183, 131, 0);
+    color:rgb(248, 225, 167);
     margin-left:8px; 
     margin-left: 30px;
 }
@@ -136,14 +136,14 @@ header{
     align-items:center;
 }
 .navbar a{
+    padding: 5px;
     text-decoration:none;
-    color:#9b0303;
+    color:#f3efef;
     font-weight: 600;
     font-size: 18px;
     text-transform:capitalize;
 }
 .order{
-    padding: 5px;
     text-decoration:none;
 }
 .seller{
@@ -202,10 +202,9 @@ header{
     .panel {
       height: 50px;
       width: 100%;
-      background:linear-gradient(180deg, #fbefc0e6, #0d3b66);
+      background:linear-gradient(180deg, #f72585, #5d0b94);
       color: #fdfdfb;
       display: flex;
-      /* border-top: dashed 2px black; */
       align-items: center;
       padding: 0 15px;
       gap: 16px;
@@ -301,9 +300,9 @@ header{
     width: 50px;
     position:relative;
     text-align:center;
-    color:rgb(143, 100, 14);
+    color:rgb(132, 30, 22);
     margin-top:5px;
-    background: linear-gradient(135deg, rgb(255, 252, 191),rgb(255, 242, 0));
+    background: linear-gradient(135deg, rgb(255, 255, 255),#dbb964);
     display:inline-block;
     position:fixed;
     right: 5px;
