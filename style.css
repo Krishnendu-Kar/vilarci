@@ -927,13 +927,14 @@ header{
 
 
 .rating_avg{
+    font-size: 0.9rem;
     background-color:#038D63;
     color:rgb(246, 249, 246);
     padding: 2px 5px 2px 7px;
     border-radius: 8px;
 }
 .rating_count{
-    font-size: .8em;
+    font-size: .8rem;
     font-weight: 600;
     color:#999999;
 }
