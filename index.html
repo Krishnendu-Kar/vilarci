@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -27,7 +26,7 @@
 
         <!-- Preloads -->
         <link rel="preload" href="style.css" as="style">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" xintegrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
         <!-- Canonical -->
@@ -43,6 +42,10 @@
 
         <!-- Title -->
         <title>Vilarci - Fast & Reliable E-commerce Shopping</title>
+        
+        <!-- Added for Toast Notifications -->
+        <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     </head>
     <body>
             <div class="loader-container" id="page-loader">
@@ -110,7 +113,8 @@
                 </ul>
             </div>
             <div class="cart border" onclick="window.location.href='cart.html'">
-                    <p class="cart-amount">0</p>
+                    <!-- Updated ID to match script logic -->
+                    <p class="cart-amount" id="cart-count-badge">0</p>
                     <div class="cart-icon">
                         <p><i class="fa-solid fa-cart-arrow-down"></i>
                         </p>
@@ -227,384 +231,27 @@
             ©2025 vilarci ; All Right will be reserved
         </footer>
         
-
-
         <script>
            // 1. Select the element and store it in a constant
             const locationElement = document.querySelector('.location-name');
 
             // 2. Get the text content and remove extra whitespace (newlines)
-            let text = locationElement.textContent.trim(); 
-
-            // 3. Check length and truncate if necessary
-            // Note: 8 is very short, you might want 10 or 15
-            const truncatedText = text.length > 7 ? text.substring(0, 7) + "..." : text;
-
-            // 4. Update the HTML (Fixing the 'innerHTML' typo)
-            locationElement.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${truncatedText}`;
-
-        // ====== FLASH DEAL LOGIC (WITH AUTO ROTATION) ======
-
-            function addFlashProductToCart(event, productId) {
-                event.preventDefault(); 
-                event.stopPropagation(); 
-                const product = packetProducts.find(p => p.id === productId);
-                if (product) addToCart(product);
+            if(locationElement) {
+                let text = locationElement.textContent.trim(); 
+                // 3. Check length and truncate if necessary
+                const truncatedText = text.length > 7 ? text.substring(0, 7) + "..." : text;
+                // 4. Update the HTML
+                locationElement.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${truncatedText}`;
             }
-
-            function initFlashDeal() {
-                const container = document.getElementById("flash-sale-section");
-                const timerDisplay = document.getElementById("flash-timer-display");
-                const productContainer = document.getElementById("flash-products-container");
-                const statusText = document.getElementById("flash-status-text");
-
-                if (!container) return;
-
-                // 1. Get ALL pool of hourdeal products
-                const allFlashProducts = packetProducts.filter(p => p.category === 'hourdeal');
-                
-                // CONFIGURATION
-                const CYCLE_HOURS = 5; 
-                const ACTIVE_HOURS = 1; 
-                const ITEMS_PER_CYCLE = 5; 
-
-                const CYCLE_MS = CYCLE_HOURS * 60 * 60 * 1000;
-                const ACTIVE_MS = ACTIVE_HOURS * 60 * 60 * 1000;
-
-                function update() {
-                    const now = new Date();
-                    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                    const msSinceMidnight = now - startOfDay;
-                    
-                    const msInCurrentCycle = msSinceMidnight % CYCLE_MS;
-                    
-                    // --- NEW LOGIC: PREVENT DUPLICATES ---
-                    let currentCycleProducts = [];
-
-                    // If we have fewer products than 5, just show what we have (Don't rotate/repeat)
-                    if (allFlashProducts.length <= ITEMS_PER_CYCLE) {
-                        currentCycleProducts = allFlashProducts;
-                    } else {
-                        // Only rotate if we have plenty of products
-                        const globalCycleIndex = Math.floor(now.getTime() / CYCLE_MS);
-                        const startIndex = (globalCycleIndex * ITEMS_PER_CYCLE) % allFlashProducts.length;
-                        
-                        for (let i = 0; i < ITEMS_PER_CYCLE; i++) {
-                            const index = (startIndex + i) % allFlashProducts.length;
-                            currentCycleProducts.push(allFlashProducts[index]);
-                        }
-                    }
-
-                    const formatTime = (ms) => {
-                        const totalSeconds = Math.floor(ms / 1000);
-                        const h = Math.floor(totalSeconds / 3600);
-                        const m = Math.floor((totalSeconds % 3600) / 60);
-                        const s = totalSeconds % 60;
-                        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-                    };
-
-                    // --- SCENARIO 1: ACTIVE DEAL ---
-                    if (msInCurrentCycle < ACTIVE_MS) {
-                        container.className = "flash-section-active";
-                        statusText.innerHTML = "Hurry! Ends in:";
-                        
-                        // Check if we need to update the display
-                        const firstCard = productContainer.querySelector('.flash-card');
-                        const currentFirstId = firstCard ? firstCard.getAttribute('data-id') : null;
-                        
-                        // Render only if content changed or if we are unlocking
-                        if ((currentCycleProducts.length > 0 && currentFirstId != currentCycleProducts[0].id) || productContainer.classList.contains("blurred-content")) {
-                            
-                            productContainer.classList.remove("blurred-content");
-                            const existingOverlay = container.querySelector('.locked-overlay');
-                            if(existingOverlay) existingOverlay.remove();
-
-                            if (currentCycleProducts.length === 0) {
-                                productContainer.innerHTML = "<p style='padding:20px; width:100%; text-align:center;'>No deals available right now.</p>";
-                            } else {
-                                productContainer.innerHTML = currentCycleProducts.map(p => {
-                                    const discount = p.originalPrice ? Math.round(((p.originalPrice - p.price)/p.originalPrice)*100) : 0;
-                                    return `
-                                    <div class="flash-card" data-id="${p.id}">
-                                        ${discount > 0 ? `<div class="discount-percent" style="position:absolute; top:5px; left:5px; z-index:1;">${discount}% OFF</div>` : ''}
-                                        <img src="${p.image}" alt="${p.name}" loading="lazy">
-                                        <h4>${p.name}</h4>
-                                        <div class="price">₹${p.price} ${p.originalPrice ? `<del>₹${p.originalPrice}</del>` : ''}</div>
-                                        <button class="flash-add-btn" onclick="addFlashProductToCart(event, ${p.id})">
-                                            Add to Cart
-                                        </button>
-                                    </div>                                    
-                                `}).join('');
-                            }
-                        }
-                        const timeLeft = ACTIVE_MS - msInCurrentCycle;
-                        timerDisplay.innerText = formatTime(timeLeft);
-                    } 
-                    
-                    // --- SCENARIO 2: WAITING PERIOD ---
-                    else {
-                        container.className = "flash-section-waiting";
-                        statusText.innerText = "Next Deal Starts In:";
-                        
-                        if (!productContainer.classList.contains("blurred-content")) {
-                            productContainer.classList.add("blurred-content");
-                            if(!container.querySelector('.locked-overlay')) {
-                                const overlay = document.createElement('div');
-                                overlay.className = 'locked-overlay';
-                                overlay.innerHTML = '<i class="fa-solid fa-lock"></i> Deals Locked';
-                                container.appendChild(overlay);
-                            }
-                            
-                            // Show mystery cards (use actual count, or max 5)
-                            const mysteryCount = currentCycleProducts.length > 0 ? currentCycleProducts.length : 5;
-                            
-                            let mysteryHTML = '';
-                            for(let i=0; i<mysteryCount; i++) {
-                                mysteryHTML += `
-                                    <div class="flash-card">
-                                        <img src="https://via.placeholder.com/150?text=?" alt="Mystery">
-                                        <h4>???</h4>
-                                        <div class="price">₹???</div>
-                                        <button class="flash-add-btn" disabled>Locked</button>
-                                    </div>`;
-                            }
-                            productContainer.innerHTML = mysteryHTML;
-                        }
-
-                        const timeLeft = CYCLE_MS - msInCurrentCycle;
-                        timerDisplay.innerText = formatTime(timeLeft);
-                    }
-                }
-
-                update();
-                setInterval(update, 1000);
-            }
-
-            document.addEventListener("DOMContentLoaded", initFlashDeal);
-
-
-            // Show button when user scrolls down 300px
-            window.onscroll = function() {scrollFunction()};
-
-            function scrollFunction() {
-            const btn = document.getElementById("backToTop");
-            // Check if btn exists to avoid errors
-            if (!btn) return; 
-
-            if (document.body.scrollTop > 400 || document.documentElement.scrollTop > 400) {
-                btn.style.display = "block";
-            } else {
-                btn.style.display = "none";
-            }
-            }
-
-            function scrollToTop() {
-            window.scrollTo({top: 0, behavior: 'smooth'});
-            }
-            // --- Slider Functionality (Unchanged) ---
-            document.addEventListener('DOMContentLoaded', function () {
-                // ... all your slider code is perfect ...
-            });
-
-            // --- Loading and Search Logic (MODIFIED) ---
-            
-            // This holds the *full* 20k random list for the page
-            let pageSpecificProducts = []; 
-
-            // This function prepares the random list and starts the infinite scroll
-            function initializeHomePage() {
-                // 1. Create a shuffled copy of all products
-                pageSpecificProducts = [...packetProducts].sort(() => 0.5 - Math.random());
-                
-                // 2. Tell app.js to start loading them (74 initially, 14 on scroll)
-                // We also pass 'packetProducts' as the searchFallback
-                initInfiniteScroll(pageSpecificProducts, 24, 14);
-            }
-
-            // This runs when the page is fully loaded
-            document.addEventListener("DOMContentLoaded", function() {
-                initializeHomePage();
-            });
-
-            // This function is called every time the user types
-
         </script>
-        <script>
-     
-        const messages = [
-            "Fetching the best deals for you...",
-            "Getting the latest products...",
-            "Almost there, don’t go anywhere...",
-            "Loading happiness to your doorstep..."
-        ];
 
-        let i = 0;
-        const loaderText = document.getElementById("loader-text");
-
-        // Rotate messages every 2s
-        setInterval(() => {
-            loaderText.textContent = messages[i];
-            i = (i + 1) % messages.length;
-        }, 2000);
-
-    // Remove loader as soon as DOM is ready (much faster)
-        document.addEventListener("DOMContentLoaded", function() {
-            setTimeout(() => {
-                const loader = document.getElementById("page-loader");
-                if(loader) {
-                    loader.style.opacity = "0"; 
-                    setTimeout(() => {
-                        loader.style.display = "none";
-                    }, 500); 
-                }
-            }, 500); // Small 0.5s delay to make animation smooth
-        });
-        
-       
-
-
-
-            const searchInput = document.querySelector(".search-boxAni");
-
-                // Full texts for big screens
-                const fullTexts = [
-                " Search products...",
-                " Search categories...",
-                " Search offers..."
-                ];
-
-                // Short texts for small screens
-                const shortTexts = [
-                " Products...",
-                " Categories...",
-                " Offers..."
-                ];
-
-                let texts = []; // will update depending on screen size
-                let textIndex = 0;
-                let charIndex = 0;
-                let currentText = "";
-                let typing = true;
-
-                function updateTexts() {
-                if (window.matchMedia("(max-width: 475px)").matches) {
-                    texts = shortTexts;
-                } else {
-                    texts = fullTexts;
-                }
-                }
-
-                function typeAnimation() {
-                if (typing) {
-                    // Typing characters
-                    currentText = texts[textIndex].slice(0, ++charIndex);
-                    searchInput.setAttribute("placeholder", currentText);
-
-                    if (charIndex === texts[textIndex].length) {
-                    typing = false;
-                    setTimeout(typeAnimation, 1500); // pause before deleting
-                    return;
-                    }
-                } else {
-                    // Deleting characters
-                    currentText = texts[textIndex].slice(0, --charIndex);
-                    searchInput.setAttribute("placeholder", currentText);
-
-                    if (charIndex === 0) {
-                    typing = true;
-                    textIndex = (textIndex + 1) % texts.length;
-                    }
-                }
-
-                setTimeout(typeAnimation, typing ? 70 : 60);
-                }
-
-                // Initialize texts once
-                updateTexts();
-
-                // Also update texts dynamically when screen resizes
-                window.addEventListener("resize", updateTexts);
-
-                // Start animation
-                typeAnimation();
-
-
-
-            // --- Slider Functionality ---
-document.addEventListener('DOMContentLoaded', function () {
-    const sliderWrapper = document.querySelector('.slider-wrapper');
-    // Check if the slider exists on the page before running the script
-    if (!sliderWrapper) return;
-
-    const slides = document.querySelectorAll('.slide');
-    const prevBtn = document.querySelector('.slider-btn.prev');
-    const nextBtn = document.querySelector('.slider-btn.next');
-    const dotsContainer = document.querySelector('.slider-dots');
-    
-    let currentIndex = 0;
-    let slideInterval;
-    const totalSlides = slides.length;
-
-    
-    // Create navigation dots
-    for (let i = 0; i < totalSlides; i++) {
-        const dot = document.createElement('div');
-        dot.classList.add('dot');
-        dot.addEventListener('mouseover', () => {
-            goToSlide(i);
-            resetInterval();
-        });
-        dotsContainer.appendChild(dot);
-    }
-    const dots = document.querySelectorAll('.dot');
-
-    // Function to update the slider
-    function goToSlide(index) {
-        sliderWrapper.style.transform = `translateX(-${index * 100}%)`;
-        dots.forEach(dot => dot.classList.remove('active'));
-        dots[index].classList.add('active');
-        currentIndex = index;
-    }
-
-    // Event listeners for next/prev buttons
-    nextBtn.addEventListener('click', () => {
-        const nextIndex = (currentIndex + 1) % totalSlides;
-        goToSlide(nextIndex);
-        resetInterval();
-    });
-
-    prevBtn.addEventListener('click', () => {
-        const prevIndex = (currentIndex - 1 + totalSlides) % totalSlides;
-        goToSlide(prevIndex);
-        resetInterval();
-    });
-
-    // Auto-play functionality
-    function startInterval() {
-        slideInterval = setInterval(() => {
-            const nextIndex = (currentIndex + 1) % totalSlides;
-            goToSlide(nextIndex);
-        }, 5000); // Change slide every 5 seconds
-    }
-
-    function resetInterval() {
-        clearInterval(slideInterval);
-        startInterval();
-    }
-
-    // Initialize slider
-    goToSlide(0);
-    startInterval();
-});
-        </script>
-        <!-- 1. SUPABASE & CONFIG -->
+    <!-- 1. SUPABASE & CONFIG -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_wy4_pxxwFkS63SSL_d5yug_Bgybs85R';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
-        // Global Product Array (Replaces your products.js array)
         let packetProducts = []; 
 
         // 2. FETCH FROM DB
@@ -612,41 +259,50 @@ document.addEventListener('DOMContentLoaded', function () {
             const loader = document.getElementById('page-loader');
             if(loader) loader.style.display = 'flex';
 
-            // Fetch active products
             const { data, error } = await supabase
                 .from('products')
                 .select('*')
                 .eq('is_active', true)
                 .order('created_at', { ascending: false })
-                .limit(50); // Load 50 newest first
+                .limit(50);
 
             if (error) {
                 console.error("Error fetching products:", error);
-                alert("Failed to load products. Please refresh.");
+                if(loader) loader.style.display = 'none';
                 return;
             }
 
-            // 3. MAP DB COLUMNS TO FRONTEND FORMAT
-            // Your DB uses 'base_price', your HTML expects 'price'
+            // 3. MAP DB TO FRONTEND
             packetProducts = data.map(p => ({
-                id: p.id, // 19-digit ID
+                id: p.id,
+                slug: p.slug, 
                 name: p.name,
-                slug: p.slug,
                 price: p.base_price,
                 originalPrice: p.original_price,
-                image: (p.images && p.images.length > 0) ? p.images[0] : 'https://via.placeholder.com/200',
-                category: p.category_id, // ID (e.g., 12)
-                rating: 4.5, // Default for now
-                delivery_time: "2 Days" // Default or fetch from shipping_zones later
+                rating_avg : p.rating_avg,
+                rating_count: p.rating_count,
+                image: (p.images && p.images.length > 0) ? p.images[0] : 'https://via.placeholder.com/200?text=Vilarci',
+                category: p.category_id,
+                rating: 4.5,
+                // Default amount string if not in DB
+                amount: p.amount
             }));
 
             // 4. RENDER
             displayProducts(packetProducts, 'productList');
             
-            if(loader) loader.style.display = 'none';
+            // Check cart count on load
+            updateCartCount();
+
+            if(loader) {
+                loader.style.opacity = "0"; 
+                setTimeout(() => {
+                    loader.style.display = "none";
+                }, 500); 
+            }
         }
 
-        // 5. RENDER FUNCTION (Standard E-commerce Card)
+        // 5. RENDER FUNCTION
         function displayProducts(products, containerId) {
             const container = document.getElementById(containerId);
             container.innerHTML = '';
@@ -657,21 +313,21 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             products.forEach(product => {
-                // Calculate Discount
                 let discountBadge = '';
                 if (product.originalPrice > product.price) {
                     const off = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
-                    discountBadge = `<div class="discount-badge">${off}% OFF</div>`;
+                    discountBadge = `<div class="discount-percent">${off}% OFF</div>`;
                 }
 
                 const card = `
-                    <div class="product-card" onclick="window.location.href='universal pdp.html?slug=${product.slug}'">
+                    <div class="product-card" onclick="window.location.href='product_details.html?slug=${product.slug}'">
                         ${discountBadge}
                         <div class="img-box">
                             <img src="${product.image}" alt="${product.name}" loading="lazy">
                         </div>
                         <div class="details">
                             <h4 class="product-name">${product.name}</h4>
+                            <p><span class="rating_avg">${product.rating_avg} <i style="font-size:0.6em; position: relative;top: -2px;" class="fa-solid fa-star"></i></span> <span class="rating_count"> ${product.rating_count} Ratings</span> </p>
                             <div class="price-area">
                                 <span class="price">₹${product.price}</span>
                                 ${product.originalPrice ? `<span class="mrp">₹${product.originalPrice}</span>` : ''}
@@ -686,22 +342,251 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        // 6. SIMPLE CART LOGIC (Placeholder)
+        // 6. CART LOGIC
+        // 6. CART LOGIC (UPDATED FOR FASHION)
         function addToCart(event, id) {
-            event.stopPropagation(); // Don't trigger the card click
-            alert(`Added Product ${id} to Cart!`);
-            // You can connect your existing cart logic here
+            
+            event.stopPropagation(); // Prevent the card click event
+            
+            // 1. Find product in our local array
+            const product = packetProducts.find(p => String(p.id) === String(id));
+            
+            if (!product) return;
+
+            // 2. CHECK FOR FASHION PRODUCT (Code 12)
+            // We assume the ID is a string. If it's a number, String() converts it.
+            const idString = String(product.id);
+            const fashionCode = idString.substring(6, 8); // Check indices 6 and 7
+
+            if (fashionCode === '12') {
+                // IT IS FASHION: Redirect to details page to pick a size
+                Toastify({
+                    text: "Please select a size first",
+                    duration: 3000,
+                    gravity: "top", 
+                    position: "center", 
+                    style: {
+                        background: "#3b82f6", // Blue for info
+                        borderRadius: "8px",
+                        fontSize: "14px"
+                    }
+                }).showToast();
+                
+                // Small delay to let them read the toast, then redirect
+                setTimeout(() => {
+                    window.location.href = `product_details.html?slug=${product.slug}`;
+                }, 1000);
+                
+                return; // STOP HERE
+            }
+
+            // 3. STANDARD PRODUCT LOGIC (Packets/Weights)
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            
+            const existingItem = cart.find(item => String(item.id) === String(id));
+
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({
+                    ...product,
+                    quantity: 1
+                });
+            }
+
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartCount();
+            
+            // Success Notification
+            Toastify({
+                text: "Added to Cart!",
+                duration: 3000,
+                gravity: "top", 
+                position: "center", 
+                style: {
+                    background: "#22c55e", // Green for success
+                    borderRadius: "8px",
+                    fontSize: "14px"
+                }
+            }).showToast();
         }
 
-        // Init
+        function updateCartCount() {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            let count = cart.reduce((acc, item) => acc + item.quantity, 0);
+            const badge = document.getElementById('cart-count-badge');
+            if(badge) badge.innerText = count;
+            
+            // Update class amount if used elsewhere
+            const badges = document.querySelectorAll('.cart-amount');
+            badges.forEach(b => b.innerText = count);
+        }
+
+        // Init Supabase Load
         document.addEventListener("DOMContentLoaded", fetchAndDisplayProducts);
     </script>
 
-    <!-- Add some basic CSS for the cards if missing -->
+    <!-- Other scripts (Slider, Animation) -->
+    <script>
+        // --- Loader Text Animation ---
+        const messages = [
+            "Fetching the best deals for you...",
+            "Getting the latest products...",
+            "Almost there, don’t go anywhere...",
+            "Loading happiness to your doorstep..."
+        ];
+
+        let i = 0;
+        const loaderText = document.getElementById("loader-text");
+
+        if(loaderText) {
+            setInterval(() => {
+                loaderText.textContent = messages[i];
+                i = (i + 1) % messages.length;
+            }, 2000);
+        }
+
+        // --- Search Bar Typing Animation ---
+        const searchInputBox = document.querySelector(".search-boxAni");
+
+        const fullTexts = [
+        " Search products...",
+        " Search categories...",
+        " Search offers..."
+        ];
+
+        const shortTexts = [
+        " Products...",
+        " Categories...",
+        " Offers..."
+        ];
+
+        let texts = []; 
+        let textIndex = 0;
+        let charIndex = 0;
+        let currentText = "";
+        let typing = true;
+
+        function updateTexts() {
+            if (window.matchMedia("(max-width: 475px)").matches) {
+                texts = shortTexts;
+            } else {
+                texts = fullTexts;
+            }
+        }
+
+        function typeAnimation() {
+            if (!searchInputBox) return;
+            
+            if (typing) {
+                currentText = texts[textIndex].slice(0, ++charIndex);
+                searchInputBox.setAttribute("placeholder", currentText);
+
+                if (charIndex === texts[textIndex].length) {
+                typing = false;
+                setTimeout(typeAnimation, 1500); 
+                return;
+                }
+            } else {
+                currentText = texts[textIndex].slice(0, --charIndex);
+                searchInputBox.setAttribute("placeholder", currentText);
+
+                if (charIndex === 0) {
+                typing = true;
+                textIndex = (textIndex + 1) % texts.length;
+                }
+            }
+            setTimeout(typeAnimation, typing ? 70 : 60);
+        }
+
+        updateTexts();
+        window.addEventListener("resize", updateTexts);
+        typeAnimation();
+
+        // --- Slider Functionality ---
+        document.addEventListener('DOMContentLoaded', function () {
+            const sliderWrapper = document.querySelector('.slider-wrapper');
+            if (!sliderWrapper) return;
+
+            const slides = document.querySelectorAll('.slide');
+            const prevBtn = document.querySelector('.slider-btn.prev');
+            const nextBtn = document.querySelector('.slider-btn.next');
+            const dotsContainer = document.querySelector('.slider-dots');
+            
+            let currentIndex = 0;
+            let slideInterval;
+            const totalSlides = slides.length;
+
+            for (let i = 0; i < totalSlides; i++) {
+                const dot = document.createElement('div');
+                dot.classList.add('dot');
+                dot.addEventListener('mouseover', () => {
+                    goToSlide(i);
+                    resetInterval();
+                });
+                dotsContainer.appendChild(dot);
+            }
+            const dots = document.querySelectorAll('.dot');
+
+            function goToSlide(index) {
+                sliderWrapper.style.transform = `translateX(-${index * 100}%)`;
+                dots.forEach(dot => dot.classList.remove('active'));
+                if(dots[index]) dots[index].classList.add('active');
+                currentIndex = index;
+            }
+
+            if(nextBtn) {
+                nextBtn.addEventListener('click', () => {
+                    const nextIndex = (currentIndex + 1) % totalSlides;
+                    goToSlide(nextIndex);
+                    resetInterval();
+                });
+            }
+
+            if(prevBtn) {
+                prevBtn.addEventListener('click', () => {
+                    const prevIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+                    goToSlide(prevIndex);
+                    resetInterval();
+                });
+            }
+
+            function startInterval() {
+                slideInterval = setInterval(() => {
+                    const nextIndex = (currentIndex + 1) % totalSlides;
+                    goToSlide(nextIndex);
+                }, 5000); 
+            }
+
+            function resetInterval() {
+                clearInterval(slideInterval);
+                startInterval();
+            }
+
+            goToSlide(0);
+            startInterval();
+        });
+        
+        window.onscroll = function() {scrollFunction()};
+
+        function scrollFunction() {
+            const btn = document.getElementById("backToTop");
+            if (!btn) return; 
+            if (document.body.scrollTop > 400 || document.documentElement.scrollTop > 400) {
+                btn.style.display = "block";
+            } else {
+                btn.style.display = "none";
+            }
+        }
+
+        function scrollToTop() {
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+    </script>
+
     <style>
         .shop-section {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
             gap: 15px;
             padding: 15px;
         }
@@ -714,26 +599,26 @@ document.addEventListener('DOMContentLoaded', function () {
             cursor: pointer;
             transition: transform 0.2s;
         }
-        .product-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .discount-badge {
-            position: absolute; top: 8px; left: 8px;
-            background: #22c55e; color: white;
-            font-size: 10px; font-weight: bold;
-            padding: 2px 6px; border-radius: 4px;
+        @media (max-width: 364px){
+            .product-card {
+                width: 45vw;
+            }
         }
+        @media (min-width: 365px){
+            .shop-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        }}
+        .product-card:hover {  box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+
         .img-box { height: 160px; padding: 10px; display: flex; justify-content: center; align-items: center; }
         .img-box img { max-height: 100%; max-width: 100%; }
-        .details { padding: 10px; }
+        .details { padding: 10px;}
         .product-name { font-size: 13px; margin: 0 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .price-area { display: flex; align-items: baseline; gap: 5px; margin-bottom: 8px; }
         .price { font-weight: bold; font-size: 15px; }
         .mrp { text-decoration: line-through; font-size: 11px; color: #999; }
-        .add-btn {
-            width: 100%; background: white; border: 1px solid #2874f0;
-            color: #2874f0; padding: 5px; border-radius: 4px; font-weight: bold;
-            cursor: pointer;
-        }
-        .add-btn:hover { background: #2874f0; color: white; }
+
     </style>
     </body>
 </html>

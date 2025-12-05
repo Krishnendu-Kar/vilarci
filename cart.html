@@ -22,7 +22,7 @@
         <meta name="twitter:image" content="https://krishnendu-kar.github.io/LocalRapid/LocaalRapid.png">
         <!-- Preloads -->
         <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" as="style">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" xintegrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
         <!-- Canonical -->
         <link rel="canonical" href="https://krishnendu-kar.github.io/LocalRapid/cart.html">
         <!-- Favicon & Apple Icon -->
@@ -30,7 +30,7 @@
         <link rel="icon" href="https://krishnendu-kar.github.io/LocalRapid/LocaalRapid.ico" type="image/x-icon">
         <link rel="apple-touch-icon" href="https://krishnendu-kar.github.io/LocalRapid/LocaalRapid.ico" sizes="180x180">
 
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" xintegrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
         <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
@@ -38,7 +38,7 @@
 
         <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
         <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-        <title>Cart- LocaalRapid Fast & Reliable E-commerce Shopping</title>
+        <title>Cart- Vilarci Fast & Reliable E-commerce Shopping</title>
         <style>
             .navbar{
                 background: linear-gradient(180deg, #ff2a1f, #1c2333) !important;
@@ -63,7 +63,7 @@
             <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
                 <div class="container">
                     <a class="navbar-brand" href="index.html">
-                        <i class="bi bi-shop me-2"></i>LocaalRapid
+                        <i class="bi bi-shop me-2"></i>Vilarci
                     </a>
                     <div class="navbar-nav ms-auto">
                         <a class="nav-link text-white me-3" href="index.html">
@@ -396,16 +396,16 @@
                     iconColor: '#ff4444',
                     // We use HTML to show the image and details nicely
                    html: `
-    <img src="${item.image}" style="width:80px;border-radius:8px;margin-bottom:10px;">
-    <br>
-    <b>${item.name}</b><br>
+                        <img src="${item.image}" style="width:80px;border-radius:8px;margin-bottom:10px;">
+                        <br>
+                        <b>${item.name}</b><br>
 
-    <span style="color:#666">
-        ₹${item.price} 
-        ${item.originalPrice != item.price ? `<del>₹${item.originalPrice}</del>` : ""}
-        (${item.quantity})
-    </span>
-`,
+                        <span style="color:#666">
+                            ₹${item.price} 
+                            ${item.originalPrice != item.price ? `<del>₹${item.originalPrice}</del>` : ""}
+                            (${item.quantity})
+                        </span>
+                    `,
 
                     icon: "warning",
                     showCancelButton: true,
@@ -530,9 +530,8 @@
                 const deliveryCharge = 5;
 
                 cart.forEach(item => {
-                    const detailPage = (item.available_weights && Array.isArray(item.available_weights))
-                        ? 'product-details_weightable.html'
-                        : 'product-details.html';
+                    // Use product_details.html for all items (Universal PDP)
+                    const detailPage = 'product_details.html';
 
                     item.name = item.name
                 .split(" ")
@@ -540,10 +539,17 @@
                 .join(" ");
 
                     const uniqueId = item.cartItemId || item.id;
-                    const price = Number(item.price) || 0;
-                    const originalPrice = Number(item.originalPrice) || price;
+                    // FIX: Remove commas before converting to ensure math works
+                    const price = parseFloat(String(item.price).replace(/,/g, '')) || 0;
+                    const rawOriginal = parseFloat(String(item.originalPrice).replace(/,/g, ''));
+
+                    // FIX: Ensure Original Price is never lower than Selling Price
+                    const originalPrice = (rawOriginal > price) ? rawOriginal : price;
+
                     const itemMrpTotal = originalPrice * item.quantity;
                     const itemTotal = price * item.quantity;
+
+                    
 
                     totalItems += item.quantity;
                     itemsSubtotal += itemTotal;
@@ -561,11 +567,11 @@
                             <div class="card-body">
                                 <div class="row align-items-center">
                                     <div class="col-md-2">
-                                        <img src="${item.image}" class="img-fluid rounded" alt="${item.name}" loading="lazy" width="100" height="100" style="max-height: 100px; object-fit: contain; cursor: pointer;" onclick="window.location.href='${detailPage}?id=${item.id}'">
+                                        <img src="${item.image}" class="img-fluid rounded" alt="${item.name}" loading="lazy" width="100" height="100" style="max-height: 100px; object-fit: contain; cursor: pointer;" onclick="window.location.href='${detailPage}?slug=${item.slug}'">
                                     </div>
                                     <div class="col-md-4">
-                                        <h5 onclick="window.location.href='${detailPage}?id=${item.id}'" style="text-transform:capitalize;"><abbr style="text-decoration: none;cursor:context-menu; cursor: pointer;" title="${item.name}">${item.name}</abbr></h5>
-                                        <p class="text-success mb-0" style="color:red;">₹${price.toFixed(2)} (${item.amount})</p>
+                                        <h5 onclick="window.location.href='product_details.html?slug=${item.slug}'" style="text-transform:capitalize; cursor: pointer;"><abbr style="text-decoration: none;cursor:context-menu; cursor: pointer;" title="${item.name}">${item.name}</abbr></h5>
+                                        <p class="text-success mb-0" style="color:red;">₹${price.toFixed(2)} ${item.amount ? `(${item.amount})` : ''}</p>
                                         ${price !== originalPrice
                                             ? `<p class="text-muted  small mb-0"><del>₹${originalPrice.toFixed(2)}</del></p>`
                                             : ""}
@@ -824,7 +830,8 @@ if (popup2 && show2 && close2) {
     window.onclick = (e) => {
         if (e.target === popup2) popup2.style.display = "none";
     };
-}
+}   
+
         </script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     </body>

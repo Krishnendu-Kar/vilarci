@@ -32,7 +32,7 @@
 
         <form id="uploadForm" class="p-8 space-y-10">
 
-            <!-- SECTION 1: ID CONFIGURATION (Seller ID Removed) -->
+            <!-- SECTION 1: ID CONFIGURATION -->
             <section class="bg-blue-50 p-6 rounded-xl border border-blue-100">
                 <h3 class="text-blue-900 font-bold uppercase tracking-wider text-xs mb-4 flex items-center gap-2">
                     <span class="bg-blue-200 text-blue-800 py-1 px-2 rounded">Step 1</span> System Identification
@@ -68,7 +68,7 @@
                 </div>
             </section>
 
-            <!-- SECTION 2: CATEGORIZATION -->
+            <!-- SECTION 2: CATEGORIZATION (Dynamic DB Fetching) -->
             <section>
                 <h3 class="text-slate-900 font-bold uppercase tracking-wider text-xs mb-4 border-b pb-2">Step 2: Categorization</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -123,7 +123,7 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 mb-1">Stock Quantity</label>
-                            <input type="number" id="stock" value="0" class="w-full p-3 border rounded-lg">
+                            <input type="text" id="stock" value="0" class="w-full p-3 border rounded-lg">
                             <p class="text-[10px] text-orange-500 mt-1">*Set to 0 if using Variants</p>
                         </div>
                         <div>
@@ -210,46 +210,16 @@
 
     <script>
         // ==========================================
-        // 1. CONFIGURATION (REPLACE KEYS HERE!)
+        // 1. CONFIGURATION
         // ==========================================
         const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_wy4_pxxwFkS63SSL_d5yug_Bgybs85R';
- 
-        
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // ID Architecture Placeholders
+        // ID Architecture Placeholders (To be replaced by Seller Auth later)
         const STATE_CODE = "10"; 
         const AREA_CODE = "100";
         const FIXED_VAL = "1";
-
-        // DEMO DATA (Sync with your DB later)
-        const DEMO_CATEGORIES = [
-            {
-                id: "12", name: "Fashion", subs: [
-                    { id: "101", name: "Men's Top Wear", supers: [
-                        { id: "201", name: "T-Shirts" },
-                        { id: "202", name: "Formal Shirts" }
-                    ]},
-                    { id: "102", name: "Women's Ethnic", supers: [
-                        { id: "203", name: "Sarees" },
-                        { id: "204", name: "Kurtas" }
-                    ]}
-                ]
-            },
-            {
-                id: "14", name: "Grocery", subs: [
-                    { id: "103", name: "Staples", supers: [
-                        { id: "205", name: "Sugar & Jaggery" },
-                        { id: "206", name: "Rice & Grains" }
-                    ]},
-                    { id: "104", name: "Snacks", supers: [
-                        { id: "207", name: "Chips & Namkeen" },
-                        { id: "208", name: "Biscuits" }
-                    ]}
-                ]
-            }
-        ];
 
         // ==========================================
         // 2. ID GENERATION LOGIC
@@ -295,71 +265,69 @@
         }
 
         // ==========================================
-        // 3. INIT & DROPDOWN LOGIC
+        // 3. INIT & DROPDOWN LOGIC (DB CONNECTED)
         // ==========================================
         window.onload = async function() {
-            const select = document.getElementById('catSelect');
-            DEMO_CATEGORIES.forEach(c => select.add(new Option(c.name, c.id)));
-            
-            // --- CRITICAL: AUTH & SUSPENSION CHECK ---
+            // Check for Logged In Seller
             const sellerId = sessionStorage.getItem('vilarci_seller_id');
-            
             if(!sellerId) {
-                // If no ID in session, force login page
                 alert("Session Expired. Please login to upload products.");
                 window.location.href = 'login.html';
                 return;
             }
+            document.getElementById('displaySellerId').innerText = `ID: ${sellerId}`;
 
-            // Live Verification Check from Database
-            const { data: sellerData, error: verifyError } = await supabase
-                .from('sellers')
-                .select('is_verified')
-                .eq('seller_numeric_id', sellerId)
-                .single();
+            // 1. Fetch Top-Level Categories from DB
+            const { data: categories, error } = await supabase
+                .from('categories')
+                .select('id, name')
+                .order('name');
 
-            if (verifyError) {
-                console.warn("Verification check warning:", verifyError.message);
-            } else if (sellerData && sellerData.is_verified === false) {
-                // USER IS SUSPENDED!
-                alert("🚫 ACCESS DENIED: Your seller account has been SUSPENDED by the Admin.\n\nYou cannot upload products.");
-                // Clear session to be safe
-                sessionStorage.clear();
-                await supabase.auth.signOut();
-                window.location.href = 'seller_profile.html';
+            if (error) {
+                console.error("Error fetching categories:", error);
+                alert("Failed to load categories.");
                 return;
             }
+
+            const select = document.getElementById('catSelect');
+            categories.forEach(c => select.add(new Option(c.name, c.id)));
             
-            document.getElementById('displaySellerId').innerText = `ID: ${sellerId}`;
-            generateRandomSuffix();
+            generateRandomSuffix(); // Init logic
         };
 
-        function handleCatChange() {
+        async function handleCatChange() {
             const catId = document.getElementById('catSelect').value;
             const subSelect = document.getElementById('subSelect');
             const superSelect = document.getElementById('superSelect');
             
+            // Reset downstream
             subSelect.innerHTML = '<option value="">Select Sub Category</option>';
             superSelect.innerHTML = '<option value="">Select Super Sub</option>';
             subSelect.disabled = true;
             superSelect.disabled = true;
             
-            updateProductIdDisplay();
+            updateProductIdDisplay(); 
 
             if(!catId) return;
 
-            const category = DEMO_CATEGORIES.find(c => c.id === catId);
-            if(category && category.subs) {
+            // 2. Fetch Sub-Categories from DB based on selected Category
+            const { data: subCategories, error } = await supabase
+                .from('sub_categories')
+                .select('id, name')
+                .eq('category_id', catId)
+                .order('name');
+
+            if (subCategories) {
                 subSelect.disabled = false;
-                category.subs.forEach(s => subSelect.add(new Option(s.name, s.id)));
+                subCategories.forEach(s => subSelect.add(new Option(s.name, s.id)));
             }
         }
 
-        function handleSubChange() {
-            const catId = document.getElementById('catSelect').value;
+        async function handleSubChange() {
             const subId = document.getElementById('subSelect').value;
             const superSelect = document.getElementById('superSelect');
             
+            // Reset downstream
             superSelect.innerHTML = '<option value="">Select Super Sub</option>';
             superSelect.disabled = true;
 
@@ -367,12 +335,16 @@
 
             if(!subId) return;
 
-            const category = DEMO_CATEGORIES.find(c => c.id === catId);
-            const subCategory = category.subs.find(s => s.id === subId);
-            
-            if(subCategory && subCategory.supers) {
+            // 3. Fetch Super-Sub-Categories from DB based on selected Sub-Category
+            const { data: superSubCategories, error } = await supabase
+                .from('super_sub_categories')
+                .select('id, name')
+                .eq('sub_category_id', subId)
+                .order('name');
+
+            if (superSubCategories) {
                 superSelect.disabled = false;
-                subCategory.supers.forEach(s => superSelect.add(new Option(s.name, s.id)));
+                superSubCategories.forEach(s => superSelect.add(new Option(s.name, s.id)));
             }
         }
 
@@ -424,9 +396,8 @@
         // 5. UPLOAD LOGIC
         // ==========================================
         async function uploadProduct() {
+            // 1. Get IDs
             const generatedId = document.getElementById('final_product_id').value;
-            
-            // --- AUTO-DETECTED SELLER ID ---
             const sellerId = sessionStorage.getItem('vilarci_seller_id');
 
             if(!sellerId) { 
@@ -437,7 +408,7 @@
 
             if(generatedId.length !== 19 || isNaN(generatedId)) { alert("⚠️ Product ID incomplete. Please select all 3 category levels."); return; }
 
-            // Gather Data
+            // 2. Gather Data
             const form = {
                 name: document.getElementById('name').value,
                 slug: document.getElementById('slug').value,
@@ -452,7 +423,7 @@
                 superId: document.getElementById('superSelect').value || null
             };
 
-            // Parse JSON
+            // 3. Parse JSON
             let specs, variants, bulk;
             try {
                 specs = JSON.parse(document.getElementById('specifications').value);
@@ -467,10 +438,10 @@
                 return;
             }
 
-            // Construct Payload
+            // 4. Construct Payload
             const payload = {
                 id: generatedId, 
-                seller_id: sellerId, // Using the Auto-Detected ID here
+                seller_id: sellerId, 
                 name: form.name,
                 slug: form.slug,
                 description: form.description,
@@ -488,6 +459,7 @@
                 is_active: true
             };
 
+            // 5. Send
             const { data, error } = await supabase.from('products').insert([payload]);
 
             if(error) {

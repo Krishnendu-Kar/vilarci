@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Details</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-slate-50 font-sans min-h-screen">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm border-b sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='index.html'">
+                <div class="bg-indigo-600 text-white font-bold text-xl px-2 py-1 rounded">V</div>
+                <h1 class="text-xl font-bold text-indigo-900">Vilarci</h1>
+            </div>
+            <a href="index.html" class="text-slate-500 hover:text-indigo-600 text-sm font-medium flex items-center gap-1">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Search
+            </a>
+        </div>
+    </nav>
+
+    <!-- LOADING STATE -->
+    <div id="loader" class="flex flex-col items-center justify-center h-[80vh]">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+        <p class="text-slate-500 text-sm animate-pulse">Loading product details...</p>
+    </div>
+
+    <!-- ERROR STATE -->
+    <div id="error-screen" class="hidden flex flex-col items-center justify-center h-[80vh] text-center">
+        <div class="bg-red-50 p-4 rounded-full mb-4">
+            <i data-lucide="alert-circle" class="w-12 h-12 text-red-500"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-800">Product Not Found</h2>
+        <p class="text-slate-500 mt-2 max-w-md">The product you are looking for might have been removed or the link is broken.</p>
+        <a href="index.html" class="mt-6 bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-indigo-700 transition">Go Home</a>
+    </div>
+
+    <!-- MAIN PRODUCT CONTAINER -->
+    <main id="product-container" class="hidden max-w-7xl mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+            
+            <!-- LEFT: IMAGE GALLERY -->
+            <div class="space-y-4">
+                <div class="aspect-square bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm relative group">
+                    <span id="badge-label" class="absolute top-4 left-4 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full hidden shadow-sm z-10">
+                        SALE
+                    </span>
+                    <img id="main-image" src="" class="w-full h-full object-contain p-8 hover:scale-105 transition-transform duration-500">
+                </div>
+                
+                <!-- Thumbnails Container -->
+                <div id="thumbnails" class="flex gap-2 overflow-x-auto pb-2 hidden">
+                    <!-- JS will inject <img> tags here -->
+                </div>
+            </div>
+
+            <!-- RIGHT: DETAILS -->
+            <div class="space-y-6">
+                
+                <!-- Breadcrumbs & IDs -->
+                <div class="flex justify-between items-start border-b border-slate-100 pb-4">
+                    <div class="text-[10px] text-slate-400 font-mono space-y-1">
+                        <p>Product ID: <span id="display-id" class="text-slate-600 font-bold select-all">...</span></p>
+                        <p>Seller ID: <span id="display-seller" class="text-slate-600 select-all">...</span></p>
+                    </div>
+                    <div class="flex items-center bg-green-50 px-2 py-1 rounded text-green-700 text-xs font-bold border border-green-100">
+                        4.5 <i data-lucide="star" class="w-3 h-3 ml-1 fill-current"></i>
+                    </div>
+                </div>
+
+                <!-- Title & Price -->
+                <div>
+                    <div class="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-2" id="category-tag">Category</div>
+                    <h1 id="product-title" class="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight">...</h1>
+                    
+                    <div class="mt-4 flex items-baseline gap-3">
+                        <span id="price-display" class="text-4xl font-bold text-slate-900">₹0</span>
+                        <span id="mrp-display" class="text-lg text-slate-400 line-through decoration-2">₹0</span>
+                        <span id="discount-display" class="text-sm font-bold text-green-600 bg-green-50 px-2 py-1 rounded"></span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">Inclusive of all taxes</p>
+                </div>
+
+                <!-- DYNAMIC LOGIC CONTAINER -->
+                <div id="dynamic-logic-container" class="bg-white p-4 rounded-xl border-2 border-indigo-50 shadow-sm">
+                    <!-- Injected via JS -->
+                </div>
+
+                <!-- DESCRIPTION -->
+                <div>
+                    <h3 class="font-bold text-slate-800 text-sm uppercase mb-2 flex items-center gap-2">
+                         Description
+                    </h3>
+                    <p id="product-description" class="text-slate-600 text-sm leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">...</p>
+                </div>
+
+                <!-- HIGHLIGHTS -->
+                <div id="highlights-section" class="hidden">
+                    <h3 class="font-bold text-slate-800 text-sm uppercase mb-2">Key Highlights</h3>
+                    <div id="product-highlights" class="grid grid-cols-1 gap-2 text-sm text-slate-600"></div>
+                </div> 
+
+                <!-- SPECIFICATIONS -->
+                <div id="specs-section" class="hidden">
+                    <h3 class="font-bold text-slate-800 text-sm uppercase mb-2">Specifications</h3>
+                    <div id="specs-grid" class="grid grid-cols-2 gap-y-2 text-sm border-t border-slate-100 pt-3"></div>
+                </div>
+
+                <!-- ACTION BUTTONS -->
+                <div class="fixed bottom-0 left-0 w-full bg-white border-t p-4 md:static md:bg-transparent md:border-0 md:p-0 flex gap-3 z-40 shadow-lg md:shadow-none">
+                    <button onclick="addToCart()" class="flex-1 bg-white border-2 border-indigo-600 text-indigo-700 font-bold py-3.5 rounded-xl hover:bg-indigo-50 transition flex justify-center items-center gap-2">
+                        <i data-lucide="shopping-cart" class="w-5 h-5"></i> Add to Cart
+                    </button>
+                    <button class="flex-1 bg-indigo-600 text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-indigo-700 transition transform active:scale-[0.98] flex justify-center items-center gap-2">
+                        <i data-lucide="zap" class="w-5 h-5"></i> Buy Now
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // CONFIGURATION
+        const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_wy4_pxxwFkS63SSL_d5yug_Bgybs85R';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        lucide.createIcons();
+
+        let currentProduct = {};
+        let selectedPrice = 0;
+        let selectedWeightLabel = "";
+
+        // ==========================================
+        // 1. MAIN INIT LOGIC
+        // ==========================================
+        
+        async function initPage() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const slug = urlParams.get('slug'); 
+            const idFallback = urlParams.get('id');
+
+            let query = supabase.from('products').select('*');
+
+            if (slug) query = query.eq('slug', slug);
+            else if (idFallback) query = query.eq('id', idFallback);
+            else { showError(); return; }
+
+            const { data, error } = await query.single();
+
+            if (error || !data) {
+                console.error("Error:", error);
+                showError();
+                return;
+            }
+
+            currentProduct = data;
+            renderUniversalData(data);
+            
+           // Check 19-digit ID logic
+            const idString = data.id.toString();
+            
+            // Extract codes
+            const fashionCode = idString.substring(6, 8); // Characters at index 6 & 7 (e.g., "12")
+            const subAreaCode = idString.substring(8, 11); 
+
+            console.log("ID:", idString, "Fashion:", fashionCode, "SubArea:", subAreaCode);
+
+            // LOGIC ROUTER
+            if (fashionCode === '12') {
+                renderFashionInterface(data); // <--- NEW FASHION ROUTE
+            } else if (subAreaCode === '185') {
+                renderWeightableInterface(data);
+            } else {
+                renderPacketInterface(data);
+            }
+
+
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('product-container').classList.remove('hidden');
+        }
+
+        // ==========================================
+        // 2. RENDERERS
+        // ==========================================
+
+        function renderUniversalData(product) {
+            document.getElementById('display-id').innerText = product.id;
+            document.getElementById('display-seller').innerText = product.seller_id;
+            document.getElementById('product-title').innerText = product.name;
+            document.getElementById('product-description').innerText = product.description || "No description available.";
+            
+            // --- IMAGE GALLERY LOGIC ---
+            const mainImg = document.getElementById('main-image');
+            const thumbContainer = document.getElementById('thumbnails');
+            thumbContainer.innerHTML = ''; // Clear previous
+
+            if (product.images && product.images.length > 0) {
+                // 1. Set Main Image
+                mainImg.src = product.images[0];
+
+                // 2. Create Thumbnails if more than 1 image
+                if (product.images.length > 1) {
+                    thumbContainer.classList.remove('hidden');
+                    
+                    product.images.forEach((imgUrl, index) => {
+                        const thumb = document.createElement('img');
+                        thumb.src = imgUrl;
+                        thumb.className = `w-16 h-16 object-cover rounded-lg border-2 cursor-pointer hover:border-indigo-600 transition ${index === 0 ? 'border-indigo-600' : 'border-transparent'}`;
+                        
+                        // Click to swap
+                        thumb.onmouseover = () => {
+                            mainImg.src = imgUrl;
+                            // Reset all borders
+                            Array.from(thumbContainer.children).forEach(t => t.classList.remove('border-indigo-600'));
+                            Array.from(thumbContainer.children).forEach(t => t.classList.add('border-transparent'));
+                            // Highlight active
+                            thumb.classList.remove('border-transparent');
+                            thumb.classList.add('border-indigo-600');
+                        };
+                        thumbContainer.appendChild(thumb);
+                    });
+                } else {
+                    thumbContainer.classList.add('hidden');
+                }
+            } else {
+                mainImg.src = "https://via.placeholder.com/400?text=No+Image";
+                thumbContainer.classList.add('hidden');
+            }
+
+            // Badge
+            if (product.badge_label) {
+                const badge = document.getElementById('badge-label');
+                badge.innerText = product.badge_label;
+                badge.classList.remove('hidden');
+            }
+
+            // Highlights
+            if (product.highlights && product.highlights.length > 0) {
+                document.getElementById('highlights-section').classList.remove('hidden');
+                const div = document.getElementById('product-highlights');
+                div.innerHTML = ''; // Clear previous
+                product.highlights.forEach(h => {
+                    div.innerHTML += `<div class="flex gap-2 items-start"><i data-lucide="check-circle2" class="w-4 h-4 text-green-500 mt-0.5"></i> <span>${h}</span></div>`;
+                });
+            }
+
+            // Specs
+            if (product.specifications) {
+                document.getElementById('specs-section').classList.remove('hidden');
+                const grid = document.getElementById('specs-grid');
+                grid.innerHTML = ''; // Clear previous
+                
+                function parseSpecs(obj) {
+                    Object.entries(obj).forEach(([k, v]) => {
+                        if(typeof v === 'object' && v !== null) parseSpecs(v);
+                        else {
+                            grid.innerHTML += `
+                                <div class="text-slate-500 font-medium">${k}</div>
+                                <div class="text-slate-800">${v}</div>
+                            `;
+                        }
+                    });
+                }
+                parseSpecs(product.specifications);
+            }
+            lucide.createIcons();
+        }
+
+
+        // --- INTERFACE A: WEIGHTABLE (Code 185) + CALCULATOR ---
+        function renderWeightableInterface(product) {
+            const container = document.getElementById('dynamic-logic-container');
+            const bulkRules = product.bulk_rules || [];
+
+            let html = `
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-slate-800 text-sm uppercase">Select Quantity</h3>
+                        <span class="text-xs text-indigo-600 font-bold bg-indigo-50 px-2 py-1 rounded">Bulk Savings</span>
+                    </div>
+                    
+                    <!-- Preset Options -->
+                    <div class="grid grid-cols-1 gap-2" id="bulk-options-container">
+            `;
+
+            // Generate cards
+            bulkRules.forEach((rule, index) => {
+                const basePricePerGram = product.base_price / 1000; // Assumes base_price is per kg
+                let calcPrice = (rule.unit === 'gm' ? rule.min_qty : rule.min_qty * 1000) * basePricePerGram;
+                
+                let quantityLabel = rule.min_qty < 1000 && rule.unit === 'gm' ? `${rule.min_qty} gm` : `${rule.min_qty/1000} kg`;
+                if(rule.unit !== 'gm' && rule.unit !== 'kg') quantityLabel = `${rule.min_qty} ${rule.unit}`;
+
+                const finalPrice = Math.round(calcPrice - (rule.discount_amount || 0));
+                const saved = Math.round(rule.discount_amount || 0);
+
+                if(index === 0) {
+                    updatePriceUI(finalPrice, Math.round(calcPrice));
+                    selectedWeightLabel = quantityLabel;
+                }
+
+                html += `
+                    <div onclick="selectWeight(this, ${finalPrice}, ${Math.round(calcPrice)}, '${quantityLabel}')" 
+                         class="weight-option cursor-pointer border rounded-xl p-3 flex justify-between items-center hover:border-indigo-500 transition-all ${index === 0 ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600' : 'border-slate-200 bg-white'}">
+                        <div class="flex items-center gap-3">
+                            <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center ${index === 0 ? 'border-indigo-600' : 'border-slate-300'}">
+                                ${index === 0 ? '<div class="w-2.5 h-2.5 bg-indigo-600 rounded-full"></div>' : ''}
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-800">${quantityLabel}</p>
+                                ${saved > 0 ? `<p class="text-[10px] text-green-600 font-bold">Save ₹${saved}</p>` : ''}
+                            </div>
+                        </div>
+                        <p class="font-bold text-slate-900">₹${finalPrice}</p>
+                    </div>
+                `;
+            });
+
+            html += `   </div>
+
+                    <!-- NEW: Custom Calculator -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mt-2">
+                        <h4 class="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-1">
+                            <i data-lucide="calculator" class="w-3 h-3"></i> Custom Amount
+                        </h4>
+                        <div class="flex items-center gap-3">
+                            <div class="relative flex-1">
+                                <input type="number" id="custom-weight" placeholder="0" 
+                                    class="w-full pl-3 pr-8 py-2 border border-slate-300 rounded-lg text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                                    oninput="calculateCustom('weight', this.value)">
+                                <span class="absolute right-3 top-2 text-xs font-bold text-slate-400">gm</span>
+                            </div>
+                            <i data-lucide="arrow-left-right" class="w-4 h-4 text-slate-300"></i>
+                            <div class="relative flex-1">
+                                <span class="absolute left-3 top-2 text-xs font-bold text-slate-400">₹</span>
+                                <input type="number" id="custom-cost" placeholder="0" 
+                                    class="w-full pl-6 pr-3 py-2 border border-slate-300 rounded-lg text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                                    oninput="calculateCustom('cost', this.value)">
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-2 text-center">Enter weight to see price, or price to see weight.</p>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        window.selectWeight = function(element, price, mrp, label) {
+            // Reset calculator
+            document.getElementById('custom-weight').value = '';
+            document.getElementById('custom-cost').value = '';
+
+            document.querySelectorAll('.weight-option').forEach(el => {
+                el.className = 'weight-option cursor-pointer border border-slate-200 bg-white rounded-xl p-3 flex justify-between items-center hover:border-indigo-500 transition-all';
+                el.querySelector('.w-5').className = 'w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center';
+                el.querySelector('.w-5').innerHTML = '';
+            });
+
+            element.className = 'weight-option cursor-pointer border border-indigo-600 bg-indigo-50 rounded-xl p-3 flex justify-between items-center ring-1 ring-indigo-600 transition-all';
+            element.querySelector('.w-5').className = 'w-5 h-5 rounded-full border-2 border-indigo-600 flex items-center justify-center';
+            element.querySelector('.w-5').innerHTML = '<div class="w-2.5 h-2.5 bg-indigo-600 rounded-full"></div>';
+
+            selectedWeightLabel = label;
+            updatePriceUI(price, mrp);
+        }
+
+        window.calculateCustom = function(mode, value) {
+            // Deselect bulk options
+            document.querySelectorAll('.weight-option').forEach(el => {
+                el.className = 'weight-option cursor-pointer border border-slate-200 bg-white rounded-xl p-3 flex justify-between items-center hover:border-indigo-500 transition-all opacity-50';
+                el.querySelector('.w-5').innerHTML = '';
+            });
+
+            const val = parseFloat(value);
+            if (!val || val <= 0) {
+                if(mode === 'weight') document.getElementById('custom-cost').value = '';
+                if(mode === 'cost') document.getElementById('custom-weight').value = '';
+                return;
+            }
+
+            // Base Price is per 1000gm (1kg)
+            const pricePerGram = currentProduct.base_price / 1000;
+
+            if (mode === 'weight') {
+                const cost = Math.round(val * pricePerGram);
+                document.getElementById('custom-cost').value = cost;
+                selectedPrice = cost;
+                selectedWeightLabel = val + " gm (Custom)";
+            } else {
+                const weight = Math.round(val / pricePerGram);
+                document.getElementById('custom-weight').value = weight;
+                selectedPrice = Math.round(val);
+                selectedWeightLabel = weight + " gm (Custom)";
+            }
+
+            updatePriceUI(selectedPrice, 0); 
+        }
+
+
+        // --- INTERFACE C: FASHION (Code 12) ---
+        function renderFashionInterface(product) {
+            const container = document.getElementById('dynamic-logic-container');
+            const variants = product.variants || []; // Uses your DB JSON structure
+
+            let html = `
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-slate-800 text-sm uppercase">Select Size</h3>
+                        <a href="#" class="text-xs text-indigo-600 font-bold hover:underline">Size Chart</a>
+                    </div>
+                    
+                    <div class="grid grid-cols-4 gap-3">
+            `;
+
+            if(variants.length === 0) {
+                html += `<p class="text-sm text-slate-500 col-span-4">No variants available.</p>`;
+            } else {
+                variants.forEach(v => {
+                    const isOutOfStock = v.stock <= 0;
+                    
+                    // Dynamic styling based on stock
+                    const baseClass = "cursor-pointer border rounded-lg py-3 flex flex-col items-center justify-center transition-all relative overflow-hidden group";
+                    const stockClass = isOutOfStock 
+                        ? "bg-slate-50 border-slate-200 opacity-50 cursor-not-allowed" 
+                        : "bg-white border-slate-200 hover:border-indigo-500 hover:shadow-sm";
+                    
+                    // We pass 'this', size, specific price, and sku to the selector function
+                    const clickAction = isOutOfStock 
+                        ? "" 
+                        : `selectFashionVariant(this, '${v.size}', ${v.price}, '${v.sku}')`;
+
+                    html += `
+                        <div onclick="${clickAction}" class="variant-option ${baseClass} ${stockClass}">
+                            <span class="font-bold text-slate-800 text-sm">${v.size}</span>
+                            ${!isOutOfStock && v.stock < 10 
+                                ? `<span class="text-[9px] text-red-500 font-bold mt-1">${v.stock} left</span>` 
+                                : ''}
+                            ${isOutOfStock 
+                                ? `<div class="absolute inset-0 flex items-center justify-center"><div class="w-full h-[1px] bg-slate-400 -rotate-45"></div></div>` 
+                                : ''}
+                        </div>
+                    `;
+                });
+            }
+
+            html += `
+                    </div>
+                    <div id="fashion-warning" class="hidden text-xs text-red-500 font-bold flex items-center gap-1">
+                        <i data-lucide="alert-circle" class="w-3 h-3"></i> Please select a size
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+            
+            // Reset selection variables so previous page loads don't conflict
+            selectedWeightLabel = ""; 
+            selectedPrice = product.base_price; // Default to base price until clicked
+            lucide.createIcons();
+        }
+
+        window.selectFashionVariant = function(element, size, price, sku) {
+            // 1. Visually reset all other boxes
+            document.querySelectorAll('.variant-option').forEach(el => {
+                if(!el.classList.contains('opacity-50')) {
+                    el.className = "variant-option cursor-pointer border border-slate-200 bg-white rounded-lg py-3 flex flex-col items-center justify-center transition-all hover:border-indigo-500 relative overflow-hidden group";
+                }
+            });
+
+            // 2. Highlight the clicked box
+            element.className = "variant-option cursor-pointer border-2 border-indigo-600 bg-indigo-50 rounded-lg py-3 flex flex-col items-center justify-center transition-all relative overflow-hidden ring-1 ring-indigo-600";
+
+            // 3. Update Logic Variables
+            selectedPrice = price; 
+            selectedWeightLabel = `Size: ${size}`; // This will appear in the cart
+            
+            // 4. Update the Big Price Display (Because XL might cost more than S)
+            updatePriceUI(selectedPrice, currentProduct.original_price);
+            
+            // 5. Hide warning if shown
+            document.getElementById('fashion-warning').classList.add('hidden');
+        }
+
+
+        // --- INTERFACE B: PACKET (Standard) ---
+        function renderPacketInterface(product) {
+            const container = document.getElementById('dynamic-logic-container');
+            
+            let stockStatus = product.stock_quantity > 10 
+                ? `<span class="text-green-600 font-bold flex items-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> In Stock</span>`
+                : `<span class="text-orange-600 font-bold">Only ${product.stock_quantity} left!</span>`;
+            
+            if(product.stock_quantity <= 0) stockStatus = `<span class="text-red-600 font-bold">Out of Stock</span>`;
+
+            container.innerHTML = `
+                <div class="flex flex-col gap-4">
+                    <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100">
+                        <span class="text-sm font-medium text-slate-600">Availability</span>
+                        ${stockStatus}
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-bold text-slate-800">Quantity</span>
+                        <div class="flex items-center border border-slate-300 rounded-lg bg-white">
+                            <button onclick="updatePacketQty(-1)" class="px-3 py-2 text-slate-500 hover:bg-slate-100 transition">-</button>
+                            <input type="text" id="packet-qty" value="1" class="w-10 text-center text-sm font-bold outline-none" readonly>
+                            <button onclick="updatePacketQty(1)" class="px-3 py-2 text-slate-500 hover:bg-slate-100 transition">+</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            selectedWeightLabel = product.amount; 
+            updatePriceUI(product.base_price, product.original_price);
+            lucide.createIcons();
+        }
+
+        window.updatePacketQty = function(change) {
+            const input = document.getElementById('packet-qty');
+            let val = parseInt(input.value) + change;
+            if(val < 1) val = 1;
+            if(val > currentProduct.stock_quantity) {
+                alert("Max stock reached!");
+                val = currentProduct.stock_quantity;
+            }
+            input.value = val;
+            selectedWeightLabel = val + " Units";
+            updatePriceUI(currentProduct.base_price * val, currentProduct.original_price * val);
+        }
+
+
+        // --- UTILS ---
+        function updatePriceUI(price, mrp) {
+            selectedPrice = price; 
+            document.getElementById('price-display').innerText = `₹${price}`;
+            
+            if (mrp && mrp > price) {
+                document.getElementById('mrp-display').innerText = `₹${mrp}`;
+                const discount = Math.round(((mrp - price) / mrp) * 100);
+                document.getElementById('discount-display').innerText = `${discount}% OFF`;
+                document.getElementById('discount-display').classList.remove('hidden');
+                document.getElementById('mrp-display').classList.remove('hidden');
+            } else {
+                document.getElementById('mrp-display').classList.add('hidden');
+                document.getElementById('discount-display').classList.add('hidden');
+            }
+        }
+
+        function addToCart() {
+
+            // --- NEW SAFETY CHECK ---
+            // If it is a Fashion product (Code 12) AND no size is selected
+            const idString = currentProduct.id.toString();
+            if (idString.substring(6, 8) === '12' && selectedWeightLabel === "") {
+                document.getElementById('fashion-warning').classList.remove('hidden');
+                // Optional: Scroll back up slightly or shake animation
+                return; // STOP execution
+            }
+            // 1. Create a Unique Signature for this specific variant
+            // Example: "moong-dal-500-gm" or "moong-dal-1-kg"
+            // We remove spaces to make it clean
+            const uniqueKey = `${currentProduct.slug}-${selectedWeightLabel.replace(/\s+/g, '-')}`;
+
+            const cartItem = {
+                cartItemId: uniqueKey, // <--- THIS IS THE KEY FIX
+                id: currentProduct.id,
+                slug: currentProduct.slug,
+                name: currentProduct.name,
+                price: selectedPrice,
+                originalPrice: currentProduct.original_price || selectedPrice,
+                amount: selectedWeightLabel, // The variant name (e.g., "500 gm")
+                image: (currentProduct.images && currentProduct.images.length > 0) ? currentProduct.images[0] : "",
+                quantity: 1
+            };
+
+            let cart = JSON.parse(localStorage.getItem('cart') || "[]");
+
+            // 2. Check if THIS SPECIFIC VARIANT exists
+            const existingIndex = cart.findIndex(i => i.cartItemId === uniqueKey);
+
+            if (existingIndex > -1) {
+                cart[existingIndex].quantity += 1; // Just increase count
+            } else {
+                cart.push(cartItem); // Add as new row
+            }
+
+            localStorage.setItem('cart', JSON.stringify(cart));
+            alert("Added to cart!");
+        }
+
+        function showError() {
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('error-screen').classList.remove('hidden');
+        }
+
+        initPage();
+    </script>
+</body>
+</html>
