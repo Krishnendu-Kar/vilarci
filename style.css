@@ -86,13 +86,13 @@ header{
 }
 
 .border:hover {
-    border: 2px solid rgb(255, 219, 250);
+    border: 2px solid rgb(79, 9, 70);
     border-radius: 5px;
 }
 .navbar{
     height: 54px;
     width: 100%;
-    background-color: #11efd9;
+    background-color: #f9efb6;
     color:#9b0303;
     font-size: 1.1rem;
     display:flex;
@@ -202,10 +202,10 @@ header{
     .panel {
       height: 50px;
       width: 100%;
-      background-color: #1a535c;
+      background:linear-gradient(180deg, #fbefc0e6, #0d3b66);
       color: #fdfdfb;
       display: flex;
-      border-top: dashed 2px black;
+      /* border-top: dashed 2px black; */
       align-items: center;
       padding: 0 15px;
       gap: 16px;
