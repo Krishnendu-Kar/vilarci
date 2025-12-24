@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products - Vilarci</title>
+    
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f8fa; }
+        
+        /* Re-using your Amazon-style Navbar Button */
+        .panel-all {
+            display: flex; align-items: center; gap: 6px; cursor: pointer;
+            padding: 8px 12px; font-weight: 700; font-size: 15px; color: #fff;
+            border: 1px solid transparent; border-radius: 4px; transition: all 0.2s;
+        }
+        .panel-all:hover { border: 1px solid white; background-color: rgba(255, 255, 255, 0.1); }
+
+        /* Page Layout */
+        .page-container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 15px;
+            min-height: 60vh;
+        }
+
+        .category-header {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-bottom: 3px solid #e43e3e;
+        }
+        .category-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #111;
+            text-transform: capitalize;
+        }
+        .result-count {
+            color: #555;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        /* Product Grid (Matches index.html) */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        /* Mobile adjustment */
+        @media (max-width: 480px) {
+            .product-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+        }
+
+        /* Loading State */
+        .loading-state {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 300px; color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="navbar">
+            <div class="nav-logo border" onclick="window.location.href='index.html'">
+                <div class="logo-name">Vilarci</div>
+            </div>
+            <div class="nav-address border">
+                <p class="location-name"><i class="fa-solid fa-location-dot"></i> Location</p>
+            </div>
+            <div class="cart border" onclick="window.location.href='cart.html'">
+                <p class="cart-amount" id="cart-count-badge">0</p>
+                <div class="cart-icon"><i class="fa-solid fa-cart-arrow-down"></i></div>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div class="panel-all border" onclick="toggleSidebar()">
+                <i class="fa-solid fa-bars"></i>
+                <span>All</span>
+            </div>
+            
+            <div class="nav-search search-wrapper border">
+                <input type="search" class="search-input" placeholder="Search within category..." id="localSearch">
+                <div class="search-icon"><i class="fa-solid fa-magnifying-glass" style="color: #d70675;"></i></div>
+            </div>
+        </div>
+    </header>
+
+    <script src="sidebar.js"></script>
+
+    <main class="page-container" style="margin-top: 120px;">
+        
+        <div class="category-header">
+            <h1 class="category-title" id="page-title">Products</h1>
+            <p class="result-count" id="result-count">Loading products...</p>
+        </div>
+
+        <div id="product-container" class="product-grid">
+            </div>
+
+    </main>
+
+    <script>
+        // 1. SUPABASE CONFIG
+        const SB_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dmNndWJicXRjY295Y3ZkdXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODA2MzQsImV4cCI6MjA4MDA1NjYzNH0.7Hobx-emspJQ7HLyjaWR-XQhzk948LWufq3OCimKk4w';
+        const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+        // 2. PARSE URL PARAMETERS
+        const params = new URLSearchParams(window.location.search);
+        const catId = params.get('category_id');
+        const subId = params.get('sub_id');
+        const superId = params.get('super_id');
+
+        let allLoadedProducts = []; // Store for local search
+
+        // 3. MAIN FETCH FUNCTION
+        async function fetchProducts() {
+            renderLoading();
+
+            let query = sb.from('products').select('*').eq('is_active', true);
+            let titleText = "All Products";
+
+            try {
+                // A. Apply Filters based on URL
+                if (superId) {
+                    query = query.eq('super_sub_id', superId);
+                    titleText = await getName('super_sub_categories', superId);
+                } 
+                else if (subId) {
+                    query = query.eq('sub_category_id', subId);
+                    titleText = await getName('sub_categories', subId);
+                } 
+                else if (catId) {
+                    query = query.eq('category_id', catId);
+                    titleText = await getName('categories', catId);
+                }
+
+                // B. Execute Query
+                const { data, error } = await query.order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                // C. Update UI
+                document.getElementById('page-title').innerText = titleText;
+                document.getElementById('result-count').innerText = `${data.length} results found`;
+                allLoadedProducts = data;
+                renderProducts(data);
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('product-container').innerHTML = 
+                    `<div class="col-span-full text-center p-10 text-red-500">Error loading products.</div>`;
+            }
+        }
+
+        // 4. HELPER: Get Category Name from ID
+        async function getName(table, id) {
+            const { data } = await sb.from(table).select('name').eq('id', id).single();
+            return data ? data.name : "Products";
+        }
+
+        // 5. RENDER PRODUCTS (Re-used card design)
+        function renderProducts(products) {
+            const container = document.getElementById('product-container');
+            container.innerHTML = '';
+
+            if (products.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full flex flex-col items-center justify-center p-10 text-slate-400">
+                        <i data-lucide="package-open" class="w-16 h-16 mb-4"></i>
+                        <p class="text-lg">No products found in this category yet.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            products.forEach(p => {
+                const image = (p.images && p.images.length > 0) ? p.images[0] : 'https://via.placeholder.com/200?text=No+Image';
+                
+                // Calculate Discount
+                let discountHtml = '';
+                if(p.original_price > p.base_price) {
+                    const off = Math.round(((p.original_price - p.base_price) / p.original_price) * 100);
+                    discountHtml = `<div class="discount-badge">${off}% OFF</div>`;
+                }
+
+                const html = `
+                    <div class="product-card" onclick="window.location.href='product_details.html?slug=${p.slug}'">
+                        ${discountHtml}
+                        <div class="img-box">
+                            <img src="${image}" alt="${p.name}" loading="lazy">
+                        </div>
+                        <div class="details">
+                            <h4 class="product-name">${p.name}</h4>
+                            <p class="rating-row">
+                                <span class="rating-badge">${p.rating_avg || 4.0} <i class="fa-solid fa-star text-[10px]"></i></span>
+                                <span class="rating-count">(${p.rating_count || 0})</span>
+                            </p>
+                            <div class="price-area">
+                                <span class="price">₹${p.base_price}</span>
+                                ${p.original_price ? `<span class="mrp">₹${p.original_price}</span>` : ''}
+                            </div>
+                            <button class="add-btn" onclick="addToCart(event, '${p.id}')">
+                                Add <i class="fa-solid fa-cart-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+        }
+
+        function renderLoading() {
+            document.getElementById('product-container').innerHTML = `
+                <div class="col-span-full loading-state">
+                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-red-600 mb-4"></div>
+                    <p>Fetching products...</p>
+                </div>
+            `;
+        }
+
+        // 6. CART LOGIC (Simplified for consistency)
+        function addToCart(event, id) {
+            event.stopPropagation();
+            const product = allLoadedProducts.find(p => String(p.id) === String(id));
+            if (!product) return;
+
+            // Fashion Check (ID starts with 12)
+            if (String(product.category_id) === '12') { 
+                Toastify({ text: "Select a size first", style: { background: "#3b82f6" } }).showToast();
+                setTimeout(() => window.location.href = `product_details.html?slug=${product.slug}`, 1000);
+                return;
+            }
+
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const existing = cart.find(item => String(item.id) === String(id));
+            
+            if (existing) { existing.quantity += 1; } 
+            else { cart.push({ ...product, id: product.id, price: product.base_price, image: product.images[0], quantity: 1 }); }
+
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartCount();
+            Toastify({ text: "Added to Cart!", style: { background: "#22c55e" } }).showToast();
+        }
+
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const count = cart.reduce((acc, item) => acc + item.quantity, 0);
+            document.getElementById('cart-count-badge').innerText = count;
+        }
+
+        // 7. LOCAL SEARCH FILTER
+        document.getElementById('localSearch').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = allLoadedProducts.filter(p => p.name.toLowerCase().includes(term));
+            renderProducts(filtered);
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchProducts();
+            updateCartCount();
+        });
+
+    </script>
+</body>
+</html>

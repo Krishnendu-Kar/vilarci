@@ -28,7 +28,10 @@
         <link rel="preload" href="style.css" as="style">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" xintegrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
+        <script src="https://unpkg.com/lucide@latest"></script>
+            <!-- 1. SUPABASE & CONFIG -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
         <!-- Canonical -->
         <link rel="canonical" href="https://krishnendu-kar.github.io/vilarci/">
 
@@ -99,8 +102,12 @@
             </div>
             <div class="panel">
                 <!-- Hamburger Button -->
-                 <div id="global-sidebar-container"></div>
                 <script src="sidebar.js"></script>
+
+                <div class="panel-all border" onclick="toggleSidebar()">
+                    <i class="fa-solid fa-bars"></i>
+                    <span>All</span>
+                </div>
                     <!-- Search Bar -->
                 <div class="nav-search search-wrapper border">
                     <input type="search" class="search-input search-boxAni" id="productSearch" onclick="window.location.href='universal search.html'" placeholder=" ">
@@ -245,8 +252,7 @@
             }
         </script>
 
-    <!-- 1. SUPABASE & CONFIG -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <script>
 const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_wy4_pxxwFkS63SSL_d5yug_Bgybs85R';

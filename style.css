@@ -215,6 +215,29 @@ header{
             gap: 4px;
         }
     }
+    /* Amazon-style "All" Button */
+.panel-all {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 8px 12px;
+    font-weight: 700;
+    font-size: 15px;
+    color: #fff;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.panel-all:hover {
+    border: 1px solid white;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.panel-all i {
+    font-size: 18px; /* Burger icon size */
+}
     .nav-search{
     height: 37px;
     max-width: 700px;
