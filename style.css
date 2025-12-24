@@ -92,7 +92,7 @@ header{
 .navbar{
     height: 54px;
     width: 100%;
-    background-color: #f72585;
+    background-color: #e43e3e;
     color:#efedf1;
     font-size: 1.1rem;
     display:flex;
@@ -202,7 +202,7 @@ header{
     .panel {
       height: 50px;
       width: 100%;
-      background: #830636;
+      background: #9e0303;
       color: #fdfdfb;
       display: flex;
       align-items: center;
@@ -1146,13 +1146,13 @@ footer{
     height: 20px;
     width:100vw;
     color:whitesmoke;
-    position:sticky;
+    position:relative;
     bottom:0px;
     text-align:center;
-    padding-top:12px;
+    font-size:14px;
     display:inline-block;
     background-color:#eb0000;
     border:5px solid #eb0000e6;
     border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
+    border-top-right-radius: 10px; 
 }

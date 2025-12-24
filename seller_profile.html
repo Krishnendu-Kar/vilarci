@@ -247,7 +247,7 @@
                 
                 // --- Header Stats ---
                 // FIX: Changed 'store_name' to 'shop_name' to match Login page logic
-                document.getElementById('shop_name').innerText = seller.shop_name || "Vilarci Shop";
+                document.getElementById('shop_name').innerText = seller.store_name || "Unnamed Shop";
                 document.getElementById('full_name').innerText = `${seller.first_name || ''} ${seller.last_name || ''}`;
                 document.getElementById('seller_id').innerText = seller.seller_numeric_id || "ERR";
                 document.getElementById('product_count').innerText = productCount;
