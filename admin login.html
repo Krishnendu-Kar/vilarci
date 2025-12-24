@@ -105,7 +105,7 @@
                 const userId = data.user.id;
                 
                 const { data: userProfile, error: profileError } = await supabase
-                    .from('sellers')
+                    .from('sellers_private_089')
                     .select('role')
                     .eq('id', userId)
                     .single();

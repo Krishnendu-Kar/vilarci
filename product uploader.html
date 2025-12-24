@@ -213,8 +213,8 @@
         // 1. CONFIGURATION
         // ==========================================
         const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_wy4_pxxwFkS63SSL_d5yug_Bgybs85R';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dmNndWJicXRjY295Y3ZkdXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODA2MzQsImV4cCI6MjA4MDA1NjYzNH0.7Hobx-emspJQ7HLyjaWR-XQhzk948LWufq3OCimKk4w';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // ID Architecture Placeholders (To be replaced by Seller Auth later)
         const STATE_CODE = "10"; 
@@ -278,7 +278,7 @@
             document.getElementById('displaySellerId').innerText = `ID: ${sellerId}`;
 
             // 1. Fetch Top-Level Categories from DB
-            const { data: categories, error } = await supabase
+            const { data: categories, error } = await supabaseClient
                 .from('categories')
                 .select('id, name')
                 .order('name');
@@ -311,7 +311,7 @@
             if(!catId) return;
 
             // 2. Fetch Sub-Categories from DB based on selected Category
-            const { data: subCategories, error } = await supabase
+            const { data: subCategories, error } = await supabaseClient
                 .from('sub_categories')
                 .select('id, name')
                 .eq('category_id', catId)
@@ -336,7 +336,7 @@
             if(!subId) return;
 
             // 3. Fetch Super-Sub-Categories from DB based on selected Sub-Category
-            const { data: superSubCategories, error } = await supabase
+            const { data: superSubCategories, error } = await supabaseClient
                 .from('super_sub_categories')
                 .select('id, name')
                 .eq('sub_category_id', subId)
@@ -460,7 +460,7 @@
             };
 
             // 5. Send
-            const { data, error } = await supabase.from('products').insert([payload]);
+            const { data, error } = await supabaseClient.from('products').insert([payload]);
 
             if(error) {
                 console.error(error);

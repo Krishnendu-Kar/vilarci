@@ -3,461 +3,632 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seller Registration - Vilarci</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase Client -->
+    <title>Vilarci Seller Nexus</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Inter Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        /* Remove arrows from number inputs */
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; margin: 0; 
+        :root {
+            --primary: #4f46e5;
+            --accent: #06b6d4;
+            --bg-dark: #0f172a;
+            --glass-bg: rgba(30, 41, 59, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --danger: #ef4444;
+            --success: #10b981;
         }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.15) 0%, transparent 20%),
+                              radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.15) 0%, transparent 20%);
+            color: var(--text-main);
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .steps::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(255,255,255,0.1);
+            z-index: 1;
+        }
+
+        .step {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            padding-bottom: 10px;
+            position: relative;
+            z-index: 2;
+            transition: 0.3s;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+        }
+
+        .step.active {
+            color: var(--accent);
+            border-bottom: 2px solid var(--accent);
+            text-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+        }
+
+        label {
+            display: block;
+            margin-top: 20px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: white;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: rgba(6, 182, 212, 0.05);
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
+        }
+        
+        select { background-color: rgba(0,0,0,0.2); color: white; }
+        option { background-color: var(--bg-dark); color: white; }
+        
+        input.invalid, select.invalid { border-color: var(--danger); box-shadow: 0 0 10px rgba(239, 68, 68, 0.2); }
+        .error-msg { color: var(--danger); font-size: 0.75rem; margin-top: 5px; display: none; }
+
+        .btn-group { display: flex; gap: 15px; margin-top: 30px; }
+        .btn {
+            flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 1rem;
+            cursor: pointer; transition: all 0.3s; font-weight: 600;
+        }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), #4338ca); color: white; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4); }
+        .btn-primary:hover { box-shadow: 0 6px 20px rgba(79, 70, 229, 0.6); transform: translateY(-1px); }
+        .btn-secondary { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-muted); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); color: white; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-otp { margin-top: 15px; background: linear-gradient(135deg, var(--success), #059669); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); }
+
+        .radio-group { display: flex; gap: 10px; }
+        .radio-box {
+            flex: 1; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border);
+            border-radius: 8px; text-align: center; cursor: pointer; transition: 0.3s; font-size: 0.9rem;
+        }
+        .radio-box.selected { background: rgba(79, 70, 229, 0.2); border-color: var(--primary); color: white; box-shadow: 0 0 15px rgba(79, 70, 229, 0.2); }
+
+        .checkbox-group label { display: flex; align-items: center; gap: 12px; cursor: pointer; margin-top: 15px; color: var(--text-main); }
+        .checkbox-group input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+
+        .form-section { display: none; }
+        .form-section.active { display: block; animation: slideUp 0.5s ease forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        #otpInput { letter-spacing: 8px; font-size: 1.5rem; text-align: center; background: rgba(0,0,0,0.4); border-color: var(--accent); }
+        
+        .resend-link {
+            text-align: center; margin-top: 10px; font-size: 0.85rem; color: var(--text-muted);
+        }
+        .resend-link a { color: var(--accent); text-decoration: none; font-weight: bold; cursor: pointer; }
+        .resend-link a:hover { text-decoration: underline; }
+        .resend-link a.disabled { color: var(--text-muted); cursor: not-allowed; text-decoration: none; }
     </style>
 </head>
-<body class="font-sans bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+<body>
 
-    <!-- Header -->
-    <header class="bg-white shadow-sm sticky top-0 z-50 border-b border-slate-200">
-        <nav class="container mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <div class="bg-indigo-600 text-white font-bold text-xl px-2 py-1 rounded">V</div>
-                <div class="text-2xl font-extrabold text-indigo-900 tracking-tight">Vilarci</div>
-            </div>
-            <a href="login.html" class="text-sm font-medium text-slate-600 hover:text-indigo-600 transition">Already have an account? <span class="underline">Login</span></a>
-        </nav>
-    </header>
+<div class="container">
+    <h2>VILARCI SELLER REGISTRATION</h2>
+    
+    <div class="steps">
+        <span id="indicator-1" class="step active" onclick="safeGoToStep(1)">01 IDENTITY</span>
+        <span id="indicator-2" class="step" onclick="safeGoToStep(2)">02 STORE</span>
+        <span id="indicator-3" class="step" onclick="safeGoToStep(3)">03 FINANCE</span>
+    </div>
 
-    <!-- OTP MODAL -->
-    <div id="otp-modal" class="fixed inset-0 bg-gray-900 bg-opacity-80 hidden flex items-center justify-center z-50 backdrop-blur-sm transition-opacity">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center transform transition-all scale-100">
-            <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                <i data-lucide="lock" class="w-8 h-8"></i>
+    <div id="step-1" class="form-section active">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+            <div>
+                <label>First Name *</label>
+                <input type="text" id="firstName" placeholder="Rahul">
+                <small class="error-msg">Required.</small>
             </div>
-            <h3 class="text-xl font-bold text-gray-900">Security Check</h3>
-            <p class="text-sm text-gray-500 mt-2 mb-6">Enter the 6-digit code sent to <br><span id="otp-email-display" class="font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded"></span></p>
-            
-            <input type="text" id="otp_input" maxlength="6" class="w-full text-center text-3xl tracking-[0.5em] font-bold p-3 border-2 border-indigo-100 rounded-lg focus:border-indigo-600 outline-none mb-6 text-indigo-900" placeholder="000000" autocomplete="one-time-code">
-            
-            <button onclick="verifyOtpAndRegister()" id="verifyBtn" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition shadow-lg">
-                Verify & Create Account
-            </button>
-            <button onclick="closeOtp()" class="mt-4 text-xs text-gray-400 hover:text-gray-600 underline">Cancel Verification</button>
+            <div>
+                <label>Last Name *</label>
+                <input type="text" id="lastName" placeholder="Kar">
+                <small class="error-msg">Required.</small>
+            </div>
+        </div>
+
+        <label>Gender *</label>
+        <select id="gender">
+            <option value="">Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+        </select>
+        <small class="error-msg">Required.</small>
+
+        <label>Date of Birth (18+) *</label>
+        <input type="date" id="dob" style="color-scheme: dark;">
+        <small class="error-msg" id="dobError">Must be 18+.</small>
+
+        <label>Mobile Number *</label>
+        <input type="tel" id="mobile" maxlength="10" placeholder="9876543210">
+        <small class="error-msg">10 digits required.</small>
+
+        <label>Email (Login ID) *</label>
+        <input type="email" id="email" placeholder="name@domain.com">
+        <small class="error-msg">Invalid Email.</small>
+
+        <label>Password *</label>
+        <input type="password" id="password" placeholder="••••••••">
+        <small class="error-msg">Min 8 chars, 1 number, 1 symbol.</small>
+        
+        <button class="btn btn-primary" style="width:100%; margin-top:20px;" onclick="sendOtp()" id="btn-send-otp">Send Verification Code</button>
+
+        <div id="otp-container" style="display:none; margin-top: 25px; border-top: 1px dashed var(--glass-border); padding-top:20px;">
+            <p style="color:var(--success); text-align:center; font-size:0.9rem; margin-bottom:15px;">✓ Verification code sent to email</p>
+            <input type="text" id="otpInput" placeholder="123456" maxlength="6">
+            <button class="btn btn-otp" style="width:100%" onclick="verifyOtp()" id="btn-verify">Verify Identity</button>
+            <p class="resend-link">Did not receive code? <a id="resendBtn" onclick="resendOtp()">Resend now</a> <span id="timer"></span></p>
         </div>
     </div>
 
-    <!-- Main Content -->
-    <main class="flex-grow flex items-center justify-center py-10 px-4 sm:px-6">
-        <div class="max-w-5xl w-full bg-white p-6 sm:p-10 rounded-2xl shadow-xl border border-slate-100">
-            
-            <div class="text-center mb-10">
-                <h2 class="text-3xl font-extrabold text-slate-900">Partner Registration</h2>
-                <p class="mt-2 text-sm text-slate-500">Join Vilarci. Sell Products or Services securely.</p>
-            </div>
-
-            <div id="message-box" class="hidden p-4 rounded-lg mb-8 text-sm font-medium border"></div>
-
-            <form id="regForm" class="space-y-8">
-                
-                <!-- 1. PERSONAL DETAILS -->
-                <section class="bg-slate-50 p-6 rounded-xl border border-slate-200">
-                    <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-                        <span class="bg-indigo-600 text-white text-xs px-2 py-1 rounded-full">1</span> Personal Details
-                    </h3>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        <!-- Names -->
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">First Name <span class="text-red-500">*</span></label>
-                            <input type="text" id="first_name" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Middle Name</label>
-                            <input type="text" id="middle_name" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Last Name <span class="text-red-500">*</span></label>
-                            <input type="text" id="last_name" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                        </div>
-
-                        <!-- Demographics -->
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Gender <span class="text-red-500">*</span></label>
-                            <select id="gender" required class="w-full p-3 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
-                                <option value="">Select...</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Date of Birth (18+ only) <span class="text-red-500">*</span></label>
-                            <input type="date" id="dob" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-                            <p id="age-error" class="text-xs text-red-600 mt-1 hidden font-bold flex items-center gap-1">
-                                <i data-lucide="alert-triangle" class="w-3 h-3"></i> Must be 18+ to register.
-                            </p>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- 2. CONTACT & SECURITY -->
-                <section class="bg-slate-50 p-6 rounded-xl border border-slate-200">
-                    <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-                        <span class="bg-indigo-600 text-white text-xs px-2 py-1 rounded-full">2</span> Contact & Security
-                    </h3>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <!-- Contacts -->
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Mobile Number <span class="text-red-500">*</span></label>
-                            <input type="tel" id="mobile" required pattern="[0-9]{10}" maxlength="10" placeholder="10 digits" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">WhatsApp Number <span class="text-red-500">*</span></label>
-                            <input type="tel" id="whatsapp" required pattern="[0-9]{10}" maxlength="10" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Alt. Mobile (Optional)</label>
-                            <input type="tel" id="alt_mobile" pattern="[0-9]{10}" maxlength="10" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Email (Login ID) <span class="text-red-500">*</span></label>
-                            <input type="email" id="email" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                        </div>
-
-                        <!-- Password Security (WITH CONFIRM) -->
-                        <div class="md:col-span-2 border-t border-slate-200 my-2"></div>
-                        
-                        <div class="relative">
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Password <span class="text-red-500">*</span></label>
-                            <div class="relative">
-                                <input type="password" id="password" required class="w-full p-3 border border-slate-300 rounded-lg pr-10 focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                                <button type="button" onclick="togglePassword('password')" class="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-indigo-600 focus:outline-none">
-                                    <i data-lucide="eye" class="w-5 h-5"></i>
-                                </button>
-                            </div>
-                            <p class="text-[10px] text-slate-500 mt-1">Min 8 chars, 1 Uppercase, 1 Lowercase, 1 Number, 1 Symbol.</p>
-                        </div>
-
-                        <div class="relative">
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Confirm Password <span class="text-red-500">*</span></label>
-                            <div class="relative">
-                                <input type="password" id="confirm_password" required class="w-full p-3 border border-slate-300 rounded-lg pr-10 focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                                <button type="button" onclick="togglePassword('confirm_password')" class="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-indigo-600 focus:outline-none">
-                                    <i data-lucide="eye" class="w-5 h-5"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- 3. BUSINESS INFORMATION -->
-                <section class="bg-slate-50 p-6 rounded-xl border border-slate-200">
-                    <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-                        <span class="bg-indigo-600 text-white text-xs px-2 py-1 rounded-full">3</span> Business Info
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div class="md:col-span-2">
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Store Name <span class="text-red-500">*</span></label>
-                            <input type="text" id="store_name" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Entity Type <span class="text-red-500">*</span></label>
-                            <select id="seller_entity_type" required class="w-full p-3 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                                <option value="Individual">Individual</option>
-                                <option value="Sole Proprietor">Sole Proprietor</option>
-                                <option value="Partnership">Partnership</option>
-                                <option value="Company">Company</option>
-                            </select>
-                        </div>
-                        <!-- Business Mobile -->
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Business Mobile <span class="text-red-500">*</span></label>
-                            <input type="tel" id="mobile_business" required pattern="[0-9]{10}" maxlength="10" placeholder="Official Shop Number" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                        </div>
-
-                        <div class="md:col-span-2 bg-indigo-50 p-4 rounded-lg border border-indigo-100">
-                            <label class="block text-xs font-bold uppercase text-indigo-800 mb-2">Selling Type <span class="text-red-500">*</span></label>
-                            <div class="flex flex-wrap gap-4">
-                                <label class="flex items-center cursor-pointer bg-white px-4 py-2 rounded border border-indigo-200 shadow-sm hover:bg-indigo-50 transition">
-                                    <input type="radio" name="biz_type" value="products" checked class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
-                                    <span class="ml-2 text-sm font-medium">Products (ID starts with 1)</span>
-                                </label>
-                                <label class="flex items-center cursor-pointer bg-white px-4 py-2 rounded border-indigo-200 shadow-sm hover:bg-indigo-50 transition">
-                                    <input type="radio" name="biz_type" value="services" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
-                                    <span class="ml-2 text-sm font-medium">Services (ID starts with 2)</span>
-                                </label>
-                                <label class="flex items-center cursor-pointer bg-white px-4 py-2 rounded border-indigo-200 shadow-sm hover:bg-indigo-50 transition">
-                                    <input type="radio" name="biz_type" value="both" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
-                                    <span class="ml-2 text-sm font-medium">Both (ID starts with 3)</span>
-                                </label>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Pincode <span class="text-red-500">*</span></label>
-                            <input type="text" id="pincode" required maxlength="6" pattern="\d{6}" class="w-full p-3 border border-yellow-400 bg-yellow-50 rounded-lg font-bold tracking-widest focus:ring-2 focus:ring-yellow-500 outline-none transition" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">GSTIN (Optional)</label>
-                            <input type="text" id="gstin" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                        </div>
-                    </div>
-                </section>
-
-                <!-- 4. BANK & KYC -->
-                <section class="bg-slate-50 p-6 rounded-xl border border-slate-200">
-                    <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-                        <span class="bg-indigo-600 text-white text-xs px-2 py-1 rounded-full">4</span> KYC Verification
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">ID Type <span class="text-red-500">*</span></label>
-                            <select id="id_type" required class="w-full p-3 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                                <option value="Aadhaar">Aadhaar</option>
-                                <option value="PAN">PAN</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">ID Number <span class="text-red-500">*</span></label>
-                            <input type="text" id="id_number" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                        </div>
-                    </div>
-                </section>
-
-                <!-- 5. BANK & PAYOUT INFO -->
-                <section class="bg-slate-50 p-6 rounded-xl border border-slate-200">
-                    <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-                        <span class="bg-indigo-600 text-white text-xs px-2 py-1 rounded-full">5</span> Bank & Payout Information
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Account Holder Name <span class="text-red-500">*</span></label>
-                            <input type="text" id="bank_holder_name" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Bank Name <span class="text-red-500">*</span></label>
-                            <input type="text" id="bank_name" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Account Number / IBAN <span class="text-red-500">*</span></label>
-                            <input type="text" id="bank_account_num" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">IFSC / SWIFT Code <span class="text-red-500">*</span></label>
-                            <input type="text" id="bank_ifsc" required class="w-full p-3 border border-slate-300 rounded-lg uppercase focus:ring-2 focus:ring-indigo-500 outline-none transition">
-                        </div>
-                    </div>
-                </section>
-
-                <!-- 6. CONSENT -->
-                <div class="space-y-3 pt-4">
-                    <label class="flex gap-2 cursor-pointer"><input type="checkbox" id="check_terms" required class="w-4 h-4 mt-1"> <span class="text-sm">I agree to Terms & Conditions.</span></label>
-                    <label class="flex gap-2 cursor-pointer"><input type="checkbox" id="check_privacy" required class="w-4 h-4 mt-1"> <span class="text-sm">I agree to Privacy Policy.</span></label>
-                    <label class="flex gap-2 cursor-pointer"><input type="checkbox" id="check_data" required class="w-4 h-4 mt-1"> <span class="text-sm">I provide consent for data processing.</span></label>
-                    <label class="flex gap-2 cursor-pointer"><input type="checkbox" id="check_age" required class="w-4 h-4 mt-1"> <span class="text-sm font-bold">I confirm that I am 18+ years old.</span></label>
-                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mt-4 text-center">
-                        <p class="text-sm text-yellow-800 font-bold italic">"I confirm that all the information provided is true and valid."</p>
-                    </div>
-                </div>
-
-                <div class="pt-6">
-                    <button type="submit" id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg transition text-lg transform active:scale-[0.99]">
-                        Send Verification Code
-                    </button>
-                </div>
-            </form>
+    <div id="step-2" class="form-section">
+        <label>Store Name *</label>
+        <input type="text" id="storeName" onkeyup="generateSlug()" placeholder="My Tech Store">
+        <small class="error-msg">Required.</small>
+        
+        <label>Store Slug (Auto-generated)</label>
+        <input type="text" id="slug" readonly style="opacity: 0.7; cursor: not-allowed;">
+        
+        <label>Selling Type *</label>
+        <div class="radio-group" id="sellingTypeContainer">
+            <div class="radio-box selected" onclick="selectType('1', this)">Product</div>
+            <div class="radio-box" onclick="selectType('2', this)">Service</div>
+            <div class="radio-box" onclick="selectType('3', this)">Both</div>
         </div>
-    </main>
+        <input type="hidden" id="sellingType" value="1">
 
-    <script>
-        // CONFIGURATION (REPLACE THESE KEYS!)
-   const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_wy4_pxxwFkS63SSL_d5yug_Bgybs85R';
- 
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        lucide.createIcons();
+        <label>PAN Number *</label>
+        <input type="text" id="panNumber" placeholder="ABCDE1234F" maxlength="10" style="text-transform: uppercase;">
+        <small class="error-msg">Valid PAN required.</small>
 
-        // UTILS
-        function togglePassword(id) {
-            const input = document.getElementById(id);
-            input.type = input.type === "password" ? "text" : "password";
-        }
+        <label>Is your Annual Turnover > ₹40 Lakhs?</label>
+        <div class="radio-group">
+            <div class="radio-box" id="gstYes" onclick="toggleGst(true)">Yes</div>
+            <div class="radio-box selected" id="gstNo" onclick="toggleGst(false)">No</div>
+        </div>
+        
+        <div id="gst-container" style="display:none; margin-top: 10px;">
+            <label style="color:var(--accent);">GSTIN Number *</label>
+            <input type="text" id="gstin" placeholder="22AAAAA0000A1Z5" maxlength="15" style="text-transform: uppercase; border-color:var(--accent);">
+            <small class="error-msg">GSTIN is required.</small>
+        </div>
 
-        const form = document.getElementById('regForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const otpModal = document.getElementById('otp-modal');
-        const msgBox = document.getElementById('message-box');
+        <label>Pick up State *</label>
+        <select id="stateSelect" onchange="loadDistricts()"><option value="">Select State</option></select>
+        <small class="error-msg">Required.</small>
+        
+        <label>Pick up District *</label>
+        <select id="districtSelect" onchange="loadSubAreas()"><option value="">Select District</option></select>
+        <small class="error-msg">Required.</small>
+        
+        <label>Pick up Sub Area *</label>
+        <select id="subAreaSelect"><option value="">Select Area</option></select>
+        <small class="error-msg">Required.</small>
 
-        // Global variable to hold data while waiting for OTP
-        let pendingSellerData = {};
+        <div class="btn-group">
+            <button class="btn btn-secondary" onclick="goToStep(1)">Previous</button>
+            <button class="btn btn-primary" onclick="attemptToStep3()">Next Step</button>
+        </div>
+    </div>
 
-        function showError(msg) {
-            msgBox.innerHTML = `⚠️ <strong>Error:</strong> ${msg}`;
-            msgBox.className = "p-4 rounded-lg mb-6 text-sm bg-red-100 text-red-800 border border-red-200";
-            msgBox.classList.remove('hidden');
-            submitBtn.disabled = false;
-            submitBtn.innerText = "Send Verification Code";
-            window.scrollTo(0, 0);
-        }
+    <div id="step-3" class="form-section">
+        <label>Bank Account Holder Name *</label>
+        <input type="text" id="bankHolder" placeholder="Name as per Passbook">
+        <small class="error-msg">Required.</small>
 
-        // --- STEP 1: VALIDATE & SIGN UP (TRIGGER OTP) ---
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            // 1. Password Match & Strength
-            const pass = document.getElementById('password').value;
-            const confirmPass = document.getElementById('confirm_password').value;
-            const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+        <label>Bank Name *</label>
+        <input type="text" id="bankName" placeholder="e.g. HDFC Bank">
+        <small class="error-msg">Required.</small>
 
-            if (!strongRegex.test(pass)) {
-                showError("Password too weak. Min 8 chars, 1 Upper, 1 Lower, 1 Number, 1 Symbol.");
-                return;
-            }
-            if (pass !== confirmPass) {
-                showError("Passwords do not match!");
-                return;
-            }
+        <label>Account Number *</label>
+        <input type="text" id="accountNum" placeholder="Account Number">
+        <small class="error-msg">Required.</small>
 
-            // 2. Basic Validation (Age)
-            const dob = new Date(document.getElementById('dob').value);
+        <label>IFSC Code *</label>
+        <input type="text" id="ifsc" placeholder="HDFC0001234" style="text-transform: uppercase;">
+        <small class="error-msg">Required.</small>
+
+        <div class="checkbox-group">
+            <label><input type="checkbox" id="checkTerms"> I agree to Terms & Conditions</label>
+            <label><input type="checkbox" id="checkValid"> I confirm all information is true</label>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-secondary" onclick="goToStep(2)">Previous</button>
+            <button class="btn btn-primary" onclick="finalSubmit()" id="btn-submit">Initialize Shop</button>
+        </div>
+        <p id="final-message" style="text-align:center; margin-top:15px; font-weight:bold; color: var(--accent);"></p>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dmNndWJicXRjY295Y3ZkdXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODA2MzQsImV4cCI6MjA4MDA1NjYzNH0.7Hobx-emspJQ7HLyjaWR-XQhzk948LWufq3OCimKk4w';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let userEmail = "";
+    let isGstRequired = false;
+
+    // --- SECURITY UTILS ---
+    function escapeHtml(text) {
+        if (!text) return text;
+        return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    // --- STEP 1 LOGIC ---
+    function validateStep1() {
+        let isValid = true;
+        const showError = (id, show) => {
+            const el = document.getElementById(id);
+            const msg = el.nextElementSibling;
+            if(show) { el.classList.add('invalid'); if(msg) msg.style.display = 'block'; isValid = false; }
+            else { el.classList.remove('invalid'); if(msg) msg.style.display = 'none'; }
+        };
+
+        ['firstName', 'lastName', 'gender'].forEach(id => showError(id, !document.getElementById(id).value));
+        const emailVal = document.getElementById('email').value;
+        showError('email', !emailVal.includes('@') || !emailVal.includes('.'));
+        showError('mobile', !/^[0-9]{10}$/.test(document.getElementById('mobile').value));
+
+        const dobVal = document.getElementById('dob').value;
+        if (!dobVal) { showError('dob', true); } 
+        else {
+            const dob = new Date(dobVal);
             const today = new Date();
             let age = today.getFullYear() - dob.getFullYear();
-            const monthDiff = today.getMonth() - dob.getMonth();
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-                age--;
-            }
-            if (age < 18) { 
-                showError("Registration Failed: You must be 18+."); 
-                document.getElementById('age-error').classList.remove('hidden');
-                return; 
+            if (today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())) { age--; }
+            if (age < 18) {
+                document.getElementById('dob').classList.add('invalid');
+                document.getElementById('dobError').style.display = 'block';
+                isValid = false;
             } else {
-                document.getElementById('age-error').classList.add('hidden');
+                document.getElementById('dob').classList.remove('invalid');
+                document.getElementById('dobError').style.display = 'none';
             }
-            
-            // 3. Checkboxes
-            if (!document.getElementById('check_terms').checked || 
-                !document.getElementById('check_privacy').checked ||
-                !document.getElementById('check_data').checked ||
-                !document.getElementById('check_age').checked) {
-                showError("You must agree to all terms and declarations.");
-                return;
-            }
+        }
+        return isValid;
+    }
 
-            const email = document.getElementById('email').value;
+    // --- STEP 2 & GST ---
+    function toggleGst(required) {
+        isGstRequired = required;
+        const container = document.getElementById('gst-container');
+        document.getElementById('gstYes').classList.toggle('selected', required);
+        document.getElementById('gstNo').classList.toggle('selected', !required);
+        container.style.display = required ? 'block' : 'none';
+        if(!required) document.getElementById('gstin').value = "";
+    }
 
-            // 4. Prepare Data
-            pendingSellerData = {
-                email: email,
-                password: pass,
-                full_name: document.getElementById('first_name').value + ' ' + document.getElementById('middle_name').value + ' ' + document.getElementById('last_name').value,
-                shop_name: document.getElementById('store_name').value,
-                pincode: document.getElementById('pincode').value,
-                business_type: document.querySelector('input[name="biz_type"]:checked').value,
-                
-                // Fields
-                mobile_primary: document.getElementById('mobile').value,
-                mobile_whatsapp: document.getElementById('whatsapp').value,
-                mobile_business: document.getElementById('mobile_business').value, 
-                
-                seller_entity_type: document.getElementById('seller_entity_type').value,
-                gstin: document.getElementById('gstin').value,
-                id_type: document.getElementById('id_type').value,
-                id_number: document.getElementById('id_number').value,
-                
-                // Banking
-                bank_holder_name: document.getElementById('bank_holder_name').value,
-                bank_name: document.getElementById('bank_name').value,
-                bank_account_num: document.getElementById('bank_account_num').value,
-                bank_ifsc: document.getElementById('bank_ifsc').value,
+    function validateStep2() {
+        let isValid = true;
+        const showError = (id, show) => {
+            const el = document.getElementById(id);
+            const msg = el.nextElementSibling;
+            if(show) { el.classList.add('invalid'); if(msg) msg.style.display = 'block'; isValid = false; }
+            else { el.classList.remove('invalid'); if(msg) msg.style.display = 'none'; }
+        };
+        showError('storeName', !document.getElementById('storeName').value.trim());
+        showError('panNumber', !document.getElementById('panNumber').value.trim());
+        showError('stateSelect', !document.getElementById('stateSelect').value);
+        showError('districtSelect', !document.getElementById('districtSelect').value);
+        showError('subAreaSelect', !document.getElementById('subAreaSelect').value);
+        if(isGstRequired) showError('gstin', !document.getElementById('gstin').value.trim());
+        return isValid;
+    }
 
-                gender: document.getElementById('gender').value,
-                dob: document.getElementById('dob').value,
-            };
+    function attemptToStep3() {
+        if(validateStep2()) goToStep(3);
+        else alert("Please fill in all required Store Details.");
+    }
 
-            // Remove password from object
-            const { password, ...sellerProfileData } = pendingSellerData;
-            pendingSellerData = sellerProfileData;
-            pendingSellerData.email = email; 
+    // --- STEP 3 LOGIC ---
+    function validateStep3() {
+        let isValid = true;
+        const showError = (id, show) => {
+            const el = document.getElementById(id);
+            const msg = el.nextElementSibling;
+            if(show) { el.classList.add('invalid'); if(msg) msg.style.display = 'block'; isValid = false; }
+            else { el.classList.remove('invalid'); if(msg) msg.style.display = 'none'; }
+        };
+        ['bankHolder', 'bankName', 'accountNum', 'ifsc'].forEach(id => showError(id, !document.getElementById(id).value.trim()));
+        return isValid;
+    }
 
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin inline mr-2"></i> Sending OTP...`;
-            lucide.createIcons();
+    // --- API CALLS ---
+    async function sendOtp() {
+        if (!validateStep1()) return;
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const firstName = document.getElementById('firstName').value;
+        const btn = document.getElementById('btn-send-otp');
+        
+        btn.innerText = "Transmitting...";
+        btn.disabled = true;
 
-            // 5. Trigger Supabase Sign Up (Sends Email)
-            const { data, error } = await supabase.auth.signUp({
-                email: email,
-                password: pass,
-                options: { emailRedirectTo: null }
-            });
-
-            if (error) {
-                showError("Sign Up Error: " + error.message);
-                return;
-            }
-
-            // 6. Show OTP Modal
-            document.getElementById('otp-email-display').innerText = email;
-            otpModal.classList.remove('hidden');
+        // 1. Attempt Sign Up
+        const { data, error } = await sb.auth.signUp({
+            email: email, password: password,
+            options: { data: { full_name: firstName } }
         });
 
-        // --- STEP 2: VERIFY OTP & SAVE DATA ---
-        async function verifyOtpAndRegister() {
-            const otp = document.getElementById('otp_input').value;
-            const verifyBtn = document.getElementById('verifyBtn');
-            
-            verifyBtn.disabled = true;
-            verifyBtn.innerText = "Verifying...";
-
-            const { data, error } = await supabase.auth.verifyOtp({
-                email: pendingSellerData.email,
-                token: otp,
-                type: 'signup'
-            });
-
-            if (error) {
-                alert("Invalid Code: " + error.message);
-                verifyBtn.disabled = false;
-                verifyBtn.innerText = "Verify & Create Account";
+        // 2. INTELLIGENT HANDLER: Check if user actually exists (The "Shadow Login" trick)
+        let userIsDuplicate = false;
+        
+        if (error) {
+            // Explicit error (User Enumeration OFF)
+            if (error.message.includes("already registered") || error.code === "user_already_exists") {
+                userIsDuplicate = true;
+            } else {
+                alert("Error: " + error.message);
+                btn.innerText = "Send Verification Code";
+                btn.disabled = false;
                 return;
             }
+        } else {
+            // "Fake Success" (User Enumeration ON) or Real Success
+            // We differentiate by trying to LOGIN immediately with the password provided.
+            const { data: loginData, error: loginError } = await sb.auth.signInWithPassword({
+                email: email, password: password
+            });
 
-            const { error: dbError } = await supabase.from('sellers').insert([{
-                id: data.user.id,
-                ...pendingSellerData,
-                is_verified: false
-            }]);
-
-            if (dbError) {
-                console.error(dbError);
-                alert("Database Error: " + dbError.message);
-            } else {
-                otpModal.classList.add('hidden');
-                form.innerHTML = `
-                    <div class="text-center py-12">
-                        <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <i data-lucide="check-circle" class="w-10 h-10"></i>
-                        </div>
-                        <h3 class="text-3xl font-bold text-slate-900">Application Submitted!</h3>
-                        <p class="text-slate-500 mt-4 max-w-md mx-auto">Your email is verified. Your Vilarci account is pending Admin Approval.</p>
-                        <a href="login.html" class="inline-block mt-8 bg-slate-900 text-white font-bold py-4 px-10 rounded-xl hover:bg-slate-800 transition shadow-lg">Go to Login</a>
-                    </div>
-                `;
-                lucide.createIcons();
-                window.scrollTo(0, 0);
+            if (loginData?.session) {
+                // If login worked, it means the user was ALREADY verified and existed.
+                // We auto-recover them.
+                alert("Account found! You are already verified. Proceeding...");
+                userEmail = email;
+                goToStep(2);
+                loadStates();
+                return;
+            } else if (loginError && loginError.message.includes("Email not confirmed")) {
+                // User exists but isn't verified. Real OTP was sent.
+                // Proceed normally.
+            } else if (loginError && loginError.message.includes("Invalid login credentials")) {
+                // This implies the user Exists (otherwise signup would have created new) 
+                // BUT the password was wrong? 
+                // OR it's a new user and login failed because unverified?
+                // In any case, we show the OTP box.
             }
         }
 
-        function closeOtp() {
-            otpModal.classList.add('hidden');
-            submitBtn.disabled = false;
-            submitBtn.innerText = "Send Verification Code";
+        if (userIsDuplicate) {
+            // Try to login to see if we can rescue them
+            const { data: loginData } = await sb.auth.signInWithPassword({ email: email, password: password });
+            if (loginData?.session) {
+                alert("Welcome back! Resuming application...");
+                userEmail = email;
+                goToStep(2);
+                loadStates();
+                return;
+            } else {
+                alert("This email is registered. Please check your password or login normally.");
+                window.location.href = "login.html";
+                return;
+            }
         }
-    </script>
+
+        // 3. OTP SENT SUCCESS
+        userEmail = email;
+        document.getElementById('otp-container').style.display = "block";
+        btn.style.display = "none";
+        document.getElementById('email').readOnly = true;
+        document.getElementById('password').readOnly = true;
+        document.getElementById('email').style.opacity = "0.7";
+        startResendTimer();
+    }
+
+    // --- RESEND OTP LOGIC ---
+    async function resendOtp() {
+        const link = document.getElementById('resendBtn');
+        if(link.classList.contains('disabled')) return;
+
+        link.innerText = "Sending...";
+        link.classList.add('disabled');
+
+        const { error } = await sb.auth.resend({ type: 'signup', email: userEmail });
+        
+        if (error) {
+            alert("Resend Failed: " + error.message);
+            link.innerText = "Resend now";
+            link.classList.remove('disabled');
+        } else {
+            alert("New code sent to " + userEmail);
+            startResendTimer();
+        }
+    }
+
+    function startResendTimer() {
+        const link = document.getElementById('resendBtn');
+        const timerSpan = document.getElementById('timer');
+        let timeLeft = 30;
+        
+        link.classList.add('disabled');
+        link.innerText = "Resend now";
+        
+        const interval = setInterval(() => {
+            timeLeft--;
+            timerSpan.innerText = `(${timeLeft}s)`;
+            if(timeLeft <= 0) {
+                clearInterval(interval);
+                timerSpan.innerText = "";
+                link.classList.remove('disabled');
+            }
+        }, 1000);
+    }
+
+    async function verifyOtp() {
+        const otp = document.getElementById('otpInput').value.trim();
+        const btn = document.getElementById('btn-verify');
+        btn.innerText = "Verifying...";
+        
+        const { data, error } = await sb.auth.verifyOtp({ email: userEmail, token: otp, type: 'signup' });
+        
+        if (error) {
+            alert("Invalid Code: " + error.message);
+            btn.innerText = "Verify Identity";
+        } else {
+            alert("Identity Verified Successfully.");
+            goToStep(2);
+            loadStates(); 
+        }
+    }
+
+    async function finalSubmit() {
+        if (!validateStep3()) { alert("Please fill in Bank Details."); return; }
+        if(!document.getElementById('checkTerms').checked) return alert("Please accept Terms & Conditions");
+        if(!document.getElementById('checkValid').checked) return alert("Please confirm information is true");
+
+        const btn = document.getElementById('btn-submit');
+        btn.innerText = "Processing...";
+        btn.disabled = true;
+
+        const payload = {
+            _first_name: escapeHtml(document.getElementById('firstName').value),
+            _last_name: escapeHtml(document.getElementById('lastName').value),
+            _gender: document.getElementById('gender').value,
+            _dob: document.getElementById('dob').value,
+            _mobile: document.getElementById('mobile').value,
+            _pan_number: escapeHtml(document.getElementById('panNumber').value),
+            _shop_slug: escapeHtml(document.getElementById('storeName').value),
+            _slug: document.getElementById('slug').value,
+            _selling_type: document.getElementById('sellingType').value,
+            _state_id: parseInt(document.getElementById('stateSelect').value) || 0,
+            _district_id: parseInt(document.getElementById('districtSelect').value) || 0,
+            _sub_area_id: parseInt(document.getElementById('subAreaSelect').value) || 0,
+            _gstin: isGstRequired ? escapeHtml(document.getElementById('gstin').value) : '',
+            _bank_holder: escapeHtml(document.getElementById('bankHolder').value),
+            _bank_name: escapeHtml(document.getElementById('bankName').value),
+            _account_num: escapeHtml(document.getElementById('accountNum').value),
+            _ifsc: escapeHtml(document.getElementById('ifsc').value),
+            _location_link: '',
+            _shop_direction: ''
+        };
+
+        const { data, error } = await sb.rpc('register_new_seller', payload);
+
+        if (error) {
+            console.error(error);
+            alert("Registration Failed: " + error.message);
+            btn.innerText = "Initialize Shop";
+            btn.disabled = false;
+        } else {
+            alert("SUCCESS! Account Created. Redirecting to Login...");
+            document.getElementById('final-message').innerText = "Seller Nexus ID: " + data;
+            document.querySelectorAll('input, button, select').forEach(el => el.disabled = true);
+            setTimeout(() => window.location.href = 'login.html', 2000);
+        }
+    }
+
+    // --- NAVIGATION & UTILS ---
+    function safeGoToStep(targetStep) {
+        const currentStep = getCurrentStep();
+        if (targetStep < currentStep) { goToStep(targetStep); return; }
+        if (targetStep > 1) {
+            if(!userEmail) { alert("Please complete Identity Verification first."); return; }
+            if(!validateStep1()) return;
+        }
+        if (targetStep > 2) {
+            if(!validateStep2()) { alert("Please complete Store Details first."); return; }
+        }
+        goToStep(targetStep);
+    }
+    function getCurrentStep() {
+        if(document.getElementById('step-3').classList.contains('active')) return 3;
+        if(document.getElementById('step-2').classList.contains('active')) return 2;
+        return 1;
+    }
+    function goToStep(step) {
+        document.querySelectorAll('.form-section').forEach(el => el.classList.remove('active'));
+        document.getElementById('step-' + step).classList.add('active');
+        document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+        for(let i=1; i<=step; i++) document.getElementById('indicator-' + i).classList.add('active');
+    }
+    function generateSlug() {
+        const name = document.getElementById('storeName').value;
+        document.getElementById('slug').value = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+    }
+    function selectType(val, el) {
+        document.getElementById('sellingType').value = val;
+        document.querySelectorAll('#sellingTypeContainer .radio-box').forEach(b => b.classList.remove('selected'));
+        el.classList.add('selected');
+    }
+    async function loadStates() {
+        const { data } = await sb.from('shop_pickup_address').select('*').eq('location_type', 'STATE');
+        const sel = document.getElementById('stateSelect');
+        sel.innerHTML = '<option value="">Select State</option>';
+        if(data) data.forEach(item => sel.innerHTML += `<option value="${item.id}">${item.location_name}</option>`);
+    }
+    async function loadDistricts() {
+        const parentId = document.getElementById('stateSelect').value;
+        const { data } = await sb.from('shop_pickup_address').select('*').eq('parent_id', parentId);
+        const sel = document.getElementById('districtSelect');
+        sel.innerHTML = '<option value="">Select District</option>';
+        if(data) data.forEach(item => sel.innerHTML += `<option value="${item.id}">${item.location_name}</option>`);
+    }
+    async function loadSubAreas() {
+        const parentId = document.getElementById('districtSelect').value;
+        const { data } = await sb.from('shop_pickup_address').select('*').eq('parent_id', parentId);
+        const sel = document.getElementById('subAreaSelect');
+        sel.innerHTML = '<option value="">Select Area</option>';
+        if(data) data.forEach(item => sel.innerHTML += `<option value="${item.id}">${item.location_name}</option>`);
+    }
+</script>
 </body>
 </html>

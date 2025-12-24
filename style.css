@@ -202,7 +202,7 @@ header{
     .panel {
       height: 50px;
       width: 100%;
-      background:linear-gradient(180deg, #f72585, #5d0b94);
+      background: #830636;
       color: #fdfdfb;
       display: flex;
       align-items: center;

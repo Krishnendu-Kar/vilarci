@@ -184,85 +184,130 @@
 
             </div>
         </div>
-    </main>
+    </main>                    
+
 
     <script>
-        // CONFIGURATION
-  const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_wy4_pxxwFkS63SSL_d5yug_Bgybs85R';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // ==========================================
+        // 1. CONFIGURATION
+        // ==========================================
+        const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
+        
+        // ⚠️ CRITICAL: Replace this with your actual anon key from Supabase Settings (starts with eyJ...)
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dmNndWJicXRjY295Y3ZkdXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODA2MzQsImV4cCI6MjA4MDA1NjYzNH0.7Hobx-emspJQ7HLyjaWR-XQhzk948LWufq3OCimKk4w';
+        
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         lucide.createIcons();
 
-        // --- AUTH CHECK & DATA FETCH ---
+        // ==========================================
+        // 2. PROFILE LOGIC
+        // ==========================================
         async function initProfile() {
-            // 1. Check Login
-            const { data: { session } } = await supabase.auth.getSession();
-            
-            if (!session) {
-                window.location.href = 'login.html';
-                return;
+            try {
+                // A. Check Auth Session
+                const { data: { session }, error: authError } = await supabaseClient.auth.getSession();
+                
+                if (authError || !session) {
+                    console.warn("No active session found. Redirecting to login...");
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                // B. Fetch Seller Data
+                // We select specific columns to ensure we aren't guessing
+                const { data: seller, error: dbError } = await supabaseClient
+                    .from('sellers_private_089')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (dbError) {
+                    console.error("Database Error:", dbError);
+                    throw new Error("Could not load seller profile. (Check RLS Policies)");
+                }
+
+                console.log("Seller Data Loaded:", seller);
+
+                // C. Fetch Product Count
+                // Assumes 'seller_id' in products table matches 'seller_numeric_id'
+                let productCount = 0;
+                if (seller.seller_numeric_id) {
+                    const { count, error: countError } = await supabaseClient
+                        .from('products')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('seller_id', seller.seller_numeric_id);
+                    
+                    if (!countError) productCount = count;
+                    else console.warn("Product count error:", countError);
+                }
+
+                // ==========================================
+                // 3. POPULATE UI
+                // ==========================================
+                
+                // --- Header Stats ---
+                // FIX: Changed 'store_name' to 'shop_name' to match Login page logic
+                document.getElementById('shop_name').innerText = seller.shop_name || "Vilarci Shop";
+                document.getElementById('full_name').innerText = `${seller.first_name || ''} ${seller.last_name || ''}`;
+                document.getElementById('seller_id').innerText = seller.seller_numeric_id || "ERR";
+                document.getElementById('product_count').innerText = productCount;
+
+                // --- Verification Badge ---
+                const badge = document.getElementById('status_badge');
+                if (seller.is_verified) {
+                    badge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-green-100 text-green-700 border border-green-200";
+                    badge.innerText = "Verified Partner";
+                } else {
+                    badge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-yellow-100 text-yellow-700 border border-yellow-200";
+                    badge.innerText = "Pending Verification";
+                }
+
+                // --- Contact Details ---
+                // Fallback to "N/A" if data is missing
+                document.getElementById('email').innerText = session.user.email;
+                document.getElementById('mobile').innerText = seller.mobile_number || "N/A";
+                document.getElementById('whatsapp').innerText = seller.whatsapp_number || "N/A"; 
+
+                // --- Bank Details ---
+                document.getElementById('bank_name').innerText = seller.bank_name || "Not Added";
+                document.getElementById('bank_ifsc').innerText = seller.ifsc_code || "N/A";
+                
+                const acc = seller.bank_account_number;
+                document.getElementById('bank_acc').innerText = acc ? acc.slice(-4) : "0000";
+
+                // --- Business Profile ---
+                document.getElementById('entity_type').innerText = seller.entity_type || "Individual/Proprietor";
+                document.getElementById('gstin').innerText = seller.gstin || "Not Applicable";
+                
+                // Logic for ID Proof
+                if(seller.pan_number) {
+                    document.getElementById('id_type').innerText = "PAN Card";
+                    document.getElementById('id_number').innerText = seller.pan_number;
+                } else {
+                    document.getElementById('id_type').innerText = "Not Submitted";
+                    document.getElementById('id_number').innerText = "---";
+                }
+
+                document.getElementById('pincode').innerText = seller.pincode || "N/A";
+                document.getElementById('biz_type').innerText = "Retailer";
+
+                // Show Content
+                document.getElementById('loader').classList.add('hidden');
+                document.getElementById('dashboard-content').classList.remove('hidden');
+
+            } catch (err) {
+                alert("Error: " + err.message);
+                console.error(err);
             }
-
-            // 2. Fetch Seller Data
-            const { data: seller, error } = await supabase
-                .from('sellers')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-
-            if (error) {
-                alert("Error loading profile: " + error.message);
-                return;
-            }
-
-            // 3. Fetch PRODUCT COUNT (New Logic)
-            const { count, error: countError } = await supabase
-                .from('products')
-                .select('*', { count: 'exact', head: true })
-                .eq('seller_id', seller.seller_numeric_id);
-            
-            if (!countError) {
-                document.getElementById('product_count').innerText = count || 0;
-            }
-
-            // 4. Populate UI (Existing logic)
-            document.getElementById('shop_name').innerText = seller.shop_name;
-            document.getElementById('full_name').innerText = seller.full_name;
-            document.getElementById('seller_id').innerText = seller.seller_numeric_id;
-            document.getElementById('biz_type').innerText = seller.business_type;
-            document.getElementById('pincode').innerText = seller.pincode;
-            
-            const badge = document.getElementById('status_badge');
-            if (seller.is_verified) {
-                badge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-green-100 text-green-700 border border-green-200";
-                badge.innerText = "Verified Partner";
-            } else {
-                badge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-yellow-100 text-yellow-700 border border-yellow-200";
-                badge.innerText = "Pending Verification";
-            }
-
-            document.getElementById('email').innerText = seller.email;
-            document.getElementById('mobile').innerText = seller.mobile_primary;
-            document.getElementById('whatsapp').innerText = seller.mobile_whatsapp;
-            document.getElementById('bank_name').innerText = seller.bank_name;
-            document.getElementById('bank_ifsc').innerText = seller.bank_ifsc;
-            const acc = seller.bank_account_num;
-            document.getElementById('bank_acc').innerText = acc ? acc.slice(-4) : "N/A";
-            document.getElementById('entity_type').innerText = seller.seller_entity_type;
-            document.getElementById('gstin').innerText = seller.gstin || "Not Provided";
-            document.getElementById('id_type').innerText = seller.id_type;
-            document.getElementById('id_number').innerText = seller.id_number;
-
-            document.getElementById('loader').classList.add('hidden');
-            document.getElementById('dashboard-content').classList.remove('hidden');
         }
 
         async function logout() {
-            await supabase.auth.signOut();
+            await supabaseClient.auth.signOut();
             sessionStorage.clear();
             window.location.href = 'login.html';
         }
 
+        // Run
         initProfile();
     </script>
 </body>

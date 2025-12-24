@@ -104,115 +104,74 @@
         </p>
     </div>
 
-    <script>
-        // ==========================================
-        // 1. CONFIGURATION (REPLACE THESE KEYS!)
-        // ==========================================
-        const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_wy4_pxxwFkS63SSL_d5yug_Bgybs85R';
+   <script>
+    // 1. CONFIGURATION
+    const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dmNndWJicXRjY295Y3ZkdXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODA2MzQsImV4cCI6MjA4MDA1NjYzNH0.7Hobx-emspJQ7HLyjaWR-XQhzk948LWufq3OCimKk4w';
+
+    // FIX: Renamed to 'supabaseClient' to avoid name conflict
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    lucide.createIcons();
+
+    // 2. DOM ELEMENTS
+    const form = document.getElementById('loginForm');
+    const btn = document.getElementById('loginBtn');
+    const alertBox = document.getElementById('alert-box');
+    const alertTitle = document.getElementById('alert-title');
+    const alertMsg = document.getElementById('alert-msg');
+
+    function togglePassword() {
+        const input = document.getElementById('password');
+        input.type = input.type === "password" ? "text" : "password";
+    }
+
+    // 3. LOGIN LOGIC
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault(); // FIX: Stops page reload
         
-  
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        
-        // Initialize Icons
-        lucide.createIcons();
+        btn.disabled = true;
+        btn.innerText = "Verifying...";
+        alertBox.classList.add('hidden');
 
-        // ==========================================
-        // 2. DOM ELEMENTS & UTILS
-        // ==========================================
-        const form = document.getElementById('loginForm');
-        const alertBox = document.getElementById('alert-box');
-        const alertTitle = document.getElementById('alert-title');
-        const alertMsg = document.getElementById('alert-msg');
-        const btn = document.getElementById('loginBtn');
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
 
-        function togglePassword() {
-            const input = document.getElementById('password');
-            input.type = input.type === "password" ? "text" : "password";
-        }
+        try {
+            // A. Authenticate
+            const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
 
-        function showAlert(title, msg, type = 'error') {
-            alertTitle.innerText = title;
-            alertMsg.innerHTML = msg; 
-            
-            if(type === 'error') {
-                alertBox.className = "rounded-lg bg-red-50 p-4 mb-6 border border-red-100 flex animate-pulse";
-                alertTitle.className = "text-sm font-bold text-red-800";
-                alertMsg.className = "mt-1 text-sm text-red-700 leading-relaxed";
-            } else {
-                alertBox.className = "rounded-lg bg-blue-50 p-4 mb-6 border border-blue-100 flex";
-                alertTitle.className = "text-sm font-bold text-blue-800";
-                alertMsg.className = "mt-1 text-sm text-blue-700 leading-relaxed";
+            if (authError) throw new Error("Invalid email or password.");
+
+            // B. Get Profile
+            const { data: seller, error: dbError } = await supabaseClient
+                .from('sellers_private_089')
+                .select('seller_numeric_id, is_verified, first_name, store_name')
+                .eq('id', authData.user.id)
+                .single();
+
+            if (dbError) throw new Error("Login successful, but profile not found.");
+
+            // C. Check Verification
+            if (!seller.is_verified) {
+                await supabaseClient.auth.signOut();
+                throw new Error("Account pending approval.");
             }
+
+            // D. Success
+            sessionStorage.setItem('vilarci_seller_id', seller.seller_numeric_id);
+            window.location.href = 'seller_profile.html';
+
+        } catch (err) {
+            btn.disabled = false;
+            btn.innerText = "Sign In";
+            alertTitle.innerText = "Login Failed";
+            alertMsg.innerText = err.message;
             alertBox.classList.remove('hidden');
         }
-
-        function resetBtn() {
-            btn.disabled = false;
-            btn.innerHTML = "Sign In";
-        }
-
-        // ==========================================
-        // 4. LOGIN LOGIC
-        // ==========================================
-        
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            btn.disabled = true;
-            btn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Verifying Credentials...`;
-            alertBox.classList.add('hidden');
-
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-
-            try {
-                // STEP A: Authenticate
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
-
-                if (error) throw new Error("Invalid email or password.");
-
-                // STEP B: Check Seller Profile Status
-                const userId = data.user.id;
-                
-                const { data: seller, error: dbError } = await supabase
-                    .from('sellers')
-                    .select('seller_numeric_id, is_verified, full_name, shop_name')
-                    .eq('id', userId)
-                    .single();
-
-                if (dbError || !seller) {
-                    throw new Error("Login successful, but Seller Profile is missing. Please contact support.");
-                }
-
-                // STEP C: Verification Gate
-                if (seller.is_verified === false) {
-                    await supabase.auth.signOut(); 
-                    showAlert(
-                        "Account Pending Approval", 
-                        `Welcome back, <b>${seller.full_name}</b>.<br>Your account for <b>${seller.shop_name}</b> is currently under review by the Vilarci Admin Team.<br><br>Please check back later or contact support.`,
-                        'pending'
-                    );
-                    resetBtn();
-                    return;
-                }
-
-                // STEP D: Success!
-                sessionStorage.setItem('vilarci_seller_id', seller.seller_numeric_id);
-                sessionStorage.setItem('vilarci_seller_name', seller.full_name);
-                sessionStorage.setItem('vilarci_shop_name', seller.shop_name);
-                
-                // REDIRECT TO PROFILE PAGE (Updated)
-                window.location.href = 'seller_profile.html';
-
-            } catch (err) {
-                showAlert("Access Denied", err.message);
-                resetBtn();
-            }
-        });
-    </script>
+    });
+</script>
 </body>
 </html>
