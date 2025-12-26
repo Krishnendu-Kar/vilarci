@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service List - Vilarci</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col">
+
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 h-16 flex items-center justify-between px-4 lg:px-8">
+        <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='services.html'">
+            <div class="bg-indigo-600 text-white font-bold text-xl px-2 py-1 rounded">V</div>
+            <span class="text-2xl font-extrabold text-indigo-900 tracking-tight">Vilarci</span>
+        </div>
+        <button id="menu-btn" class="lg:hidden p-2 text-slate-500"><i data-lucide="menu" class="w-6 h-6"></i></button>
+    </nav>
+
+    <div class="flex max-w-7xl mx-auto w-full flex-grow">
+        
+        <aside id="sidebar" class="hidden lg:block w-64 bg-white border-r border-slate-200 flex-shrink-0 h-[calc(100vh-64px)] sticky top-16 overflow-y-auto">
+            <div class="p-4 border-b border-slate-100">
+                <h2 class="font-bold text-slate-900">Categories</h2>
+            </div>
+            <div id="sidebar-container">
+                <div class="p-4 text-slate-400 text-sm">Loading categories...</div>
+            </div>
+        </aside>
+
+        <main class="flex-1 p-4 sm:p-6 lg:p-8">
+            <div class="flex justify-between items-end mb-6">
+                <div>
+                    <span class="text-xs font-bold text-indigo-600 uppercase tracking-wide">Filtered Results</span>
+                    <h1 id="page-title" class="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">Services</h1>
+                </div>
+            </div>
+
+            <div id="services-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                </div>
+
+            <div id="loading-trigger" class="py-12 flex justify-center w-full">
+                <div id="spinner" class="animate-spin rounded-full h-10 w-10 border-4 border-indigo-100 border-t-indigo-600"></div>
+                <p id="end-message" class="hidden text-slate-400 text-sm font-medium">No more services found.</p>
+            </div>
+        </main>
+    </div>
+
+    <script src="service_sidebar.js"></script>
+
+    <script>
+        // 1. CONFIGURATION
+        const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dmNndWJicXRjY295Y3ZkdXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODA2MzQsImV4cCI6MjA4MDA1NjYzNH0.7Hobx-emspJQ7HLyjaWR-XQhzk948LWufq3OCimKk4w'; 
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Initialize Sidebar
+        initSidebar(supabaseClient);
+        lucide.createIcons();
+
+        // 2. PARSE URL PARAMETERS
+        const urlParams = new URLSearchParams(window.location.search);
+        const categoryId = urlParams.get('category_id');
+        const subId = urlParams.get('sub_id');
+
+        // 3. PAGINATION STATE
+        let loadedCount = 0;
+        let isLoading = false;
+        let allLoaded = false;
+        const INITIAL_BATCH = 25;
+        const NEXT_BATCH = 14;
+
+        // 4. SMART DB FETCHING (Server-Side Filtering)
+        async function loadFilteredServices() {
+            if (isLoading || allLoaded) return;
+            isLoading = true;
+
+            const limit = loadedCount === 0 ? INITIAL_BATCH : NEXT_BATCH;
+            const from = loadedCount;
+            const to = from + limit - 1;
+
+            // Start Building the Query
+            let query = supabaseClient
+                .from('services')
+                .select('name, slug, price, normal_price, image_url, badge_label, duration_minutes')
+                .eq('is_active', true) // Security First
+                .range(from, to)
+                .order('id', { ascending: true });
+
+            // Apply Filters (The "Brilliant" Part)
+            // We modify the query BEFORE sending it to Supabase
+            if (categoryId) {
+                query = query.eq('service_category_id', categoryId);
+                document.getElementById('page-title').innerText = "Category Results";
+            } 
+            else if (subId) {
+                query = query.eq('service_sub_category_id', subId);
+                document.getElementById('page-title').innerText = "Sub-Category Results";
+            }
+
+            // Execute Query
+            const { data, error } = await query;
+
+            if (error) {
+                console.error("Fetch Error:", error);
+                isLoading = false;
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                allLoaded = true;
+                document.getElementById('spinner').classList.add('hidden');
+                document.getElementById('end-message').classList.remove('hidden');
+                if (loadedCount === 0) document.getElementById('end-message').innerText = "No services found in this category.";
+                isLoading = false;
+                return;
+            }
+
+            renderCards(data);
+            loadedCount += data.length;
+            isLoading = false;
+
+            if (data.length < limit) {
+                allLoaded = true;
+                document.getElementById('spinner').classList.add('hidden');
+                document.getElementById('end-message').classList.remove('hidden');
+            }
+        }
+
+        // 5. RENDER CARDS (Same professional design as main page)
+        function renderCards(services) {
+            const grid = document.getElementById('services-grid');
+            services.forEach(svc => {
+                const card = document.createElement('div');
+                card.className = "bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-lg transition cursor-pointer flex flex-col h-full";
+                card.onclick = () => window.location.href = `service_details.html?slug=${svc.slug}`;
+
+                const imgUrl = svc.image_url || 'https://placehold.co/600x400?text=Vilarci';
+                let priceHtml = `<span class="text-lg font-bold text-slate-900">₹${svc.price}</span>`;
+                if (svc.normal_price && svc.normal_price > svc.price) {
+                    priceHtml += `<span class="ml-2 text-sm text-slate-400 line-through">₹${svc.normal_price}</span>`;
+                }
+
+                card.innerHTML = `
+                    <div class="relative aspect-[4/3] bg-slate-100">
+                        <img src="${imgUrl}" class="w-full h-full object-cover">
+                        ${svc.badge_label ? `<span class="absolute top-2 left-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow">${svc.badge_label}</span>` : ''}
+                    </div>
+                    <div class="p-4 flex flex-col flex-grow">
+                        <h3 class="font-bold text-slate-900 mb-1 line-clamp-1">${svc.name}</h3>
+                        <div class="flex items-center gap-2 text-xs text-slate-500 mb-4">
+                            <i data-lucide="clock" class="w-3 h-3"></i> ${svc.duration_minutes || 60} mins
+                        </div>
+                        <div class="mt-auto flex items-center justify-between">
+                            ${priceHtml}
+                            <button class="bg-indigo-50 text-indigo-600 p-2 rounded-lg hover:bg-indigo-100"><i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        // Mobile Menu Toggle
+        document.getElementById('menu-btn').onclick = () => {
+            document.getElementById('sidebar').classList.toggle('hidden');
+            document.getElementById('sidebar').classList.toggle('fixed');
+            document.getElementById('sidebar').classList.toggle('inset-0');
+            document.getElementById('sidebar').classList.toggle('z-40');
+            document.getElementById('sidebar').classList.toggle('w-full');
+        }
+
+        // Infinite Scroll Observer
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) loadFilteredServices();
+        }, { rootMargin: '100px' });
+        
+        observer.observe(document.getElementById('loading-trigger'));
+
+    </script>
+</body>
+</html>

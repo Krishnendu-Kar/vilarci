@@ -147,6 +147,16 @@
                             <p class="text-[10px] text-slate-400 mt-1">Click to Manage</p>
                         </div>
 
+                        <div onclick="window.location.href='seller_service_manage.html'" class="cursor-pointer bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-500 hover:shadow-md hover:bg-indigo-50 transition group">
+                                <div class="flex justify-between items-start">
+                                    <p class="text-slate-400 text-xs uppercase font-bold group-hover:text-indigo-500">Total Services</p>
+                                    <i data-lucide="wrench" class="w-4 h-4 text-slate-300 group-hover:text-indigo-500"></i>
+                                </div>
+                                <p class="text-3xl font-bold text-slate-800 mt-2 group-hover:text-indigo-700" id="service_count">0</p>
+                                <p class="text-[10px] text-slate-400 mt-1">Click to Manage</p>
+                        </div>
+
+
                         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-200 transition">
                             <p class="text-slate-400 text-xs uppercase font-bold">Total Orders</p>
                             <p class="text-3xl font-bold text-slate-800 mt-2">0</p>
@@ -241,6 +251,17 @@
                     else console.warn("Product count error:", countError);
                 }
 
+                let serviceCount = 0;
+                if (seller.seller_numeric_id) {
+                    const { count, error: serviceError } = await supabaseClient
+                        .from('services')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('seller_id', seller.seller_numeric_id);
+                    
+                    if (!serviceError) serviceCount = count || 0;
+                    else console.warn("Service count error:", serviceError);
+                }
+
                 // ==========================================
                 // 3. POPULATE UI
                 // ==========================================
@@ -251,7 +272,8 @@
                 document.getElementById('full_name').innerText = `${seller.first_name || ''} ${seller.last_name || ''}`;
                 document.getElementById('seller_id').innerText = seller.seller_numeric_id || "ERR";
                 document.getElementById('product_count').innerText = productCount;
-
+                document.getElementById('service_count').innerText = serviceCount; 
+                
                 // --- Verification Badge ---
                 const badge = document.getElementById('status_badge');
                 if (seller.is_verified) {

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Details - Vilarci</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col">
+
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='index.html'">
+                    <div class="bg-indigo-600 text-white font-bold text-xl px-2 py-1 rounded">V</div>
+                    <div class="text-2xl font-extrabold text-indigo-900 tracking-tight">Vilarci</div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button class="p-2 text-slate-400 hover:text-indigo-600 transition"><i data-lucide="search" class="w-5 h-5"></i></button>
+                    <button class="p-2 text-slate-400 hover:text-indigo-600 transition"><i data-lucide="shopping-bag" class="w-5 h-5"></i></button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+        
+        <div id="loader" class="flex justify-center items-center h-64">
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-100 border-t-indigo-600"></div>
+        </div>
+
+        <div id="error-container" class="hidden flex flex-col items-center justify-center py-20 text-center">
+            <div class="bg-red-50 text-red-500 p-4 rounded-full mb-4"><i data-lucide="alert-triangle" class="w-8 h-8"></i></div>
+            <h2 class="text-2xl font-bold text-slate-900">Service Not Found</h2>
+            <p class="text-slate-500 mt-2">The service you requested does not exist or has been removed.</p>
+            <a href="index.html" class="mt-6 text-indigo-600 font-bold hover:underline">Go Back Home</a>
+        </div>
+
+        <div id="content" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+            
+            <div class="lg:col-span-8 space-y-8">
+                
+                <div class="relative aspect-video w-full bg-slate-200 rounded-2xl overflow-hidden shadow-sm border border-slate-200">
+                    <img id="svc-image" src="" alt="Service Cover" class="w-full h-full object-cover hidden">
+                    
+                    <div id="svc-icon-container" class="w-full h-full flex items-center justify-center bg-slate-100 hidden">
+                        <span id="svc-icon" class="text-8xl"></span>
+                    </div>
+
+                    <div id="svc-badge" class="absolute top-4 left-4 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide hidden shadow-lg">
+                        Recommended
+                    </div>
+                </div>
+
+                <div>
+                    <h1 id="svc-title" class="text-3xl sm:text-4xl font-extrabold text-slate-900 leading-tight mb-3">...</h1>
+                    
+                    <div class="flex flex-wrap items-center gap-4 text-sm text-slate-600">
+                        <div class="flex items-center gap-1 bg-slate-100 px-3 py-1 rounded-full">
+                            <i data-lucide="clock" class="w-4 h-4 text-indigo-600"></i>
+                            <span id="svc-duration">60 mins</span>
+                        </div>
+                        <div class="flex items-center gap-1 bg-slate-100 px-3 py-1 rounded-full">
+                            <i data-lucide="clock-4" class="w-4 h-4 text-indigo-600"></i>
+                            <span id="svc-hours">09:00 AM - 06:00 PM</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="prose prose-slate max-w-none border-t border-slate-100 pt-6">
+                    <h3 class="text-lg font-bold text-slate-900 mb-2">About this Service</h3>
+                    <p id="svc-desc" class="text-slate-600 leading-relaxed whitespace-pre-line">...</p>
+                </div>
+
+                <div id="highlights-section" class="hidden border-t border-slate-100 pt-6">
+                    <h3 class="text-lg font-bold text-slate-900 mb-4">Service Highlights</h3>
+                    <ul id="svc-highlights" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        </ul>
+                </div>
+
+                <div id="results-section" class="hidden border-t border-slate-100 pt-6">
+                    <h3 class="text-lg font-bold text-slate-900 mb-4">What to Expect</h3>
+                    <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-6">
+                        <ul id="svc-results" class="space-y-3">
+                            </ul>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="lg:col-span-4">
+                <div class="sticky top-24 bg-white rounded-2xl shadow-xl shadow-indigo-100/50 border border-slate-200 p-6">
+                    
+                    <div class="mb-6">
+                        <p class="text-sm text-slate-500 font-medium mb-1">Total Price</p>
+                        <div class="flex items-baseline gap-3">
+                            <span id="svc-price" class="text-4xl font-extrabold text-slate-900">₹0</span>
+                            <span id="svc-normal-price" class="text-lg text-slate-400 line-through decoration-2 hidden">₹0</span>
+                            <span id="svc-discount" class="text-sm font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded hidden">0% OFF</span>
+                        </div>
+                    </div>
+
+                    <button id="book-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-bold py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all transform active:scale-95 flex justify-center items-center gap-2 mb-3">
+                        Book Now <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                    </button>
+                    
+                    <p class="text-center text-xs text-slate-400 flex justify-center items-center gap-1">
+                        <i data-lucide="shield-check" class="w-3 h-3"></i> Secure booking protected by Vilarci
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // ==========================================
+        // 1. CONFIGURATION
+        // ==========================================
+        const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dmNndWJicXRjY295Y3ZkdXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODA2MzQsImV4cCI6MjA4MDA1NjYzNH0.7Hobx-emspJQ7HLyjaWR-XQhzk948LWufq3OCimKk4w'; 
+        
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        lucide.createIcons();
+
+        // ==========================================
+        // 2. FETCH LOGIC
+        // ==========================================
+        async function initPage() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const slug = urlParams.get('slug'); 
+
+            if (!slug) {
+                showError();
+                return;
+            }
+
+            // QUERY UPDATED TO MATCH YOUR NEW TABLE SCHEMA
+            const { data: service, error } = await supabaseClient
+                .from('services')
+                .select(`
+                    id, 
+                    name, 
+                    slug, 
+                    description, 
+                    price, 
+                    normal_price, 
+                    duration_minutes, 
+                    image_url, 
+                    icon, 
+                    badge_label, 
+                    opening_time, 
+                    closing_time, 
+                    highlights, 
+                    results
+                `)
+                .eq('slug', slug)
+                .eq('is_active', true) // Only show active services
+                .single();
+
+            if (error || !service) {
+                console.error("Supabase Error:", error);
+                showError();
+                return;
+            }
+
+            renderService(service);
+        }
+
+        // ==========================================
+        // 3. RENDER LOGIC
+        // ==========================================
+        function renderService(service) {
+            
+            // A. Basic Info
+            document.getElementById('svc-title').innerText = service.name;
+            document.getElementById('svc-desc').innerText = service.description || "No description provided.";
+            document.getElementById('svc-duration').innerText = (service.duration_minutes || 60) + " mins";
+
+            // B. Pricing Logic
+            const price = parseFloat(service.price);
+            const normalPrice = service.normal_price ? parseFloat(service.normal_price) : null;
+            
+            document.getElementById('svc-price').innerText = '₹' + price;
+
+            if (normalPrice && normalPrice > price) {
+                // Show MRP and Discount
+                document.getElementById('svc-normal-price').innerText = '₹' + normalPrice;
+                document.getElementById('svc-normal-price').classList.remove('hidden');
+                
+                // Calculate % off
+                const discount = Math.round(((normalPrice - price) / normalPrice) * 100);
+                const discountEl = document.getElementById('svc-discount');
+                discountEl.innerText = discount + '% OFF';
+                discountEl.classList.remove('hidden');
+            }
+
+            // C. Images vs Icons
+            const imgEl = document.getElementById('svc-image');
+            const iconContainer = document.getElementById('svc-icon-container');
+            const iconEl = document.getElementById('svc-icon');
+
+            if (service.image_url) {
+                imgEl.src = service.image_url;
+                imgEl.classList.remove('hidden');
+                iconContainer.classList.add('hidden');
+            } else {
+                iconEl.innerText = service.icon || '🛠️';
+                imgEl.classList.add('hidden');
+                iconContainer.classList.remove('hidden');
+            }
+
+            // D. Badge Label
+            if (service.badge_label) {
+                const badgeEl = document.getElementById('svc-badge');
+                badgeEl.innerText = service.badge_label;
+                badgeEl.classList.remove('hidden');
+            }
+
+            // E. Operational Hours
+            if (service.opening_time && service.closing_time) {
+                // Formatting time strings (simple slice, you can use a library for better AM/PM)
+                const start = service.opening_time.slice(0, 5);
+                const end = service.closing_time.slice(0, 5);
+                document.getElementById('svc-hours').innerText = `${start} - ${end}`;
+            }
+
+            // F. Highlights (Array)
+            if (service.highlights && service.highlights.length > 0) {
+                const list = document.getElementById('svc-highlights');
+                document.getElementById('highlights-section').classList.remove('hidden');
+                
+                service.highlights.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = "flex items-start gap-2 text-sm text-slate-700";
+                    li.innerHTML = `<i data-lucide="check-circle-2" class="w-5 h-5 text-green-500 shrink-0"></i> <span>${item}</span>`;
+                    list.appendChild(li);
+                });
+            }
+
+            // G. Results (Array)
+            if (service.results && service.results.length > 0) {
+                const list = document.getElementById('svc-results');
+                document.getElementById('results-section').classList.remove('hidden');
+
+                service.results.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = "flex items-start gap-3 text-slate-700";
+                    li.innerHTML = `<span class="bg-indigo-100 text-indigo-700 font-bold px-2 rounded text-xs mt-1">✔</span> <span>${item}</span>`;
+                    list.appendChild(li);
+                });
+            }
+
+            // Re-init icons for dynamic elements
+            lucide.createIcons();
+
+            // H. Booking Button
+            document.getElementById('book-btn').onclick = () => {
+                // Pass ID or Slug to booking page
+                window.location.href = `booking_form.html?service=${service.slug}`;
+            };
+
+            // Reveal Content
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('content').classList.remove('hidden');
+            document.getElementById('content').classList.add('grid');
+        }
+
+        function showError() {
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('error-container').classList.remove('hidden');
+        }
+
+        initPage();
+    </script>
+</body>
+</html>
