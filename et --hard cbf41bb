@@ -1,0 +1,21 @@
+[33m08a396c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{0}: reset: moving to HEAD~1
+[33mcbf41bb[m HEAD@{1}: commit: This is first time to add app in git
+[33m08a396c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{2}: commit: services added with side bar
+[33mb59d692[m HEAD@{3}: commit: sidebar added
+[33m8626ae6[m HEAD@{4}: commit: .
+[33m7ba6822[m HEAD@{5}: commit: big security change in seller and products
+[33m0ab2ddb[m HEAD@{6}: commit: shop profile added
+[33mf6c2d3f[m HEAD@{7}: commit: ....
+[33m969f06e[m HEAD@{8}: commit: ..
+[33m9d6f8d0[m HEAD@{9}: commit: big update
+[33m3ca316e[m HEAD@{10}: commit: search button removed
+[33me57e410[m HEAD@{11}: commit: search bar added
+[33md1d08f7[m HEAD@{12}: commit: security and features upgradge
+[33ma9417ac[m HEAD@{13}: commit: verify setting
+[33mc589653[m HEAD@{14}: commit: add seller and admin pages
+[33m31b764d[m HEAD@{15}: commit: update
+[33m8db30e8[m HEAD@{16}: commit: localRpaid to vilarci
+[33mc1eb4bf[m HEAD@{17}: commit: localRpaid to vilarci
+[33mce04544[m HEAD@{18}: commit: style.css
+[33me664784[m HEAD@{19}: commit: index,404 added
+[33m92eb5a8[m HEAD@{20}: commit (initial): first deploy
