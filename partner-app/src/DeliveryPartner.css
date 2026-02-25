@@ -1,0 +1,173 @@
+/* --- Variables & Reset --- */
+:root {
+  --primary: #2563eb;       /* Professional Blue */
+  --success: #10b981;       /* Green */
+  --warning: #f59e0b;       /* Amber/Orange */
+  --dark: #1e293b;          /* Dark Slate */
+  --light: #f8fafc;         /* Off-white background */
+  --white: #ffffff;
+  --gray: #64748b;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --radius: 12px;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--light);
+}
+
+/* --- Navigation (Simple) --- */
+.main-nav {
+  background: var(--white);
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.nav-logo { font-weight: bold; font-size: 1.2rem; color: var(--primary); text-decoration: none; }
+.nav-links a { margin-left: 1rem; text-decoration: none; color: var(--dark); font-size: 0.9rem; }
+
+/* --- Delivery Container --- */
+.delivery-container {
+  max-width: 600px; /* Restrict width for mobile-app feel */
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* --- Header & Stats --- */
+.delivery-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.delivery-header h1 {
+  font-size: 1.5rem;
+  color: var(--dark);
+  margin: 0;
+}
+.delivery-header h1 span { color: var(--primary); }
+
+.delivery-stats { display: flex; gap: 0.8rem; }
+.stat-box {
+  background: var(--white);
+  padding: 0.5rem 0.8rem;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  border: 1px solid #e2e8f0;
+}
+.stat-num { display: block; font-weight: 700; color: var(--success); font-size: 1.1rem; }
+.stat-box.warning .stat-num { color: var(--warning); }
+.stat-label { font-size: 0.7rem; color: var(--gray); text-transform: uppercase; }
+
+/* --- Tabs --- */
+.status-tabs {
+  display: flex;
+  background: #e2e8f0;
+  padding: 4px;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.tab-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--gray);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+  background: var(--white);
+  color: var(--primary);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* --- Order Cards --- */
+.order-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow);
+  border: 1px solid #f1f5f9;
+  transition: transform 0.2s;
+}
+
+.order-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 0.75rem;
+}
+
+.order-id { font-weight: 700; color: var(--gray); font-size: 0.9rem; }
+
+/* Status Badges */
+.status-badge {
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.status-badge.pending { background: #fff7ed; color: #c2410c; }
+.status-badge.out-for-delivery { background: #eff6ff; color: var(--primary); }
+.status-badge.delivered { background: #ecfdf5; color: var(--success); }
+
+/* Details */
+.order-details h3 { margin: 0 0 0.5rem 0; font-size: 1.1rem; color: var(--dark); }
+.order-details p { margin: 0.3rem 0; font-size: 0.9rem; color: var(--gray); display: flex; align-items: center; gap: 8px; }
+.order-details a { color: var(--primary); text-decoration: none; font-weight: 500; }
+
+/* Actions */
+.order-actions {
+  margin-top: 1.25rem;
+  display: flex;
+  gap: 10px;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.pickup-btn { background: var(--primary); color: white; }
+.map-btn { background: #f1f5f9; color: var(--dark); border: 1px solid #cbd5e1; }
+.deliver-btn { background: var(--success); color: white; }
+
+.action-btn:active { opacity: 0.8; transform: scale(0.98); }
+
+.completed-msg {
+  width: 100%;
+  text-align: center;
+  color: var(--success);
+  font-weight: 600;
+  background: #ecfdf5;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.no-orders {
+  text-align: center;
+  padding: 3rem;
+  color: var(--gray);
+}
