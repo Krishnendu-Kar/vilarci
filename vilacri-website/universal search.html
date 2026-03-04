@@ -3,330 +3,195 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search Results - Vilarci</title>
-    <!-- Tailwind CSS -->
+    <title>Search Results | Vilarci</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .product-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
-        /* Search History Dropdown */
-#historyBox {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: white;
-    border: 1px solid #ddd;
-    border-top: none;
-    border-radius: 0 0 12px 12px;
-    max-height: 250px;
-    overflow-y: auto;
-    display: none;
-    z-index: 100;
-}
-.history-item {
-    padding: 10px 14px;
-    cursor: pointer;
-    font-size: 14px;
-}
-.history-item:hover {
-    background: #f5f5f5;
-}
-.history-clear {
-    padding: 10px;
-    text-align: center;
-    font-weight: bold;
-    cursor: pointer;
-    background: #f8f8f8;
-}
-.history-clear:hover {
-    background: #e0e0e0;
-}
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        :root {
+            --vilarci-red: #ef3131;
+            --vilarci-dark: #9E0303;
+        }
+
+        .bg-vilarci { background-color: var(--vilarci-red); }
+        .text-vilarci { color: var(--vilarci-red); }
+        .border-vilarci { border-color: var(--vilarci-red); }
+        
+        .search-shadow {
+            box-shadow: 0 4px 20px -5px rgba(239, 49, 49, 0.2);
+        }
+
+        /* Custom Scrollbar for Filters */
+        .filter-scroll::-webkit-scrollbar { width: 4px; }
+        .filter-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
+<body class="bg-gray-50 min-h-screen">
 
-    <!-- Navbar (Simplified for Search Page) -->
-    <nav class="bg-white shadow-sm sticky top-0 z-50 border-b border-slate-200">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center gap-4">
-            <!-- Logo -->
-            <a href="index.html" class="flex items-center gap-2 flex-shrink-0">
-                <div class="bg-indigo-600 text-white font-bold text-xl px-2 py-1 rounded">V</div>
-                <div class="text-2xl font-extrabold text-indigo-900 tracking-tight hidden sm:block">Vilarci</div>
+    <header class="bg-white border-b sticky top-0 z-50">
+        <div class="max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-6">
+            <a href="index.html" class="flex items-center gap-2 shrink-0">
+                <div class="bg-vilarci text-white w-10 h-10 flex items-center justify-center rounded-lg font-bold text-xl shadow-lg">V</div>
+                <span class="text-2xl font-extrabold tracking-tighter text-slate-900 hidden md:block">Vilarci</span>
             </a>
 
-            <!-- Big Search Bar -->
-            <div class="flex-grow max-w-2xl relative">
-                <input type="text" id="searchInput" placeholder="Search products, categories, or IDs..." 
-                    class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm transition-all"
-                    onkeypress="handleEnter(event)">
-                    <div id="historyBox"></div>
-
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <div class="flex-grow max-w-3xl relative group">
+                <input type="text" id="searchInput" 
+                    placeholder="Search over 1 million products..." 
+                    class="w-full bg-gray-100 border-transparent border-2 focus:border-vilarci focus:bg-white pl-12 pr-4 py-2.5 rounded-full outline-none transition-all text-sm md:text-base">
+                <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-vilarci">
                     <i data-lucide="search" class="w-5 h-5"></i>
                 </div>
             </div>
+
+            <!-- <div class="flex items-center gap-4 text-gray-600">
+                <button class="hover:text-vilarci transition"><i data-lucide="heart" class="w-6 h-6"></i></button>
+                <div class="relative cursor-pointer hover:text-vilarci transition">
+                    <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+                    <span class="absolute -top-2 -right-2 bg-vilarci text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">3</span>
+                </div>
+            </div> -->
         </div>
-    </nav>
+    </header>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 py-8">
-        
-        <!-- Header / Stats -->
-        <div class="flex items-end gap-2 mb-6">
-            <h1 class="text-2xl font-bold text-slate-800">Search Results</h1>
-            <p class="text-slate-500 pb-1 text-sm" id="result-stats">Searching...</p>
-        </div>
-
-        <!-- Loading State -->
-        <div id="loader" class="flex justify-center py-20">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-        </div>
-
-        <!-- Results Grid -->
-        <div id="results-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 hidden">
-            <!-- Products injected here -->
-        </div>
-
-        <!-- No Results State -->
-        <div id="empty-state" class="hidden text-center py-20">
-            <div class="inline-flex items-center justify-center w-20 h-20 bg-slate-100 rounded-full mb-4 text-slate-400">
-                <i data-lucide="search-x" class="w-10 h-10"></i>
-            </div>
-            <h3 class="text-lg font-bold text-slate-800">No matches found</h3>
-            <p class="text-slate-500 mt-2">Try checking your spelling or use different keywords.</p>
-            <button onclick="window.location.href='index.html'" class="mt-6 bg-white border border-slate-300 text-slate-700 px-6 py-2 rounded-lg font-bold hover:bg-slate-50 transition">
-                Back to Home
-            </button>
-        </div>
-
-    </main>
-
-    <script>
-        // CONFIGURATION
-        const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_wy4_pxxwFkS63SSL_d5yug_Bgybs85R';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        
-        lucide.createIcons();
-
-        // --------------------------
-// SEARCH HISTORY (Option A)
-// --------------------------
-function loadHistory() {
-    return JSON.parse(localStorage.getItem("search_history") || "[]");
-}
-
-function saveToHistory(term) {
-    let history = loadHistory();
-    history = history.filter(h => h !== term); // remove duplicate
-    history.unshift(term);                     // add on top
-    history = history.slice(0, 8);             // keep max 8 items
-    localStorage.setItem("search_history", JSON.stringify(history));
-}
-
-function showHistoryDropdown() {
-    const box = document.getElementById("historyBox");
-    const history = loadHistory();
-
-    if (history.length === 0) {
-        box.style.display = "none";
-        return;
-    }
-
-    box.innerHTML = history
-        .map(h => `<div class="history-item" onclick="selectHistory('${h}')">${h}</div>`)
-        .join("") +
-        `<div class="history-clear" onclick="clearHistory()">Clear All</div>`;
-
-    box.style.display = "block";
-}
-
-function hideHistoryDropdown() {
-    setTimeout(() => {
-        document.getElementById("historyBox").style.display = "none";
-    }, 150);
-}
-
-function selectHistory(text) {
-    document.getElementById("searchInput").value = text;
-    triggerSearch();
-}
-
-function clearHistory() {
-    localStorage.removeItem("search_history");
-    hideHistoryDropdown();
-}
-
-// ---------------------------------------
-// AUTO SEARCH WHILE TYPING (300ms Delay)
-// ---------------------------------------
-let typeTimer;
-
-document.getElementById("searchInput").addEventListener("input", function () {
-    const text = this.value.trim();
-
-    showHistoryDropdown(); // show history on typing
-
-    clearTimeout(typeTimer);
-    typeTimer = setTimeout(() => {
-        if (text.length > 0) {
-            triggerSearch(); 
-        }
-    }, 300);
-});
-
-document.getElementById("searchInput").addEventListener("focus", showHistoryDropdown);
-document.getElementById("searchInput").addEventListener("blur", hideHistoryDropdown);
-
-        // --- 1. SEARCH LOGIC ---
-        async function performSearch() {
-            // Get query from URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const query = urlParams.get('q') || '';
+    <main class="max-w-[1400px] mx-auto px-4 py-6">
+        <div class="flex flex-col md:flex-row gap-8">
             
-            // Set input value
-            document.getElementById('searchInput').value = query;
-
-            if (!query) {
-                showEmpty("Please enter a search term");
-                return;
-            }
-
-            document.getElementById('result-stats').innerText = `for "${query}"`;
-
-            // FETCH DATA (Joining Categories)
-            // We fetch EVERYTHING active, then filter in JS. 
-            // Why? Because searching joined tables ("categories.name") inside Supabase queries is complex for simple setups.
-            // Fetching 100-500 products text data is very fast and allows perfect filtering.
-            
-            const { data, error } = await supabase
-                .from('products')
-                .select(`
-                    *,
-                    categories (name),
-                    sub_categories (name),
-                    super_sub_categories (name)
-                `)
-                .eq('is_active', true);
-
-            if (error) {
-                console.error(error);
-                alert("Search failed. See console.");
-                return;
-            }
-
-            // CLIENT-SIDE FILTERING (The "Universal" Logic)
-            const searchLower = query.toLowerCase();
-            
-            const results = data.filter(p => {
-                // 1. Search by Name
-                if (p.name.toLowerCase().includes(searchLower)) return true;
-                // 2. Search by ID (Exact or partial)
-                if (String(p.id).includes(searchLower)) return true;
-                // 3. Search by Slug
-                if (p.slug.includes(searchLower)) return true;
-                
-                // 4. Search by Category Name (Requires the Join)
-                if (p.categories && p.categories.name.toLowerCase().includes(searchLower)) return true;
-                // 5. Search by Sub Category
-                if (p.sub_categories && p.sub_categories.name.toLowerCase().includes(searchLower)) return true;
-                // 6. Search by Super Sub Category
-                if (p.super_sub_categories && p.super_sub_categories.name.toLowerCase().includes(searchLower)) return true;
-
-                return false;
-            });
-
-            renderResults(results);
-        }
-
-        // --- 2. RENDER RESULTS ---
-        function renderResults(products) {
-            const grid = document.getElementById('results-grid');
-            const loader = document.getElementById('loader');
-            const empty = document.getElementById('empty-state');
-            const stats = document.getElementById('result-stats');
-
-            loader.classList.add('hidden');
-
-            if (products.length === 0) {
-                empty.classList.remove('hidden');
-                grid.classList.add('hidden');
-                stats.innerText += ` (0 found)`;
-                return;
-            }
-
-            stats.innerText += ` (${products.length} found)`;
-            grid.classList.remove('hidden');
-            empty.classList.add('hidden');
-
-            grid.innerHTML = products.map(p => {
-                const img = (p.images && p.images.length > 0) ? p.images[0] : 'https://via.placeholder.com/300?text=No+Image';
-                
-                // Calculate Discount
-                let discountBadge = '';
-                if (p.original_price && p.base_price < p.original_price) {
-                    const off = Math.round(((p.original_price - p.base_price) / p.original_price) * 100);
-                    discountBadge = `<span class="absolute top-2 left-2 bg-green-600 text-white text-[10px] font-bold px-2 py-1 rounded">${off}% OFF</span>`;
-                }
-
-                return `
-                <div onclick="window.location.href='universal pdp.html?slug=${p.slug}'" 
-                     class="product-card bg-white border border-slate-200 rounded-xl overflow-hidden cursor-pointer transition-all relative group">
-                    
-                    ${discountBadge}
-                    
-                    <div class="aspect-square bg-slate-50 flex items-center justify-center overflow-hidden p-4">
-                        <img src="${img}" class="object-contain w-full h-full mix-blend-multiply group-hover:scale-110 transition-transform duration-500" loading="lazy">
+            <aside class="w-full md:w-64 shrink-0 hidden md:block">
+                <div class="sticky top-24">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="font-bold text-lg">Filters</h2>
+                        <button class="text-xs text-vilarci font-semibold hover:underline">Clear All</button>
                     </div>
-                    
-                    <div class="p-4">
-                        <div class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1 truncate">
-                            ${p.categories?.name || 'General'} • ${p.super_sub_categories?.name || ''}
+
+                    <div class="mb-8">
+                        <h3 class="font-semibold mb-3 text-sm uppercase tracking-wider text-gray-500">Categories</h3>
+                        <div class="space-y-2 filter-scroll">
+                            <label class="flex items-center gap-3 cursor-pointer group">
+                                <input type="checkbox" class="w-4 h-4 rounded accent-red-500">
+                                <span class="text-gray-600 group-hover:text-black transition">Electronics</span>
+                            </label>
+                            <label class="flex items-center gap-3 cursor-pointer group">
+                                <input type="checkbox" class="w-4 h-4 rounded accent-red-500">
+                                <span class="text-gray-600 group-hover:text-black transition">Fashion</span>
+                            </label>
+                            <label class="flex items-center gap-3 cursor-pointer group">
+                                <input type="checkbox" class="w-4 h-4 rounded accent-red-500">
+                                <span class="text-gray-600 group-hover:text-black transition">Home & Living</span>
+                            </label>
                         </div>
-                        <h3 class="font-bold text-slate-800 text-sm line-clamp-2 mb-2 h-10 leading-tight">
-                            ${p.name}
-                        </h3>
-                        
-                        <div class="flex items-baseline gap-2">
-                            <span class="text-lg font-bold text-slate-900">₹${p.base_price}</span>
-                            ${p.original_price ? `<span class="text-xs text-slate-400 line-through">₹${p.original_price}</span>` : ''}
+                    </div>
+
+                    <div class="mb-8">
+                        <h3 class="font-semibold mb-3 text-sm uppercase tracking-wider text-gray-500">Price Range</h3>
+                        <div class="flex items-center gap-2">
+                            <input type="number" placeholder="Min" class="w-full border rounded-md px-2 py-1 text-sm outline-none focus:border-vilarci">
+                            <span class="text-gray-400">-</span>
+                            <input type="number" placeholder="Max" class="w-full border rounded-md px-2 py-1 text-sm outline-none focus:border-vilarci">
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="font-semibold mb-3 text-sm uppercase tracking-wider text-gray-500">Rating</h3>
+                        <div class="space-y-2">
+                            <button class="flex items-center gap-1 text-yellow-400 text-sm">
+                                <i data-lucide="star" class="fill-current w-4 h-4"></i>
+                                <i data-lucide="star" class="fill-current w-4 h-4"></i>
+                                <i data-lucide="star" class="fill-current w-4 h-4"></i>
+                                <i data-lucide="star" class="fill-current w-4 h-4"></i>
+                                <span class="text-gray-600 ml-1">& Up</span>
+                            </button>
                         </div>
                     </div>
                 </div>
-                `;
-            }).join('');
-        }
+            </aside>
 
-        function showEmpty(msg) {
-            document.getElementById('loader').classList.add('hidden');
-            document.getElementById('result-stats').innerText = msg;
-        }
+            <section class="flex-grow">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <div>
+                        <h1 class="text-xl font-bold text-slate-900" id="result-text">Showing results for "Smartphones"</h1>
+                        <p class="text-sm text-gray-500">1,240 items found</p>
+                    </div>
+                    
+                    <div class="flex items-center gap-3 w-full sm:w-auto">
+                        <select class="bg-white border rounded-lg px-4 py-2 text-sm outline-none focus:border-vilarci cursor-pointer w-full">
+                            <option>Sort by: Relevance</option>
+                            <option>Price: Low to High</option>
+                            <option>Price: High to Low</option>
+                            <option>Newest First</option>
+                        </select>
+                    </div>
+                </div>
 
-        // --- 3. UI HANDLERS ---
+                <div id="skeleton-grid" class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div class="bg-white rounded-2xl p-3 border border-transparent animate-pulse">
+                        <div class="bg-gray-200 aspect-square rounded-xl mb-4"></div>
+                        <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                        <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                </div>
+
+                <div id="results-grid" class="hidden grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                    <div class="product-card bg-white rounded-2xl p-3 border border-gray-100 transition-all duration-300 group cursor-pointer">
+                        <div class="relative aspect-square rounded-xl overflow-hidden bg-gray-50 mb-3">
+                            <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&q=80&w=500" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500">
+                            <button class="absolute top-2 right-2 p-2 bg-white/80 backdrop-blur-md rounded-full text-gray-400 hover:text-vilarci transition">
+                                <i data-lucide="heart" class="w-4 h-4"></i>
+                            </button>
+                            <div class="absolute bottom-2 left-2 bg-vilarci text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                                BESTSELLER
+                            </div>
+                        </div>
+                        <h3 class="font-semibold text-slate-800 text-sm md:text-base line-clamp-2 mb-1">Vilarci Pro Smartphone - 256GB Platinum</h3>
+                        <div class="flex items-center gap-1 mb-2">
+                            <div class="flex text-yellow-400">
+                                <i data-lucide="star" class="w-3 h-3 fill-current"></i>
+                            </div>
+                            <span class="text-[11px] text-gray-500">(4.8)</span>
+                        </div>
+                        <div class="flex items-center justify-between mt-auto">
+                            <div>
+                                <span class="text-lg font-bold text-slate-900">₹54,999</span>
+                                <span class="text-[11px] text-gray-400 line-through block">₹59,999</span>
+                            </div>
+                            <button class="bg-vilarci text-white p-2 rounded-lg hover:bg-vilarci-dark transition shadow-md shadow-red-100">
+                                <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                    </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Simulate Loading State
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('skeleton-grid').classList.add('hidden');
+                document.getElementById('results-grid').classList.remove('hidden');
+                // Re-trigger icon creation for injected elements
+                lucide.createIcons();
+            }, 1500);
+        });
+
         function handleEnter(e) {
-            if (e.key === 'Enter') triggerSearch();
+            if (e.key === 'Enter') {
+                console.log('Searching for:', e.target.value);
+                // Your Supabase logic here
+            }
         }
-
-       function triggerSearch() {
-    const val = document.getElementById('searchInput').value.trim();
-    if (val) {
-        saveToHistory(val);
-        window.history.pushState({}, '', `?q=${encodeURIComponent(val)}`);
-        performSearch();
-    }
-}
-
-
-        // Init
-        performSearch();
-
     </script>
 </body>
 </html>

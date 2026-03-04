@@ -281,7 +281,7 @@ const headerHTML = `
                 <i class="fa-solid fa-bars"></i>
                 <span>All</span>
             </div>
-            <div class="nav-search border">
+            <div class="nav-search border" onclick="window.location.href='universal search.html'">
                 <input type="search" class="search-input" id="globalSearch" placeholder="Search Vilarci...">
                 <div class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
             </div>
@@ -411,35 +411,48 @@ function renderSidebar() {
     if (currentMenu.type === 'root') {
         content.innerHTML = `
             <div style="padding: 16px 24px 8px; font-size: 12px; font-weight: 700; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase;">Explore Vilarci</div>
-            <div class="usb-item" onclick="loadProductMainCategories()">
-                <div class="usb-item-left"><i data-lucide="shopping-bag" class="usb-icon"></i><span>Shop Products</span></div>
-                <i data-lucide="chevron-right" style="color:#cbd5e1; width:18px;"></i>
-            </div>
-            <div class="usb-item" onclick="loadServiceMainCategories()">
-                <div class="usb-item-left"><i data-lucide="wrench" class="usb-icon" style="color: #ec4899;"></i><span>Book Services</span></div>
-                <i data-lucide="chevron-right" style="color:#cbd5e1; width:18px;"></i>
-            </div>
+                <div class="usb-item" onclick="loadProductMainCategories()">
+                    <div class="usb-item-left"><i data-lucide="shopping-bag" class="usb-icon"></i><span>Shop Products</span></div>
+                    <i data-lucide="chevron-right" style="color:#cbd5e1; width:18px;"></i>
+                </div>
+                <div class="usb-item" onclick="loadServiceMainCategories()">
+                    <div class="usb-item-left"><i data-lucide="wrench" class="usb-icon" style="color: #ec4899;"></i><span>Book Services</span></div>
+                    <i data-lucide="chevron-right" style="color:#cbd5e1; width:18px;"></i>
+                </div>
+                <div class="usb-item" onclick="#">
+                    <div class="usb-item-left"><i class="fa-solid fa-motorcycle" style="color: #d81f28;"></i><span>Buy For Me</span></div>
+                    <i data-lucide="chevron-right" style="color:#cbd5e1; width:18px;"></i>
+                </div>
+                <div class="usb-item" onclick="#">
+                    <div class="usb-item-left"><i class="fa-solid fa-person-chalkboard" style="color: #1f28d8;"></i><span>Explore Nearby Teachers</span></div>
+                    <i data-lucide="chevron-right" style="color:#cbd5e1; width:18px;"></i>
+                </div>
+
             <div style="height: 8px; background: #f8fafc; margin: 16px 0;"></div>
-            <div style="padding: 8px 24px 8px; font-size: 12px; font-weight: 700; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase;">My Account</div>
+
+
             <div class="usb-item" onclick="window.location.href='profile.html'">
                 <div class="usb-item-left"><i data-lucide="user-circle" class="usb-icon" style="color: #64748b;"></i> Profile</div>
             </div>
             <div class="usb-item" onclick="window.location.href='orders.html'">
                 <div class="usb-item-left"><i data-lucide="package" class="usb-icon" style="color: #64748b;"></i> Orders</div>
             </div>
+           <div class="usb-item" onclick="window.location.href='wishlist.html'">
+                <div class="usb-item-left"><i data-lucide="heart" class="usb-icon" style="color: #ff0066;"></i> Wishlist</div>
+            </div>
             <div class="usb-item" onclick="window.location.href='wallet.html'">
                 <div class="usb-item-left"><i data-lucide="wallet" class="usb-icon" style="color: #64748b;"></i> Wallet</div>
             </div>
             <div class="usb-item" onclick="window.location.href='lucky-winners.html'">
-                <div class="usb-item-left"><i data-lucide="help" class="usb-icon" style="color: #64748b;"></i> Lucky Winners</div>
+                <div class="usb-item-left"><i data-lucide="trophy" class="usb-icon" style="color: #64748b;"></i> Lucky Winners</div>
             </div>
             <div class="usb-item" onclick="window.location.href='help.html'">
-                <div class="usb-item-left"><i data-lucide="helping Video" class="usb-icon" style="color: #64748b;"></i>Need Help?</div>
+                <div class="usb-item-left"><i data-lucide="help-circle" class="usb-icon" style="color: #64748b;"></i> Need Help?</div>
             </div>
-            <div class="usb-item" onclick="window.location.href='seller home.html'">
-                <div class="usb-item-left"><i data-lucide="seller" class="usb-icon" style="color: #64748b;"></i> Become a Seller</div>
+            <div class="usb-item" onclick="window.location.href='seller-home.html'">
+                <div class="usb-item-left"><i data-lucide="store" class="usb-icon" style="color: #64748b;"></i> Become a Seller</div>
             </div>
-            
+
         `;
     } else {
         if (!currentMenu.data || currentMenu.data.length === 0) {
