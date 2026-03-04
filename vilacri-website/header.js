@@ -430,6 +430,16 @@ function renderSidebar() {
             <div class="usb-item" onclick="window.location.href='wallet.html'">
                 <div class="usb-item-left"><i data-lucide="wallet" class="usb-icon" style="color: #64748b;"></i> Wallet</div>
             </div>
+            <div class="usb-item" onclick="window.location.href='lucky-winners.html'">
+                <div class="usb-item-left"><i data-lucide="help" class="usb-icon" style="color: #64748b;"></i> Lucky Winners</div>
+            </div>
+            <div class="usb-item" onclick="window.location.href='help.html'">
+                <div class="usb-item-left"><i data-lucide="helping Video" class="usb-icon" style="color: #64748b;"></i>Need Help?</div>
+            </div>
+            <div class="usb-item" onclick="window.location.href='seller home.html'">
+                <div class="usb-item-left"><i data-lucide="seller" class="usb-icon" style="color: #64748b;"></i> Become a Seller</div>
+            </div>
+            
         `;
     } else {
         if (!currentMenu.data || currentMenu.data.length === 0) {

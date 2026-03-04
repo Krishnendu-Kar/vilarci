@@ -52,7 +52,7 @@
         <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     </head>
     <body>
-            <!-- <div class="loader-container" id="page-loader">
+            <div class="loader-container" id="page-loader">
                 <div class="loaderout">
                     <div class="loaderin1">
                         <div class="loaderin2">
@@ -61,50 +61,58 @@
                     </div>
                 </div>
                 <p class="loader-p" id="loader-text">Please wait...</p>
-            </div> -->
+            </div>
             <script src="header.js"></script>
     <div id="vilarci-header"></div>
         <main>
             
-               <div class="category-scroll-container">
-                    <div class="cat-item" onclick="window.location.href='comboCategory.html'">
-                        <i class="bi bi-collection-fill"></i>
-                        <p>Combo Packs</p>
+              <div class="category-scroll-container">
+                    <div class="cat-item" onclick="window.location.href='#'">
+                        <div class="icon-box"><i class="bi bi-bag-fill"></i></div>
+                        <p>Products</p>
                     </div>
 
                     <div class="cat-item" onclick="window.location.href='services.html'">
-                        <i class="bi bi-lightning-charge-fill"></i>
+                        <div class="icon-box"><i class="fa-solid fa-handshake"></i></div>
                         <p>Services</p>
                     </div>
 
-                    <div class="cat-item" onclick="window.location.href='groceryCategory.html'">
-                        <i class="bi bi-basket2-fill"></i>
-                        <p>Staples</p>
+                    <div class="cat-item" onclick="window.location.href='#'">
+                        <div class="icon-box"><i class="fa-solid fa-bowl-rice"></i></div>
+                        <p>Foods</p>
                     </div>
 
-                    <div class="cat-item" onclick="window.location.href='colddrinkCategory.html'">
-                        <i class="bi bi-cup-straw"></i>
-                        <p>Cold Drinks</p>
+                    <div class="cat-item" onclick="window.location.href='#'">
+                        <div class="icon-box"><i class="fa-solid fa-motorcycle"></i></div>
+                        <p>Buy for me</p>
                     </div>
 
-                    <div class="cat-item" onclick="window.location.href='snacksCategory.html'">
-                        <i class="bi bi-bag-heart-fill"></i>
-                        <p>Snacks</p>
+                    <div class="cat-item" onclick="window.location.href='#'">
+                        <div class="icon-box"><i class="fa-solid fa-basket-shopping"></i></div>
+                        <p>Grocery</p>
                     </div>
 
-                    <div class="cat-item" onclick="window.location.href='biscuitCategory.html'">
-                        <i class="bi bi-circle-fill"></i>
-                        <p>Biscuits</p>
+                    <div class="cat-item" onclick="window.location.href='#'">
+                        <div class="icon-box"><i class="fa-solid fa-person-chalkboard"></i></div>
+                        <p>Teachers</p>
                     </div>
-                    <div class="cat-item" onclick="window.location.href='oilCategory.html'">
-                        <i class="bi bi-droplet-fill"></i> <p>Oil</p>
+                    
+                    <div class="cat-item" onclick="window.location.href='#'">
+                        <div class="icon-box"><i class="fa-solid fa-person-dress"></i></div>
+                        <p>Fashion</p>
                     </div>
 
-                    <div class="cat-item" onclick="window.location.href='dailyProductCategory.html'">
-                        <i class="bi bi-house-heart-fill"></i> <p>Daily Needs</p>
+                    <div class="cat-item" onclick="window.location.href='#'">
+                        <div class="icon-box"><img src="chocolate.png" alt="Chocolate"></div>
+                        <p>Chocolate</p>
                     </div>
-                </div>
-            </main>
+
+                    <div class="cat-item" onclick="window.location.href='#'">
+                        <div class="icon-box"><i class="fa-solid fa-mobile-screen-button"></i></div>
+                        <p>Mobiles</p>
+                    </div>
+               </div>            
+        </main>
             
             <div class="sub-header">
                 <div class="slider-container">
@@ -233,7 +241,7 @@
                 loader.style.opacity = "0"; 
                 setTimeout(() => {
                     loader.style.display = "none";
-                }, 500); 
+                }, 1); 
             }
             updateCartCount();
         }

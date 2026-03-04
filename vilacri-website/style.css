@@ -93,37 +93,95 @@ html, body {
         transform: translateX(-100%); 
     }
 }
+/* --- THE HORIZON CONTAINER --- */
 .category-scroll-container {
     display: flex;
-    margin-top: 134px;
-    justify-content: space-between;
+    margin-top: 134px; /* Ensure this matches your header height */
+    justify-content: space-between; /* Changed from space-between for better scrolling */
     overflow-x: auto;
-    gap: 15px;
-    padding: 15px;
+    gap: 18px; /* Slightly wider gap for touch targets */
+    padding: 20px 15px 45px 15px; /* Added top padding */
     background: linear-gradient(134deg, #ff4545, #2919ff);
-    box-shadow: inset 0 18px 28px -4px rgba(0, 0, 0, 0.55);
+    box-shadow: inset 0 18px 28px -4px rgba(0, 0, 0, 0.4);
+    
+    /* Smooth scrolling for mobile */
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch; 
+    
+    /* Hide Scrollbar but keep functionality */
     scrollbar-width: none; 
 
-    /* --- THE HORIZON DESIGN --- */
-    
-    /* 1. Critical: Add bottom padding so text doesn't touch the edge */
-    padding-bottom: 45px; 
-
-    /* 2. The Curve Mask */
-    /* This creates a smooth curve that dips slightly in the middle */
+    /* The Curve Mask */
     --curve-depth: 30px;
-    -webkit-mask-image: radial-gradient(ellipse 120% 100% at 50% -10%, rgba(0, 0, 0, 0.904) 75%, transparent 100%);
-    mask-image: radial-gradient(ellipse 120% 100% at 50% -10%, rgba(0, 0, 0, 0.985) 75%, transparent 100%);
-
+    -webkit-mask-image: radial-gradient(ellipse 120% 100% at 50% -10%, black 75%, transparent 100%);
+    mask-image: radial-gradient(ellipse 120% 100% at 50% -10%, black 75%, transparent 100%);
 }
+
 .category-scroll-container::-webkit-scrollbar { 
     display: none; 
 }
-.sub-header{
-     background-color:rgb(255, 255, 255);
-     display:flex;
-        align-items:center;
-        justify-content: center;
+
+/* --- CATEGORY ITEMS --- */
+.cat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 72px; /* Prevents items from squishing together */
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+/* Slight press animation */
+.cat-item:active {
+    transform: scale(0.95);
+}
+
+/* --- ICON BOX (The circles) --- */
+.cat-item .icon-box {
+    width: 56px;
+    height: 56px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    margin-bottom: 8px;
+    
+    /* Gradient text effect for the icons inside the white box */
+    color: #2919ff; 
+    font-size: 22px;
+}
+
+/* Ensure images inside the box fit perfectly */
+/* Ensure images inside the box fit perfectly and look larger */
+.cat-item .icon-box img {
+    width: 44px;  /* Increased from 32px */
+    height: 44px; /* Increased from 32px */
+    object-fit: contain;
+    /* Optional: Add a slight drop shadow to the PNG itself to make it pop */
+    filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.2)); 
+}
+
+/* --- TYPOGRAPHY --- */
+.cat-item p {
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    margin: 0;
+    text-align: center;
+    white-space: nowrap; /* Keeps text on one line */
+    letter-spacing: 0.3px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); /* Helps text readability */
+}
+
+/* --- SUB HEADER --- */
+.sub-header {
+    background-color: rgb(255, 255, 255);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Consider adding a minimum height here if needed */
 }
 /* --- Slider Styles --- */
 .slider-container {
