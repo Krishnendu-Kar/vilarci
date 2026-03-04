@@ -32,6 +32,7 @@
             <!-- 1. SUPABASE & CONFIG -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
+    
         <!-- Canonical -->
         <link rel="canonical" href="https://krishnendu-kar.github.io/vilarci/">
 
@@ -51,7 +52,7 @@
         <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     </head>
     <body>
-            <div class="loader-container" id="page-loader">
+            <!-- <div class="loader-container" id="page-loader">
                 <div class="loaderout">
                     <div class="loaderin1">
                         <div class="loaderin2">
@@ -60,81 +61,9 @@
                     </div>
                 </div>
                 <p class="loader-p" id="loader-text">Please wait...</p>
-            </div>
-        <header>
-            <div class="navbar">
-                <div class="nav-logo border" onclick="window.location.href='index.html'">
-                    <div class="logo-name">Vilarci</div>
-                    <div><img class="logo" src="logo.png" alt="logo" loading="lazy"> </div>
-                </div>
-                <div class="nav-address border">
-                    <p class="location">location</p>
-                    <div class="address-icon">
-                        <p class="location-name"><i class="fa-solid fa-location-dot"></i>
-                        radhaballavpur</p>
-                    </div>
-                </div>
-                <div>
-                    <a class="border" href="OrderTracking.html"><abbr class="order" title="Track your order">Orders</abbr> </a>
-                </div>
-                <div class="seller border">
-                    <a href="seller home.html" target="_blank" class="feedback-btn">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="15" viewBox="0 0 16 15">
-                            <defs>
-                                <linearGradient id="a" x1="0%" x2="86.876%" y1="0%" y2="80.202%">
-                                <stop offset="0%" stop-color="#FFF6CC"/>
-                                <stop offset="100%" stop-color="#FFD580"/>
-                                </linearGradient>
-                            </defs>
-                            <g fill="none" fill-rule="evenodd">
-                                <path d="M-2-2h20v20H-2z"/>
-                                <path fill="url(#a)" fill-rule="nonzero" d="M15.93 5.614h-2.948V4.14c0-.818-.655-1.473-1.473-1.473H8.56c-.817 0-1.473.655-1.473 1.473v1.474H4.14c-.818 0-1.466.656-1.466 1.474l-.001 8.105c0 .818.655 1.474 1.473 1.474h11.79c.818 0 1.474-.656 1.474-1.474V7.088c0-.818-.656-1.474-1.474-1.474zm-4.421 0H8.56V4.14h2.949v1.474z" transform="translate(-2 -2)"/>
-                            </g>
-                        </svg>
-                        Become a seller
-                    </a>
-                </div>
-                <div class="feedback border">
-                    <a href="https://forms.gle/o6QnsSHPTd5EUZ2q6" class="feedback-btn">
-                     Feedback </a>
-                </div>
-                   
-            </div>
-            <div class="panel">
-                <!-- Hamburger Button -->
-                <script src="sidebar.js"></script>
-
-                <div class="panel-all border" onclick="toggleSidebar()">
-                    <i class="fa-solid fa-bars"></i>
-                    <span>All</span>
-                </div>
-                    <!-- Search Bar -->
-                <div class="nav-search search-wrapper border">
-                    <input type="search" class="search-input search-boxAni" id="productSearch" onclick="window.location.href='universal search.html'" placeholder=" ">
-                    <div class="search-icon" onclick="window.location.href='universal search.html'"><p><i class="fa-solid fa-magnifying-glass" style="color: #d70675;"></i></p></div>
-                </div>
-                <ul>
-                    <li><a class="panel-a1 border" href="lucky winners.html">lucky winners</a></li>
-                    <li><a class="panel-a2 border" href="tutorial video.html">Need help?</a></li>
-                    <li><a class="panel-a3 border" href="about_us.html">About Us</a></li>
-                </ul>
-            </div>
-            <div class="cart border" onclick="window.location.href='cart.html'">
-                    <!-- Updated ID to match script logic -->
-                    <p class="cart-amount" id="cart-count-badge">0</p>
-                    <div class="cart-icon">
-                        <p><i class="fa-solid fa-cart-arrow-down"></i>
-                        </p>
-                    </div>
-                </div>
-            <div class="message-box1 border">
-                <div class="message-box2">
-                    <div class="message-text">
-                       Order Now & Save Big! Lightning-fast delivery at incredible prices – because you are special for us
-                    </div>
-                </div>
-            </div>
-        </header>
+            </div> -->
+            <script src="header.js"></script>
+    <div id="vilarci-header"></div>
         <main>
             
                <div class="category-scroll-container">
@@ -175,7 +104,8 @@
                         <i class="bi bi-house-heart-fill"></i> <p>Daily Needs</p>
                     </div>
                 </div>
-            </div>
+            </main>
+            
             <div class="sub-header">
                 <div class="slider-container">
                     <div class="slider-wrapper">
@@ -210,7 +140,7 @@
                 </div>
 
                 </div>
-                <div id="flash-sale-section" class="flash-section-hidden">
+                <!-- <div id="flash-sale-section" class="flash-section-hidden">
                     <div class="flash-header">
                         <div class="flash-title">
                             <i class="fa-solid fa-bolt-lightning"></i> DEAL OF THE HOUR
@@ -221,7 +151,7 @@
 
                     <div class="flash-scroll-container" id="flash-products-container">
                         </div>
-                </div>
+                </div> -->
             </div>
 
             <div id="addCartMessage" class="cartMessage"></div>
@@ -252,13 +182,9 @@
             }
         </script>
 
-
+        <script src="config.js"></script>
     <script>
-const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_wy4_pxxwFkS63SSL_d5yug_Bgybs85R';
-    
-    // CHANGED: Renamed variable to 'supabaseClient' to fix the conflict
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
     
     let packetProducts = [];
         // 2. FETCH FROM DB
@@ -267,9 +193,9 @@ const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
         const loader = document.getElementById('page-loader');
         if(loader) loader.style.display = 'flex';
 
-        try {
-            // CHANGED: Using 'supabaseClient' here
-            const { data, error } = await supabaseClient
+       try {
+        // Use window.supabaseClient here!
+        const { data, error } = await window.supabaseClient
                 .from('products')
                 .select('*')
                 .eq('is_active', true)

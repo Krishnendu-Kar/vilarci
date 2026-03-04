@@ -4,9 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Service Details - Vilarci</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -14,20 +19,7 @@
 </head>
 <body class="bg-slate-50 min-h-screen flex flex-col">
 
-    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='index.html'">
-                    <div class="bg-indigo-600 text-white font-bold text-xl px-2 py-1 rounded">V</div>
-                    <div class="text-2xl font-extrabold text-indigo-900 tracking-tight">Vilarci</div>
-                </div>
-                <div class="flex items-center gap-4">
-                    <button class="p-2 text-slate-400 hover:text-indigo-600 transition"><i data-lucide="search" class="w-5 h-5"></i></button>
-                    <button class="p-2 text-slate-400 hover:text-indigo-600 transition"><i data-lucide="shopping-bag" class="w-5 h-5"></i></button>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <div id="vilarci-header"></div>
 
     <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
         
@@ -39,7 +31,7 @@
             <div class="bg-red-50 text-red-500 p-4 rounded-full mb-4"><i data-lucide="alert-triangle" class="w-8 h-8"></i></div>
             <h2 class="text-2xl font-bold text-slate-900">Service Not Found</h2>
             <p class="text-slate-500 mt-2">The service you requested does not exist or has been removed.</p>
-            <a href="index.html" class="mt-6 text-indigo-600 font-bold hover:underline">Go Back Home</a>
+            <a href="service_list.html" class="mt-6 text-indigo-600 font-bold hover:underline">Go Back to Services</a>
         </div>
 
         <div id="content" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
@@ -62,11 +54,11 @@
                     <h1 id="svc-title" class="text-3xl sm:text-4xl font-extrabold text-slate-900 leading-tight mb-3">...</h1>
                     
                     <div class="flex flex-wrap items-center gap-4 text-sm text-slate-600">
-                        <div class="flex items-center gap-1 bg-slate-100 px-3 py-1 rounded-full">
+                        <div id="duration-container" class="flex items-center gap-1 bg-slate-100 px-3 py-1 rounded-full">
                             <i data-lucide="clock" class="w-4 h-4 text-indigo-600"></i>
                             <span id="svc-duration">60 mins</span>
                         </div>
-                        <div class="flex items-center gap-1 bg-slate-100 px-3 py-1 rounded-full">
+                        <div id="hours-container" class="flex items-center gap-1 bg-slate-100 px-3 py-1 rounded-full">
                             <i data-lucide="clock-4" class="w-4 h-4 text-indigo-600"></i>
                             <span id="svc-hours">09:00 AM - 06:00 PM</span>
                         </div>
@@ -119,20 +111,26 @@
         </div>
     </main>
 
+    <script src="config.js"></script>
+    <script src="header.js"></script>
+
     <script>
         // ==========================================
-        // 1. CONFIGURATION
+        // 1. GET DB CLIENT
         // ==========================================
-        const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dmNndWJicXRjY295Y3ZkdXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODA2MzQsImV4cCI6MjA4MDA1NjYzNH0.7Hobx-emspJQ7HLyjaWR-XQhzk948LWufq3OCimKk4w'; 
-        
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        lucide.createIcons();
+        // Use the globally available client from config.js
+        const db = window.supabaseClient;
 
         // ==========================================
         // 2. FETCH LOGIC
         // ==========================================
         async function initPage() {
+            if (!db) {
+                console.error("Vilarci Error: Database client failed to load.");
+                showError();
+                return;
+            }
+
             const urlParams = new URLSearchParams(window.location.search);
             const slug = urlParams.get('slug'); 
 
@@ -142,7 +140,7 @@
             }
 
             // QUERY UPDATED TO MATCH YOUR NEW TABLE SCHEMA
-            const { data: service, error } = await supabaseClient
+            const { data: service, error } = await db
                 .from('services')
                 .select(`
                     id, 
@@ -161,7 +159,7 @@
                     results
                 `)
                 .eq('slug', slug)
-                .eq('is_active', true) // Only show active services
+                .eq('is_active', true) 
                 .single();
 
             if (error || !service) {
@@ -181,7 +179,12 @@
             // A. Basic Info
             document.getElementById('svc-title').innerText = service.name;
             document.getElementById('svc-desc').innerText = service.description || "No description provided.";
-            document.getElementById('svc-duration').innerText = (service.duration_minutes || 60) + " mins";
+            
+            if(service.duration_minutes) {
+                document.getElementById('svc-duration').innerText = service.duration_minutes + " mins";
+            } else {
+                document.getElementById('duration-container').classList.add('hidden');
+            }
 
             // B. Pricing Logic
             const price = parseFloat(service.price);
@@ -190,11 +193,9 @@
             document.getElementById('svc-price').innerText = '₹' + price;
 
             if (normalPrice && normalPrice > price) {
-                // Show MRP and Discount
                 document.getElementById('svc-normal-price').innerText = '₹' + normalPrice;
                 document.getElementById('svc-normal-price').classList.remove('hidden');
                 
-                // Calculate % off
                 const discount = Math.round(((normalPrice - price) / normalPrice) * 100);
                 const discountEl = document.getElementById('svc-discount');
                 discountEl.innerText = discount + '% OFF';
@@ -225,10 +226,11 @@
 
             // E. Operational Hours
             if (service.opening_time && service.closing_time) {
-                // Formatting time strings (simple slice, you can use a library for better AM/PM)
                 const start = service.opening_time.slice(0, 5);
                 const end = service.closing_time.slice(0, 5);
                 document.getElementById('svc-hours').innerText = `${start} - ${end}`;
+            } else {
+                document.getElementById('hours-container').classList.add('hidden');
             }
 
             // F. Highlights (Array)
@@ -258,11 +260,10 @@
             }
 
             // Re-init icons for dynamic elements
-            lucide.createIcons();
+            if(window.lucide) window.lucide.createIcons();
 
             // H. Booking Button
             document.getElementById('book-btn').onclick = () => {
-                // Pass ID or Slug to booking page
                 window.location.href = `booking_form.html?service=${service.slug}`;
             };
 
@@ -277,7 +278,8 @@
             document.getElementById('error-container').classList.remove('hidden');
         }
 
-        initPage();
+        // Initialize Page
+        document.addEventListener('DOMContentLoaded', initPage);
     </script>
 </body>
 </html>

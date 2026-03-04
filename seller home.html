@@ -27,7 +27,7 @@
         }
     </script>
     <style>
-    .border:hover {
+    .border1:hover {
             outline: 2px solid rgb(37, 28, 223);
             border-radius: 5px;
         }
@@ -104,30 +104,46 @@
 <body class="font-sans bg-gray-50 text-gray-800">
 
     <!-- Header -->
+<!-- Header -->
 <header class="bg-white shadow-md sticky top-0 z-50">
-        <nav class="container mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
+    <nav class="container mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
+        
+        <!-- Left Side (Logo + Sidebar) -->
+        <div class="flex items-center gap-4">
             
-            <div class="flex items-center gap-4">
-                
-                <div id="global-sidebar-container" style="color: #0a0528;"></div>
+            <div id="global-sidebar-container" style="color: #0a0528;"></div>
 
-                <div class="text-3xl logo font-extrabold text-localrapid-blue">
-                    <a href="index.html" class="flex items-center">
-                        Vilarci
-                        <img src="LocaalRapid.png" alt="Logo" loading="lazy" style="height: 40px; width: auto; margin-left: 10px;">
-                    </a>   
-                </div>
-
+            <div class="text-3xl logo font-extrabold text-localrapid-blue">
+                <a href="index.html" class="flex items-center">
+                    Vilarci
+                    <img src="LocaalRapid.png" alt="Logo" loading="lazy"
+                        style="height: 40px; width: auto; margin-left: 10px;">
+                </a>   
             </div>
 
-            <div class="flex items-center space-x-4">
-                <a href="seller registration.html" class="bg-localrapid-blue text-white px-5 py-2.5 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors start-selling">
-                    Start Selling
-                </a>
-            </div>
+        </div>
 
-        </nav>
-    </header>
+        <!-- Right Side (Login + Start Selling) -->
+        <div class="flex items-center space-x-4">
+            
+            <a href="seller_profile.html"
+            class="bg-localrapid-grey text-black px-5 py-2.5 rounded-md text-sm font-medium 
+            border border-black 
+            hover:bg-gray-300 hover:border-black 
+            focus:outline-none focus:ring-0
+            transition">
+            Login
+            </a>
+
+            <a href="seller registration.html"
+                class="bg-localrapid-blue text-white px-5 py-2.5 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors start-selling">
+                Start Selling
+            </a>
+
+        </div>
+
+    </nav>
+</header>
 
     <script src="sidebar.js"></script>
 
