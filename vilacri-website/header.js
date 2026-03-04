@@ -111,7 +111,7 @@ const componentCSS = `
         align-items: center;
         gap: 8px;
         background: #e43e3e;
-        color: #ffe6e6 !important; /* Vilarci Red text/icon */
+        color: #fbe1f8 !important; /* Vilarci Red text/icon */
         
         border-radius: 50px !important; /* Perfect Pill Shape */
         font-weight: 800 !important;
@@ -128,7 +128,7 @@ const componentCSS = `
         box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
         border-color: #ce093a; /* Premium gold ring on hover */
     }
-    @media (max-width: 600px) {
+    @media (max-width: 300px) {
         .profile-text { display: none; } /* Hides text on mobile */
         .profile-btn { padding: 6px 12px !important; }
     }
@@ -136,7 +136,7 @@ const componentCSS = `
     /* NAVBAR RESPONSIVE QUERIES */
     @media (max-width: 850px) { .feedback-link { display: none; } }
     @media (max-width: 700px) { .seller-link { display: none; } }
-    @media (max-width: 540px) { .nav-links { display: none; } }
+    @media (max-width: 430px) { .profile-text{ display: none; } }
     @media (max-width: 400px) { 
         .logo-name { font-size: 20px; } 
         .logo { height: 26px; width: 26px; } 
@@ -272,7 +272,7 @@ const headerHTML = `
                 </a>
                 
                 <a class="border seller-link" href="seller home.html">Become a Seller</a>
-                <a class="border feedback-link" href="#">Feedback</a>
+                <a class="border feedback-link" href="feedback.html">Feedback</a>
             </div>
         </div>
         
