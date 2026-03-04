@@ -40,7 +40,7 @@
     <script src="header.js"></script>
 
     <script>
-        // 1. GET DB CLIENT (From config.js)
+        // 1. GET DB CLIENT
         const db = window.supabaseClient;
 
         // 2. PARSE URL PARAMETERS
@@ -55,62 +55,121 @@
         const INITIAL_BATCH = 25;
         const NEXT_BATCH = 14;
 
-        // 4. SMART DB FETCHING (Server-Side Filtering)
-        async function loadFilteredServices() {
+        // 4. SMART DB FETCHING (Location & Category Aware)
+        async function loadFilteredServices(isLoadMore = false) {
+            const grid = document.getElementById('services-grid');
+
+            // 🌟 RESET STATE
+            if (!isLoadMore) {
+                loadedCount = 0;
+                allLoaded = false;
+                if(grid) grid.innerHTML = '';
+                document.getElementById('spinner').classList.remove('hidden');
+                document.getElementById('end-message').classList.add('hidden');
+            }
+
             if (isLoading || allLoaded || !db) return;
             isLoading = true;
 
-            const limit = loadedCount === 0 ? INITIAL_BATCH : NEXT_BATCH;
-            const from = loadedCount;
-            const to = from + limit - 1;
+            try {
+                // 🌟 STEP A: Smart Location Check
+                const savedLoc = localStorage.getItem('vilarci_user_location');
+                let validSellerIds = null;
 
-            // Start Building the Query
-            let query = db
-                .from('services')
-                .select('name, slug, price, normal_price, image_url, badge_label, duration_minutes')
-                .eq('is_active', true) // Security First
-                .range(from, to)
-                .order('id', { ascending: true });
+                if (savedLoc) {
+                    const locObj = JSON.parse(savedLoc);
+                    let subZoneIds = [];
 
-            // Apply Filters matching your exact DB Schema
-            if (categoryId) {
-                query = query.eq('service_category_id', categoryId);
-                document.getElementById('page-title').innerText = "Category Results";
-            } else if (subId) {
-                query = query.eq('service_sub_category_id', subId);
-                document.getElementById('page-title').innerText = "Sub-Category Results";
-            }
+                    if (locObj.type === 'district') {
+                        const { data } = await db.from('sub_zones').select('id').eq('district_id', locObj.id);
+                        subZoneIds = data ? data.map(z => z.id) : [];
+                    } else if (locObj.type === 'main_zone') {
+                        const { data } = await db.from('sub_zones').select('id').eq('main_zone_id', locObj.id);
+                        subZoneIds = data ? data.map(z => z.id) : [];
+                    } else {
+                        subZoneIds = [parseInt(locObj.id)];
+                    }
 
-            // Execute Query
-            const { data, error } = await query;
-
-            if (error) {
-                console.error("Fetch Error:", error);
-                isLoading = false;
-                return;
-            }
-
-            if (!data || data.length === 0) {
-                allLoaded = true;
-                document.getElementById('spinner').classList.add('hidden');
-                document.getElementById('end-message').classList.remove('hidden');
-                
-                if (loadedCount === 0) {
-                    document.getElementById('end-message').innerText = "No services found in this category.";
-                    document.getElementById('end-message').classList.add('text-lg', 'text-slate-500'); 
+                    if (subZoneIds.length > 0) {
+                        const { data: sellers } = await db.from('seller_delivery_zones').select('seller_id').in('sub_zone_id', subZoneIds);
+                        validSellerIds = sellers ? [...new Set(sellers.map(s => s.seller_id))] : [];
+                    } else {
+                        validSellerIds = [];
+                    }
                 }
+
+                // 🌟 STEP B: Empty State if No Providers
+                if (validSellerIds !== null && validSellerIds.length === 0) {
+                    if (!isLoadMore) {
+                        grid.innerHTML = `
+                            <div class="col-span-full text-center py-16">
+                                <i data-lucide="map-pin-off" class="w-14 h-14 mx-auto text-slate-300 mb-4"></i>
+                                <h3 class="text-xl font-bold text-slate-700 mb-1">No Services Available</h3>
+                                <p class="text-slate-500 font-medium">We don't have providers in this area yet.</p>
+                            </div>`;
+                        if(window.lucide) window.lucide.createIcons();
+                    }
+                    allLoaded = true;
+                    stopLoadingUI();
+                    return;
+                }
+
+                const limit = loadedCount === 0 ? INITIAL_BATCH : NEXT_BATCH;
+                const from = loadedCount;
+                const to = from + limit - 1;
+
+                // 🌟 STEP C: Build Query
+                let query = db
+                    .from('services')
+                    .select('name, slug, price, normal_price, image_url, badge_label, duration_minutes')
+                    .eq('is_active', true)
+                    .range(from, to)
+                    .order('id', { ascending: true });
+
+                // Category Filters
+                if (categoryId) {
+                    query = query.eq('service_category_id', categoryId);
+                    document.getElementById('page-title').innerText = "Category Results";
+                } else if (subId) {
+                    query = query.eq('service_sub_category_id', subId);
+                    document.getElementById('page-title').innerText = "Sub-Category Results";
+                }
+
+                // Location Filter
+                if (validSellerIds !== null && validSellerIds.length > 0) {
+                    query = query.in('seller_id', validSellerIds);
+                }
+
+                const { data, error } = await query;
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    allLoaded = true;
+                    if (!isLoadMore) {
+                        grid.innerHTML = `
+                            <div class="col-span-full text-center py-16 text-slate-500">
+                                <i data-lucide="briefcase" class="w-12 h-12 mx-auto text-slate-300 mb-3"></i>
+                                <p class="font-bold">No services found in this category for your area.</p>
+                            </div>`;
+                        if(window.lucide) window.lucide.createIcons();
+                    }
+                    stopLoadingUI();
+                    return;
+                }
+
+                renderCards(data);
+                loadedCount += data.length;
+
+                if (data.length < limit) {
+                    allLoaded = true;
+                    stopLoadingUI();
+                }
+
+            } catch (err) {
+                console.error("Fetch Error:", err);
+            } finally {
                 isLoading = false;
-                return;
-            }
-
-            renderCards(data);
-            loadedCount += data.length;
-            isLoading = false;
-
-            if (data.length < limit) {
-                allLoaded = true;
-                document.getElementById('spinner').classList.add('hidden');
-                document.getElementById('end-message').classList.remove('hidden');
             }
         }
 
@@ -122,7 +181,7 @@
                 card.className = "bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-lg transition cursor-pointer flex flex-col h-full";
                 card.onclick = () => window.location.href = `service_details.html?slug=${svc.slug}`;
 
-                const imgUrl = svc.image_url || 'logo.png'; // Fallback image
+                const imgUrl = svc.image_url || 'logo.png'; 
                 
                 let priceHtml = `<span class="text-lg font-bold text-slate-900">₹${svc.price}</span>`;
                 if (svc.normal_price && svc.normal_price > svc.price) {
@@ -148,20 +207,33 @@
                 grid.appendChild(card);
             });
             
-            // Render the icons on the newly created cards
             if(window.lucide) window.lucide.createIcons();
         }
 
-        // 6. INITIALIZATION
+        function stopLoadingUI() {
+            document.getElementById('spinner').classList.add('hidden');
+            const endMsg = document.getElementById('end-message');
+            endMsg.classList.remove('hidden');
+            if (loadedCount === 0) {
+                endMsg.innerText = "No services available.";
+                endMsg.classList.add('text-lg', 'text-slate-500'); 
+            }
+        }
+
+        // 6. INITIALIZATION & RELOAD LISTENER
         document.addEventListener('DOMContentLoaded', () => {
-            // Start the infinite scroll observer
             const observer = new IntersectionObserver((entries) => {
-                if (entries[0].isIntersecting) loadFilteredServices();
+                if (entries[0].isIntersecting) loadFilteredServices(true);
             }, { rootMargin: '100px' });
             
             observer.observe(document.getElementById('loading-trigger'));
+            
+            // First load
+            loadFilteredServices(false);
         });
 
+        // 🌟 INSTANT RELOAD WHEN LOCATION CHANGES!
+        window.addEventListener('vilarciLocationChanged', () => loadFilteredServices(false));
     </script>
 </body>
 </html>

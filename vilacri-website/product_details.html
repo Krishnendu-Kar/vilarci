@@ -3,174 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product Details</title>
-    <!-- Tailwind CSS -->
+    <title>Product Details - Vilarci</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
-    <!-- Supabase Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-                <!-- 1. SUPABASE & CONFIG -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" xintegrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style> body { font-family: 'Inter', sans-serif; } 
-        .rating_avg{
-    display:inline-flex;
-    justify-content:center;
-    align-items:center;
-    font-size: 1rem;
-    font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
-    background-color:#038D63;
-    color:rgb(246, 249, 246);
-    padding: 2px 5px 2px 7px;
-    border-radius: 8px;
-}
-.rating_count{
-    font-size: .9rem;
-    font-weight: 600;
-    color:#999999;
-}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style> 
+        body { font-family: 'Inter', sans-serif; } 
+        
+        .rating_avg {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            background-color: #038D63;
+            color: #ffffff;
+            padding: 2px 6px;
+            border-radius: 6px;
+        }
+        
+        /* Hide scrollbar for thumbnails */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-slate-50 font-sans min-h-screen">
+<body class="bg-slate-50 font-sans min-h-screen pb-24 md:pb-8">
 
-       <script src="header.js"></script>
+    <script src="header.js"></script>
     <div id="vilarci-header"></div>
 
-    <!-- LOADING STATE -->
-    <div id="loader" class="flex flex-col items-center justify-center h-[80vh]">
+    <div id="loader" class="flex flex-col items-center justify-center h-[70vh]">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
-        <p class="text-slate-500 text-sm animate-pulse">Loading product details...</p>
+        <p class="text-slate-500 font-medium animate-pulse">Loading product details...</p>
     </div>
 
-    <!-- ERROR STATE -->
-    <div id="error-screen" class="hidden flex flex-col items-center justify-center h-[80vh] text-center">
-        <div class="bg-red-50 p-4 rounded-full mb-4">
-            <i data-lucide="alert-circle" class="w-12 h-12 text-red-500"></i>
+    <div id="error-screen" class="hidden flex flex-col items-center justify-center h-[70vh] text-center px-4">
+        <div class="bg-red-50 p-5 rounded-full mb-4">
+            <i data-lucide="package-x" class="w-12 h-12 text-red-500"></i>
         </div>
         <h2 class="text-2xl font-bold text-slate-800">Product Not Found</h2>
-        <p class="text-slate-500 mt-2 max-w-md">The product you are looking for might have been removed or the link is broken.</p>
-        <a href="index.html" class="mt-6 bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-indigo-700 transition">Go Home</a>
+        <p class="text-slate-500 mt-2 max-w-md">The product you are looking for might have been removed, or the link is broken.</p>
+        <button onclick="window.history.back()" class="mt-6 bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg">Go Back</button>
     </div>
 
-    <!-- MAIN PRODUCT CONTAINER -->
-    <main id="product-container" class="hidden max-w-7xl mx-auto px-4 py-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-            
-            <!-- LEFT: IMAGE GALLERY -->
-            <div class="space-y-4">
-                <div class="aspect-square bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm relative group">
-                    <span id="badge-label" class="absolute top-4 left-4 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full hidden shadow-sm z-10">
-                        SALE
-                    </span>
-                    <img id="main-image" src="" class="w-full h-full object-contain p-8 hover:scale-105 transition-transform duration-500">
-                </div>
+    <main id="product-container" class="hidden max-w-6xl mx-auto px-4 py-6 md:py-10">
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2">
                 
-                <!-- Thumbnails Container -->
-                <div id="thumbnails" class="flex gap-2 overflow-x-auto pb-2 hidden">
-                    <!-- JS will inject <img> tags here -->
-                </div>
-            </div>
-
-            <!-- RIGHT: DETAILS -->
-            <div class="space-y-6">
-                
-                <!-- Breadcrumbs & IDs -->
-                <div class="flex justify-between items-start border-b border-slate-100 pb-4">
-                    <div class="text-[10px] text-slate-400 font-mono space-y-1">
-                        <p>Product ID: <span id="display-id" class="text-slate-600 font-bold select-all">...</span></p>
-                        <p>Seller ID: <span id="display-seller" class="text-slate-600 select-all">...</span></p>
+                <div class="p-4 md:p-8 bg-slate-50 border-r border-slate-100 flex flex-col">
+                    <div class="aspect-square bg-white rounded-2xl overflow-hidden shadow-sm relative group flex-grow flex items-center justify-center mb-4 border border-slate-100">
+                        <span id="badge-label" class="absolute top-4 left-4 bg-red-500 text-white text-[10px] uppercase font-extrabold px-3 py-1.5 rounded-full hidden shadow-md z-10 tracking-wider">
+                            SALE
+                        </span>
+                        <img id="main-image" src="" class="w-full h-full object-contain p-6 md:p-10 transition-transform duration-500 hover:scale-105">
                     </div>
-                </div>
-
-                <!-- Title & Price -->
-                <div>
-                    <div class="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-2" id="category-tag">Category</div>
-                    <h1 id="product-title" class="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight">...</h1>
                     
-                    <div class="mt-4 flex items-baseline gap-3">
-                        <span id="price-display" class="text-4xl font-bold text-slate-900">₹0</span>
-                        <span id="mrp-display" class="text-lg text-slate-400 line-through decoration-2">₹0</span>
-                        <span id="discount-display" class="text-sm font-bold text-green-600 bg-green-50 px-2 py-1 rounded"></span>
+                    <div id="thumbnails" class="flex gap-3 overflow-x-auto no-scrollbar pb-2 hidden">
+                        </div>
+                </div>
+
+                <div class="p-5 md:p-8 space-y-6 flex flex-col justify-center">
+                    
+                    <div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <!-- <span id="category-tag" class="text-[10px] font-extrabold text-indigo-600 bg-indigo-50 px-2 py-1 rounded uppercase tracking-wider">Vilarci Verified</span> -->
+                            <div class="flex items-center gap-1.5">
+                                <div class="rating_avg"><span id="rating_avg"></span> <i class="fa-solid fa-star ml-1 text-[10px]"></i></div>
+                                <span class="text-xs font-semibold text-slate-400" id="rating_count"></span>
+                            </div>
+                        </div>
+                        
+                        <h1 id="product-title" class="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight mb-4">...</h1>
+                        
+                        <div class="flex items-end gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 inline-flex w-full md:w-auto">
+                            <span id="price-display" class="text-4xl font-extrabold text-slate-900 tracking-tight">₹0</span>
+                            <div class="flex flex-col pb-1">
+                                <span id="mrp-display" class="text-sm text-slate-400 line-through font-medium">₹0</span>
+                                <span id="discount-display" class="text-xs font-bold text-green-600"></span>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-400 font-medium mt-2 ml-1">Inclusive of all taxes</p>
                     </div>
-                    <p class="text-xs text-slate-400 mt-1">Inclusive of all taxes</p>
-                </div>
-                <div  class="rating_avg">
-                    <span  id="rating_avg"></span> <i style="font-size:0.6em; margin-left:2px;" class="fa-solid fa-star"></i>
-                </div>
-                <span class="rating_count"></span>
-               <!-- DYNAMIC LOGIC CONTAINER -->
-                <div id="dynamic-logic-container" class="bg-white p-4 rounded-xl border-2 border-indigo-50 shadow-sm">
-                    <!-- Injected via JS -->
-                </div>
 
-                <!-- DESCRIPTION -->
-                <div>
-                    <h3 class="font-bold text-slate-800 text-sm uppercase mb-2 flex items-center gap-2">
-                         Description
-                    </h3>
-                    <p id="product-description" class="text-slate-600 text-sm leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">...</p>
-                </div>
+                    <div id="dynamic-logic-container" class="border-t border-slate-100 pt-6"></div>
 
-                <!-- HIGHLIGHTS -->
-                <div id="highlights-section" class="hidden">
-                    <h3 class="font-bold text-slate-800 text-sm uppercase mb-2">Key Highlights</h3>
-                    <div id="product-highlights" class="grid grid-cols-1 gap-2 text-sm text-slate-600"></div>
-                </div> 
+                    <div class="pt-2">
+                        <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wide mb-3">Product Description</h3>
+                        <p id="product-description" class="text-slate-600 text-sm leading-relaxed"></p>
+                    </div>
 
-                <!-- SPECIFICATIONS -->
-                <div id="specs-section" class="hidden">
-                    <h3 class="font-bold text-slate-800 text-sm uppercase mb-2">Specifications</h3>
-                    <div id="specs-grid" class="grid grid-cols-2 gap-y-2 text-sm border-t border-slate-100 pt-3"></div>
-                </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                        <div id="highlights-section" class="hidden bg-slate-50 p-4 rounded-xl">
+                            <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-3">Key Highlights</h3>
+                            <div id="product-highlights" class="grid gap-2 text-sm text-slate-600 font-medium"></div>
+                        </div> 
+                        <div id="specs-section" class="hidden bg-slate-50 p-4 rounded-xl">
+                            <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-3">Specifications</h3>
+                            <div id="specs-grid" class="grid grid-cols-2 gap-y-3 gap-x-2 text-sm"></div>
+                        </div>
+                    </div>
 
-                <!-- ACTION BUTTONS -->
-                <div class="fixed bottom-0 left-0 w-full bg-white border-t p-4 md:static md:bg-transparent md:border-0 md:p-0 flex gap-3 z-40 shadow-lg md:shadow-none">
-                    <button onclick="addToCart()" class="flex-1 bg-white border-2 border-indigo-600 text-indigo-700 font-bold py-3.5 rounded-xl hover:bg-indigo-50 transition flex justify-center items-center gap-2">
-                        <i data-lucide="shopping-cart" class="w-5 h-5"></i> Add to Cart
-                    </button>
-                    <button class="flex-1 bg-indigo-600 text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-indigo-700 transition transform active:scale-[0.98] flex justify-center items-center gap-2">
-                        <i data-lucide="zap" class="w-5 h-5"></i> Buy Now
-                    </button>
+                    <div id="seller-card" class="mt-4 bg-white border-2 border-slate-100 rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:border-indigo-200 hover:shadow-md transition group hidden">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition">
+                                <i data-lucide="store" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider mb-0.5">Sold By</p>
+                                <h4 id="shop-name-display" class="font-bold text-slate-800 text-base leading-tight group-hover:text-indigo-600 transition">Loading...</h4>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300 group-hover:text-indigo-600 transition transform group-hover:translate-x-1"></i>
+                    </div>
+
                 </div>
             </div>
         </div>
     </main>
 
-    <script>
-    // ==========================================
-    // 0. CONFIGURATION & SETUP
-    // ==========================================
-    const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dmNndWJicXRjY295Y3ZkdXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODA2MzQsImV4cCI6MjA4MDA1NjYzNH0.7Hobx-emspJQ7HLyjaWR-XQhzk948LWufq3OCimKk4w';
-    
-    // FIX 1: Renamed to 'supabaseClient' to avoid conflicts with window.supabase
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    
-    // Initialize Icons
-    lucide.createIcons();
+    <div id="action-bar" class="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-slate-200 p-3 flex gap-2 z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] transition-transform duration-300 transform translate-y-full">
+        
+        <button onclick="addToCart()" class="w-14 h-14 shrink-0 bg-slate-100 text-slate-700 rounded-xl flex items-center justify-center hover:bg-slate-200 transition focus:ring-2 focus:ring-slate-300">
+            <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+        </button>
+        
+        <button onclick="reservePickup()" class="flex-1 bg-white border-2 border-slate-900 text-slate-900 font-bold rounded-xl hover:bg-slate-50 transition flex justify-center items-center gap-2 text-[13px] sm:text-sm active:scale-95">
+            <i data-lucide="store" class="w-4 h-4 hidden sm:block"></i> Store Pickup
+        </button>
+        
+        <button onclick="buyNow()" class="flex-1 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition flex justify-center items-center gap-2 text-[13px] sm:text-sm active:scale-95">
+            <i data-lucide="zap" class="w-4 h-4 hidden sm:block"></i> Buy Now
+        </button>
+    </div>
 
-    // Global State
+    <script src="config.js"></script>
+    <script>
+    // Configuration
+    const db = window.supabaseClient;
+    
     let currentProduct = {};
     let selectedPrice = 0;
     let selectedWeightLabel = "";
 
-    // ==========================================
-    // 1. MAIN INIT LOGIC
-    // ==========================================
     async function initPage() {
+        lucide.createIcons();
+        
         const urlParams = new URLSearchParams(window.location.search);
         const slug = urlParams.get('slug'); 
         const idFallback = urlParams.get('id');
 
-        // FIX 2: Using the renamed client
-        let query = supabaseClient.from('products').select('*');
+        let query = db.from('products').select('*');
 
         if (slug) query = query.eq('slug', slug);
         else if (idFallback) query = query.eq('id', idFallback);
@@ -179,7 +171,6 @@
         const { data, error } = await query.single();
 
         if (error || !data) {
-            console.error("Error loading product:", error);
             showError();
             return;
         }
@@ -187,96 +178,67 @@
         currentProduct = data;
         renderUniversalData(data);
         
-        // ID Decoding Logic
+        // Product Logic Routing
         const idString = data.id.toString();
         const fashionCode = idString.length >= 8 ? idString.substring(6, 8) : "00"; 
         const subAreaCode = idString.length >= 11 ? idString.substring(8, 11) : "000"; 
 
-        console.log(`Product Loaded: ${data.name} | Type Code: ${fashionCode}`);
+        if (fashionCode === '12') renderFashionInterface(data);
+        else if (subAreaCode === '185') renderWeightableInterface(data);
+        else renderPacketInterface(data);
 
-        // Logic Router
-        if (fashionCode === '12') {
-            renderFashionInterface(data);
-        } else if (subAreaCode === '185') {
-            renderWeightableInterface(data);
-        } else {
-            renderPacketInterface(data);
-        }
+        // Fetch Shop Info
+        fetchSellerInfo(data.seller_id);
 
-        // Hide Loader
+        // Show UI
         document.getElementById('loader').classList.add('hidden');
         document.getElementById('product-container').classList.remove('hidden');
         
-        // Update Cart Count on Load
+        // Slide up the action bar
+        setTimeout(() => {
+            document.getElementById('action-bar').classList.remove('translate-y-full');
+        }, 300);
+        
         updateGlobalCartCount();
     }
 
-    // ==========================================
-    // 2. RENDERERS
-    // ==========================================
     function renderUniversalData(product) {
         // Ratings
-        document.getElementById('rating_avg').innerText = product.rating_avg || 0;
-        document.querySelector('.rating_count').innerText = product.rating_count > 0 
+        document.getElementById('rating_avg').innerText = product.rating_avg || 4.5;
+        document.getElementById('rating_count').innerText = product.rating_count > 0 
             ? `${product.rating_count} Ratings` : 'No Ratings';
 
-        // IDs
-        document.getElementById('display-id').innerText = product.id;
-        
-        // FIX 3: Optimized Seller Link (Uses local data first, fetch only if missing)
-        const sellerLink = document.getElementById('display-seller');
-        sellerLink.innerText = product.seller_id;
-        
-        if (product.shop_slug) {
-            activateSellerLink(sellerLink, product.shop_slug);
-        } else {
-            // Fallback only if database missing column data
-            fetchSellerSlugFallback(product.seller_id, sellerLink);
-        }
-
-        // Text Data
         document.getElementById('product-title').innerText = product.name;
-        document.getElementById('product-description').innerText = product.description || "No description available.";
+        document.getElementById('product-description').innerText = product.description || "No description available for this product.";
         
-        // Category Tag
-        if(document.getElementById('category-tag')) {
-            // Mapping ID to text is complex without joining, placeholder for now
-            document.getElementById('category-tag').innerText = "Vilarci Verified"; 
-        }
-
-        // --- Image Gallery ---
+        // Gallery
         const mainImg = document.getElementById('main-image');
         const thumbContainer = document.getElementById('thumbnails');
         thumbContainer.innerHTML = ''; 
 
         if (product.images && product.images.length > 0) {
             mainImg.src = product.images[0];
-
             if (product.images.length > 1) {
                 thumbContainer.classList.remove('hidden');
                 product.images.forEach((imgUrl, index) => {
                     const thumb = document.createElement('img');
                     thumb.src = imgUrl;
-                    thumb.className = `w-16 h-16 object-cover rounded-lg border-2 cursor-pointer transition ${index === 0 ? 'border-indigo-600' : 'border-transparent hover:border-indigo-300'}`;
+                    thumb.className = `w-16 h-16 object-cover rounded-xl border-2 cursor-pointer transition flex-shrink-0 ${index === 0 ? 'border-indigo-600 shadow-md' : 'border-slate-200 hover:border-indigo-300'}`;
                     
                     thumb.onmouseover = () => {
                         mainImg.src = imgUrl;
-                        // Reset borders
                         Array.from(thumbContainer.children).forEach(t => {
-                            t.classList.remove('border-indigo-600');
-                            t.classList.add('border-transparent');
+                            t.classList.remove('border-indigo-600', 'shadow-md');
+                            t.classList.add('border-slate-200');
                         });
-                        thumb.classList.remove('border-transparent');
-                        thumb.classList.add('border-indigo-600');
+                        thumb.classList.remove('border-slate-200');
+                        thumb.classList.add('border-indigo-600', 'shadow-md');
                     };
                     thumbContainer.appendChild(thumb);
                 });
-            } else {
-                thumbContainer.classList.add('hidden');
             }
         } else {
-            mainImg.src = "https://via.placeholder.com/400?text=No+Image";
-            thumbContainer.classList.add('hidden');
+            mainImg.src = "logo.png";
         }
 
         // Badge
@@ -292,7 +254,7 @@
             const div = document.getElementById('product-highlights');
             div.innerHTML = ''; 
             product.highlights.forEach(h => {
-                div.innerHTML += `<div class="flex gap-2 items-start"><i data-lucide="check-circle2" class="w-4 h-4 text-green-500 mt-0.5"></i> <span>${h}</span></div>`;
+                div.innerHTML += `<div class="flex gap-2 items-start"><i data-lucide="check-circle2" class="w-4 h-4 text-green-500 mt-0.5 shrink-0"></i> <span>${h}</span></div>`;
             });
         }
 
@@ -301,51 +263,49 @@
             document.getElementById('specs-section').classList.remove('hidden');
             const grid = document.getElementById('specs-grid');
             grid.innerHTML = ''; 
-            
-            function parseSpecs(obj) {
-                Object.entries(obj).forEach(([k, v]) => {
-                    if(typeof v === 'object' && v !== null) parseSpecs(v);
-                    else {
-                        grid.innerHTML += `
-                            <div class="text-slate-500 font-medium">${k}</div>
-                            <div class="text-slate-800">${v}</div>
-                        `;
-                    }
-                });
-            }
-            parseSpecs(product.specifications);
+            Object.entries(product.specifications).forEach(([k, v]) => {
+                if(typeof v !== 'object') {
+                    grid.innerHTML += `
+                        <div class="text-slate-400 font-medium truncate">${k}</div>
+                        <div class="text-slate-800 font-semibold truncate text-right">${v}</div>
+                    `;
+                }
+            });
         }
+    }
+
+    // --- FETCH SELLER INFO ---
+    async function fetchSellerInfo(numericId) {
+        if (!numericId) return;
         
-        // Re-run icons for injected content
-        lucide.createIcons();
-    }
-
-    // --- Helper for Seller Link ---
-    function activateSellerLink(element, slug) {
-        element.style.cursor = 'pointer';
-        element.style.color = '#4f46e5';
-        element.style.textDecoration = 'underline';
-        element.onclick = () => window.location.href = `shop_profile.html?slug=${slug}`;
-    }
-
-    async function fetchSellerSlugFallback(numericId, element) {
-        const { data, error } = await supabaseClient
+        const { data, error } = await db
             .from('shops_public_587')
-            .select('shop_slug')
+            .select('store_name, shop_slug')
             .eq('seller_numeric_id', numericId.toString())
             .single();
         
-        if (!error && data?.shop_slug) {
-            activateSellerLink(element, data.shop_slug);
+        const sellerCard = document.getElementById('seller-card');
+        const shopNameDisplay = document.getElementById('shop-name-display');
+
+        sellerCard.classList.remove('hidden');
+
+        if (!error && data) {
+            shopNameDisplay.innerText = data.store_name || "Vilarci Verified Seller";
+            sellerCard.onclick = () => window.location.href = `shop_profile.html?slug=${data.shop_slug || numericId}`;
+        } else {
+            shopNameDisplay.innerText = "Vilarci Verified Seller";
+            // Remove hover effects if no link
+            sellerCard.classList.remove('cursor-pointer', 'hover:border-indigo-200', 'hover:shadow-md');
+            sellerCard.querySelector('i[data-lucide="chevron-right"]').classList.add('hidden');
         }
+        lucide.createIcons();
     }
 
 
     // ==========================================
-    // 3. INTERFACES (Weight, Packet, Fashion)
+    // INTERFACES (Weight, Fashion, Packet)
     // ==========================================
 
-    // --- A. WEIGHTABLE ---
     function renderWeightableInterface(product) {
         const container = document.getElementById('dynamic-logic-container');
         const bulkRules = product.bulk_rules || [];
@@ -353,10 +313,9 @@
         let html = `
             <div class="space-y-4">
                 <div class="flex items-center justify-between">
-                    <h3 class="font-bold text-slate-800 text-sm uppercase">Select Quantity</h3>
-                    <span class="text-xs text-indigo-600 font-bold bg-indigo-50 px-2 py-1 rounded">Bulk Savings</span>
+                    <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Select Quantity</h3>
                 </div>
-                <div class="grid grid-cols-1 gap-2" id="bulk-options-container">`;
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="bulk-options-container">`;
 
         bulkRules.forEach((rule, index) => {
             const basePricePerGram = product.base_price / 1000; 
@@ -375,37 +334,30 @@
 
             html += `
                 <div onclick="selectWeight(this, ${finalPrice}, ${Math.round(calcPrice)}, '${quantityLabel}')" 
-                     class="weight-option cursor-pointer border rounded-xl p-3 flex justify-between items-center hover:border-indigo-500 transition-all ${index === 0 ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600' : 'border-slate-200 bg-white'}">
-                    <div class="flex items-center gap-3">
-                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center ${index === 0 ? 'border-indigo-600' : 'border-slate-300'}">
-                            ${index === 0 ? '<div class="w-2.5 h-2.5 bg-indigo-600 rounded-full"></div>' : ''}
-                        </div>
-                        <div>
-                            <p class="font-bold text-slate-800">${quantityLabel}</p>
-                            ${saved > 0 ? `<p class="text-[10px] text-green-600 font-bold">Save ₹${saved}</p>` : ''}
-                        </div>
+                     class="weight-option cursor-pointer border rounded-2xl p-4 flex justify-between items-center transition-all ${index === 0 ? 'border-indigo-600 bg-indigo-50/50 ring-1 ring-indigo-600' : 'border-slate-200 bg-white hover:border-slate-300'}">
+                    <div class="flex flex-col">
+                        <p class="font-bold text-slate-800 text-lg">${quantityLabel}</p>
+                        ${saved > 0 ? `<p class="text-[10px] text-green-600 font-bold uppercase tracking-wide">Save ₹${saved}</p>` : ''}
                     </div>
-                    <p class="font-bold text-slate-900">₹${finalPrice}</p>
+                    <p class="font-extrabold text-indigo-700 text-xl">₹${finalPrice}</p>
                 </div>`;
         });
 
         html += `</div>
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mt-2">
-                    <h4 class="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-1">
-                        <i data-lucide="calculator" class="w-3 h-3"></i> Custom Amount
-                    </h4>
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 mt-2">
+                    <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Custom Amount</h4>
                     <div class="flex items-center gap-3">
                         <div class="relative flex-1">
                             <input type="number" id="custom-weight" placeholder="0" 
-                                class="w-full pl-3 pr-8 py-2 border border-slate-300 rounded-lg text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                                class="w-full pl-3 pr-8 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none transition"
                                 oninput="calculateCustom('weight', this.value)">
-                            <span class="absolute right-3 top-2 text-xs font-bold text-slate-400">gm</span>
+                            <span class="absolute right-3 top-3.5 text-xs font-bold text-slate-400">gm</span>
                         </div>
                         <i data-lucide="arrow-left-right" class="w-4 h-4 text-slate-300"></i>
                         <div class="relative flex-1">
-                            <span class="absolute left-3 top-2 text-xs font-bold text-slate-400">₹</span>
+                            <span class="absolute left-3 top-3.5 text-xs font-bold text-slate-400">₹</span>
                             <input type="number" id="custom-cost" placeholder="0" 
-                                class="w-full pl-6 pr-3 py-2 border border-slate-300 rounded-lg text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                                class="w-full pl-7 pr-3 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none transition"
                                 oninput="calculateCustom('cost', this.value)">
                         </div>
                     </div>
@@ -416,7 +368,6 @@
         lucide.createIcons();
     }
 
-    // --- B. FASHION ---
     function renderFashionInterface(product) {
         const container = document.getElementById('dynamic-logic-container');
         const variants = product.variants || []; 
@@ -424,67 +375,66 @@
         let html = `
             <div class="space-y-4">
                 <div class="flex justify-between items-center">
-                    <h3 class="font-bold text-slate-800 text-sm uppercase">Select Size</h3>
-                    <a href="#" class="text-xs text-indigo-600 font-bold hover:underline">Size Chart</a>
+                    <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Select Size</h3>
                 </div>
-                <div class="grid grid-cols-4 gap-3">`;
+                <div class="flex flex-wrap gap-3">`;
 
         if(variants.length === 0) {
-            html += `<p class="text-sm text-slate-500 col-span-4">No variants available.</p>`;
+            html += `<p class="text-sm text-slate-500 w-full">No sizes available.</p>`;
         } else {
             variants.forEach(v => {
                 const isOutOfStock = v.stock <= 0;
-                const baseClass = "cursor-pointer border rounded-lg py-3 flex flex-col items-center justify-center transition-all relative overflow-hidden group";
+                const baseClass = "cursor-pointer border-2 rounded-xl h-12 min-w-[3rem] px-4 flex flex-col items-center justify-center transition-all relative overflow-hidden group font-bold";
                 const stockClass = isOutOfStock 
-                    ? "bg-slate-50 border-slate-200 opacity-50 cursor-not-allowed" 
-                    : "bg-white border-slate-200 hover:border-indigo-500 hover:shadow-sm";
+                    ? "bg-slate-50 border-slate-200 text-slate-400 opacity-60 cursor-not-allowed" 
+                    : "bg-white border-slate-200 text-slate-700 hover:border-indigo-600 hover:text-indigo-600";
                 
                 const clickAction = isOutOfStock ? "" : `selectFashionVariant(this, '${v.size}', ${v.price}, '${v.sku}')`;
 
                 html += `
                     <div onclick="${clickAction}" class="variant-option ${baseClass} ${stockClass}">
-                        <span class="font-bold text-slate-800 text-sm">${v.size}</span>
-                        ${!isOutOfStock && v.stock < 10 ? `<span class="text-[9px] text-red-500 font-bold mt-1">${v.stock} left</span>` : ''}
-                        ${isOutOfStock ? `<div class="absolute inset-0 flex items-center justify-center"><div class="w-full h-[1px] bg-slate-400 -rotate-45"></div></div>` : ''}
+                        ${v.size}
+                        ${!isOutOfStock && v.stock < 5 ? `<span class="absolute bottom-0.5 text-[8px] text-red-500 font-extrabold uppercase">Few Left</span>` : ''}
+                        ${isOutOfStock ? `<div class="absolute inset-0 flex items-center justify-center"><div class="w-full h-[2px] bg-slate-300 -rotate-45"></div></div>` : ''}
                     </div>`;
             });
         }
 
         html += `</div>
-                <div id="fashion-warning" class="hidden text-xs text-red-500 font-bold flex items-center gap-1">
-                    <i data-lucide="alert-circle" class="w-3 h-3"></i> Please select a size
+                <div id="fashion-warning" class="hidden text-xs text-red-500 font-bold flex items-center gap-1 bg-red-50 p-2 rounded-lg">
+                    <i data-lucide="alert-triangle" class="w-4 h-4"></i> Please select a size to continue
                 </div>
             </div>`;
 
         container.innerHTML = html;
         selectedWeightLabel = ""; 
         selectedPrice = product.base_price; 
+        updatePriceUI(selectedPrice, product.original_price);
         lucide.createIcons();
     }
 
-    // --- C. PACKET ---
     function renderPacketInterface(product) {
         const container = document.getElementById('dynamic-logic-container');
         
         let stockStatus = product.stock_quantity > 10 
-            ? `<span class="text-green-600 font-bold flex items-center gap-1"><i data-lucide="check" class="w-4 h-4"></i> In Stock</span>`
-            : `<span class="text-orange-600 font-bold">Only ${product.stock_quantity} left!</span>`;
+            ? `<span class="text-green-600 font-bold flex items-center gap-1 text-xs uppercase tracking-wider"><i data-lucide="check-circle2" class="w-4 h-4"></i> In Stock</span>`
+            : `<span class="text-orange-500 font-bold text-xs uppercase tracking-wider flex items-center gap-1"><i data-lucide="alert-circle" class="w-4 h-4"></i> Only ${product.stock_quantity} left</span>`;
         
-        if(product.stock_quantity <= 0) stockStatus = `<span class="text-red-600 font-bold">Out of Stock</span>`;
+        if(product.stock_quantity <= 0) stockStatus = `<span class="text-red-500 font-bold text-xs uppercase tracking-wider flex items-center gap-1"><i data-lucide="x-circle" class="w-4 h-4"></i> Out of Stock</span>`;
 
         container.innerHTML = `
-            <div class="flex flex-col gap-4">
-                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100">
-                    <span class="text-sm font-medium text-slate-600">Availability</span>
+            <div class="flex flex-col gap-5">
+                <div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Availability</span>
                     ${stockStatus}
                 </div>
                 
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-bold text-slate-800">Quantity</span>
-                    <div class="flex items-center border border-slate-300 rounded-lg bg-white">
-                        <button onclick="updatePacketQty(-1)" class="px-3 py-2 text-slate-500 hover:bg-slate-100 transition">-</button>
-                        <input type="text" id="packet-qty" value="1" class="w-10 text-center text-sm font-bold outline-none" readonly>
-                        <button onclick="updatePacketQty(1)" class="px-3 py-2 text-slate-500 hover:bg-slate-100 transition">+</button>
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Quantity</h3>
+                    <div class="flex items-center bg-white border-2 border-slate-200 rounded-xl overflow-hidden shadow-sm h-11">
+                        <button onclick="updatePacketQty(-1)" class="w-11 h-full text-slate-500 hover:bg-slate-100 hover:text-indigo-600 transition font-bold text-lg flex items-center justify-center">-</button>
+                        <input type="text" id="packet-qty" value="1" class="w-12 h-full text-center text-sm font-bold text-slate-900 outline-none border-x border-slate-200" readonly>
+                        <button onclick="updatePacketQty(1)" class="w-11 h-full text-slate-500 hover:bg-slate-100 hover:text-indigo-600 transition font-bold text-lg flex items-center justify-center">+</button>
                     </div>
                 </div>
             </div>`;
@@ -495,35 +445,26 @@
     }
 
     // ==========================================
-    // 4. INTERACTION LOGIC
+    // SELECTION LOGIC
     // ==========================================
 
     window.selectWeight = function(element, price, mrp, label) {
-        // Reset Custom Inputs
         document.getElementById('custom-weight').value = '';
         document.getElementById('custom-cost').value = '';
 
-        // Reset Styles
         document.querySelectorAll('.weight-option').forEach(el => {
-            el.className = 'weight-option cursor-pointer border border-slate-200 bg-white rounded-xl p-3 flex justify-between items-center hover:border-indigo-500 transition-all';
-            el.querySelector('.w-5').className = 'w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center';
-            el.querySelector('.w-5').innerHTML = '';
+            el.className = 'weight-option cursor-pointer border-2 border-slate-100 bg-white rounded-2xl p-4 flex justify-between items-center hover:border-slate-300 transition-all';
         });
 
-        // Set Active Style
-        element.className = 'weight-option cursor-pointer border border-indigo-600 bg-indigo-50 rounded-xl p-3 flex justify-between items-center ring-1 ring-indigo-600 transition-all';
-        element.querySelector('.w-5').className = 'w-5 h-5 rounded-full border-2 border-indigo-600 flex items-center justify-center';
-        element.querySelector('.w-5').innerHTML = '<div class="w-2.5 h-2.5 bg-indigo-600 rounded-full"></div>';
+        element.className = 'weight-option cursor-pointer border-2 border-indigo-600 bg-indigo-50/50 rounded-2xl p-4 flex justify-between items-center transition-all shadow-sm';
 
         selectedWeightLabel = label;
         updatePriceUI(price, mrp);
     }
 
     window.calculateCustom = function(mode, value) {
-        // Deselect bulk options visual
         document.querySelectorAll('.weight-option').forEach(el => {
-            el.className = 'weight-option cursor-pointer border border-slate-200 bg-white rounded-xl p-3 flex justify-between items-center hover:border-indigo-500 transition-all opacity-50';
-            el.querySelector('.w-5').innerHTML = '';
+            el.className = 'weight-option cursor-pointer border-2 border-slate-100 bg-white rounded-2xl p-4 flex justify-between items-center transition-all opacity-50';
         });
 
         const val = parseFloat(value);
@@ -551,15 +492,13 @@
     }
 
     window.selectFashionVariant = function(element, size, price, sku) {
-        // Reset others
         document.querySelectorAll('.variant-option').forEach(el => {
-            if(!el.classList.contains('opacity-50')) {
-                el.className = "variant-option cursor-pointer border border-slate-200 bg-white rounded-lg py-3 flex flex-col items-center justify-center transition-all hover:border-indigo-500 relative overflow-hidden group";
+            if(!el.classList.contains('opacity-60')) {
+                el.className = "variant-option cursor-pointer border-2 border-slate-200 bg-white text-slate-700 rounded-xl h-12 min-w-[3rem] px-4 flex flex-col items-center justify-center transition-all hover:border-indigo-600 hover:text-indigo-600 relative overflow-hidden group font-bold";
             }
         });
 
-        // Highlight Active
-        element.className = "variant-option cursor-pointer border-2 border-indigo-600 bg-indigo-50 rounded-lg py-3 flex flex-col items-center justify-center transition-all relative overflow-hidden ring-1 ring-indigo-600";
+        element.className = "variant-option cursor-pointer border-2 border-indigo-600 bg-indigo-600 text-white rounded-xl h-12 min-w-[3rem] px-4 flex flex-col items-center justify-center transition-all relative overflow-hidden font-bold shadow-md transform scale-105";
 
         selectedPrice = price; 
         selectedWeightLabel = `Size: ${size}`; 
@@ -574,11 +513,7 @@
         
         if(val < 1) val = 1;
         if(currentProduct.stock_quantity && val > currentProduct.stock_quantity) {
-            Toastify({
-                text: `Max stock is ${currentProduct.stock_quantity}`,
-                duration: 2000,
-                style: { background: "#ef4444" }
-            }).showToast();
+            Toastify({ text: `Max stock is ${currentProduct.stock_quantity}`, duration: 2000, style: { background: "#ef4444" } }).showToast();
             val = currentProduct.stock_quantity;
         }
         
@@ -595,36 +530,31 @@
             document.getElementById('mrp-display').innerText = `₹${mrp}`;
             const discount = Math.round(((mrp - price) / mrp) * 100);
             document.getElementById('discount-display').innerText = `${discount}% OFF`;
-            document.getElementById('discount-display').classList.remove('hidden');
-            document.getElementById('mrp-display').classList.remove('hidden');
         } else {
-            document.getElementById('mrp-display').classList.add('hidden');
-            document.getElementById('discount-display').classList.add('hidden');
+            document.getElementById('mrp-display').innerText = '';
+            document.getElementById('discount-display').innerText = '';
         }
     }
 
     // ==========================================
-    // 5. CART & ACTIONS
+    // ACTION BUTTONS
     // ==========================================
 
-    function addToCart(isBuyNow = false) {
-        // Safety Check for Fashion
+    function checkFashionSelection() {
         const idString = currentProduct.id.toString();
         const fashionCode = idString.length >= 8 ? idString.substring(6, 8) : "";
-        
         if (fashionCode === '12' && (!selectedWeightLabel || selectedWeightLabel === "")) {
             document.getElementById('fashion-warning').classList.remove('hidden');
-            Toastify({
-                text: "Please select a size",
-                duration: 3000,
-                style: { background: "#ef4444" }
-            }).showToast();
-            return;
+            Toastify({ text: "Please select a size", duration: 3000, style: { background: "#ef4444" } }).showToast();
+            return false;
         }
+        return true;
+    }
 
-        // Unique Cart ID
+    function addToCart() {
+        if(!checkFashionSelection()) return;
+
         const uniqueKey = `${currentProduct.slug}-${selectedWeightLabel.replace(/\s+/g, '-')}`;
-
         const cartItem = {
             cartItemId: uniqueKey,
             id: currentProduct.id,
@@ -640,46 +570,41 @@
         let cart = JSON.parse(localStorage.getItem('cart') || "[]");
         const existingIndex = cart.findIndex(i => i.cartItemId === uniqueKey);
 
-        if (existingIndex > -1) {
-            cart[existingIndex].quantity += 1; 
-        } else {
-            cart.push(cartItem); 
-        }
+        if (existingIndex > -1) cart[existingIndex].quantity += 1; 
+        else cart.push(cartItem); 
 
         localStorage.setItem('cart', JSON.stringify(cart));
         updateGlobalCartCount();
 
-        if (isBuyNow) {
-            window.location.href = 'cart.html';
-        } else {
-            Toastify({
-                text: "Added to Cart!",
-                duration: 3000,
-                gravity: "bottom", 
-                position: "center", 
-                style: {
-                    background: "#22c55e", 
-                    borderRadius: "8px",
-                }
-            }).showToast();
-        }
+        Toastify({
+            text: "Added to Cart!",
+            duration: 3000,
+            gravity: "bottom", position: "center", 
+            style: { background: "#22c55e", borderRadius: "8px", fontWeight: "bold" }
+        }).showToast();
     }
 
-    // FIX 4: Implemented Buy Now Button Logic
-    // Attach this to your Buy Now button in HTML: onclick="buyNow()"
     function buyNow() {
-        addToCart(true);
+        if(!checkFashionSelection()) return;
+        addToCart();
+        window.location.href = 'cart.html';
     }
-    
-    // Attach to HTML Button
-    document.querySelector('button .fa-zap, button .lucide-zap').closest('button').onclick = buyNow;
+
+    // 🌟 NEW RESERVE PICKUP FUNCTION 🌟
+    function reservePickup() {
+        if(!checkFashionSelection()) return;
+        // Functionality to be added later (e.g. adding to a 'reservations' array in local storage or direct API call)
+        Toastify({
+            text: "Store Pickup reserved! The seller will keep this ready.",
+            duration: 4000,
+            gravity: "bottom", position: "center", 
+            style: { background: "#0f172a", borderRadius: "8px", fontWeight: "bold" }
+        }).showToast();
+    }
 
     function updateGlobalCartCount() {
-        // Tries to update badge if it exists in the navbar
         let cart = JSON.parse(localStorage.getItem('cart') || "[]");
         let count = cart.reduce((acc, item) => acc + item.quantity, 0);
-        
-        // Try standard ID or class
         const badge = document.getElementById('cart-count-badge');
         if(badge) badge.innerText = count;
     }
@@ -689,8 +614,7 @@
         document.getElementById('error-screen').classList.remove('hidden');
     }
 
-    // Start
     initPage();
-</script>
+    </script>
 </body>
 </html>

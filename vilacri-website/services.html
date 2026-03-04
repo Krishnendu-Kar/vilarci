@@ -48,14 +48,10 @@
     <script src="header.js"></script>
 
     <script>
-        // ==========================================
         // 1. GET DB CLIENT (From config.js)
-        // ==========================================
         const db = window.supabaseClient;
 
-        // ==========================================
         // 2. INFINITE SCROLL STATE
-        // ==========================================
         let loadedCount = 0;
         let isLoading = false;
         let allLoaded = false;
@@ -63,53 +59,117 @@
         const INITIAL_BATCH = 25;
         const NEXT_BATCH = 14;
 
-        // ==========================================
-        // 3. FETCH LOGIC
-        // ==========================================
-        async function loadServices() {
+        // 3. FETCH LOGIC (Location Aware & Auto-Resetting)
+        async function loadServices(isLoadMore = false) {
+            const grid = document.getElementById('services-grid');
+
+            // 🌟 RESET STATE ON NEW LOCATION
+            if (!isLoadMore) {
+                loadedCount = 0;
+                allLoaded = false;
+                if(grid) grid.innerHTML = '';
+                document.getElementById('spinner').classList.remove('hidden');
+                document.getElementById('end-message').classList.add('hidden');
+            }
+
             if (isLoading || allLoaded || !db) return;
             isLoading = true;
 
-            const isFirstLoad = loadedCount === 0;
-            const limit = isFirstLoad ? INITIAL_BATCH : NEXT_BATCH;
-            const from = loadedCount;
-            const to = from + limit - 1;
+            try {
+                // 🌟 STEP A: Smart Location Check
+                const savedLoc = localStorage.getItem('vilarci_user_location');
+                let validSellerIds = null;
 
-            // Secure Database Query fetching ALL active services, newest first
-            const { data, error } = await db
-                .from('services')
-                .select('name, slug, price, normal_price, image_url, badge_label, duration_minutes')
-                .eq('is_active', true)
-                .range(from, to)
-                .order('id', { ascending: false });
+                if (savedLoc) {
+                    const locObj = JSON.parse(savedLoc);
+                    let subZoneIds = [];
 
-            if (error) {
-                console.error("Fetch Error:", error);
+                    if (locObj.type === 'district') {
+                        const { data } = await db.from('sub_zones').select('id').eq('district_id', locObj.id);
+                        subZoneIds = data ? data.map(z => z.id) : [];
+                    } else if (locObj.type === 'main_zone') {
+                        const { data } = await db.from('sub_zones').select('id').eq('main_zone_id', locObj.id);
+                        subZoneIds = data ? data.map(z => z.id) : [];
+                    } else {
+                        subZoneIds = [parseInt(locObj.id)];
+                    }
+
+                    if (subZoneIds.length > 0) {
+                        const { data: sellers } = await db.from('seller_delivery_zones').select('seller_id').in('sub_zone_id', subZoneIds);
+                        validSellerIds = sellers ? [...new Set(sellers.map(s => s.seller_id))] : [];
+                    } else {
+                        validSellerIds = [];
+                    }
+                }
+
+                // 🌟 STEP B: Empty State if No Providers
+                if (validSellerIds !== null && validSellerIds.length === 0) {
+                    if (!isLoadMore) {
+                        grid.innerHTML = `
+                            <div class="col-span-full text-center py-16">
+                                <i data-lucide="map-pin-off" class="w-14 h-14 mx-auto text-slate-300 mb-4"></i>
+                                <h3 class="text-xl font-bold text-slate-700 mb-1">No Services Available</h3>
+                                <p class="text-slate-500 font-medium">We don't have any service providers in this area yet.</p>
+                            </div>
+                        `;
+                        if(window.lucide) window.lucide.createIcons();
+                    }
+                    allLoaded = true;
+                    stopLoadingUI();
+                    return;
+                }
+
+                const limit = loadedCount === 0 ? INITIAL_BATCH : NEXT_BATCH;
+                const from = loadedCount;
+                const to = from + limit - 1;
+
+                // 🌟 STEP C: Build Query
+                let query = db
+                    .from('services')
+                    .select('name, slug, price, normal_price, image_url, badge_label, duration_minutes')
+                    .eq('is_active', true)
+                    .range(from, to)
+                    .order('id', { ascending: false });
+
+                // Apply Location Filter
+                if (validSellerIds !== null && validSellerIds.length > 0) {
+                    query = query.in('seller_id', validSellerIds);
+                }
+
+                const { data, error } = await query;
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    if (!isLoadMore) {
+                        grid.innerHTML = `
+                            <div class="col-span-full text-center py-16 text-slate-500">
+                                <i data-lucide="briefcase" class="w-12 h-12 mx-auto text-slate-300 mb-3"></i>
+                                <p class="font-bold">No services found.</p>
+                            </div>`;
+                        if(window.lucide) window.lucide.createIcons();
+                    }
+                    allLoaded = true;
+                    stopLoadingUI();
+                    return;
+                }
+
+                renderCards(data);
+                loadedCount += data.length;
+
+                if (data.length < limit) {
+                    allLoaded = true;
+                    stopLoadingUI();
+                }
+
+            } catch (err) {
+                console.error("Fetch Error:", err);
+            } finally {
                 isLoading = false;
-                return;
-            }
-
-            // Check if we reached the end
-            if (!data || data.length === 0) {
-                allLoaded = true;
-                stopLoadingUI();
-                return;
-            }
-
-            renderCards(data);
-            loadedCount += data.length;
-            isLoading = false;
-
-            // If fewer items returned than requested, we are at the end
-            if (data.length < limit) {
-                allLoaded = true;
-                stopLoadingUI();
             }
         }
 
-        // ==========================================
         // 4. RENDER LOGIC
-        // ==========================================
         function renderCards(services) {
             const grid = document.getElementById('services-grid');
 
@@ -118,16 +178,13 @@
                 card.className = "bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-lg transition cursor-pointer fade-in flex flex-col h-full group";
                 card.onclick = () => window.location.href = `service_details.html?slug=${svc.slug}`;
 
-                // Image Fallback
                 const imgUrl = svc.image_url || 'logo.png';
                 
-                // Price Logic
                 let priceHtml = `<span class="text-lg font-bold text-slate-900">₹${svc.price}</span>`;
                 if (svc.normal_price && svc.normal_price > svc.price) {
                     priceHtml += `<span class="ml-2 text-sm text-slate-400 line-through">₹${svc.normal_price}</span>`;
                 }
 
-                // Badge Logic
                 const badge = svc.badge_label 
                     ? `<span class="absolute top-2 left-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow">${escapeHtml(svc.badge_label)}</span>` 
                     : '';
@@ -153,7 +210,6 @@
                 grid.appendChild(card);
             });
             
-            // Re-init icons for new elements
             if(window.lucide) window.lucide.createIcons();
         }
 
@@ -162,7 +218,6 @@
             document.getElementById('end-message').classList.remove('hidden');
         }
 
-        // Helper to prevent XSS
         function escapeHtml(text) {
             if (!text) return '';
             const div = document.createElement('div');
@@ -170,20 +225,20 @@
             return div.innerHTML;
         }
 
-        // ==========================================
-        // 5. OBSERVER / INIT
-        // ==========================================
+        // 5. OBSERVER & INSTANT RELOAD EVENT
         document.addEventListener('DOMContentLoaded', () => {
-            // Infinite Scroll Observer starts immediately
             const observer = new IntersectionObserver((entries) => {
-                if (entries[0].isIntersecting) {
-                    loadServices();
-                }
+                if (entries[0].isIntersecting) loadServices(true); // Pass true to append next page
             }, { rootMargin: '100px' });
             
             observer.observe(document.getElementById('loading-trigger'));
+            
+            // First load
+            loadServices(false);
         });
 
+        // 🌟 INSTANT RELOAD WHEN LOCATION CHANGES!
+        window.addEventListener('vilarciLocationChanged', () => loadServices(false));
     </script>
 </body>
 </html>

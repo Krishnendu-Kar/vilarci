@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Products - Vilarci</title>
 
-    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
@@ -15,35 +14,52 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        /* --- NEW CLEAN DESIGN (OVERRIDES STYLE.CSS FOR PRODUCTS) --- */
+        /* --- FULL-WIDTH PREMIUM DESIGN & FOOTER FIX --- */
         
-        /* 1. Page Background & Spacing */
-        body {
-            background-color: #f1f3f6; /* Flipkart Light Grey */
-        }
-        main {
-            max-width: 1400px;
-            margin: 120px auto 20px auto; /* Space for fixed header */
-            padding: 10px;
+        /* 1. Flex Layout to fix Footer */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
         }
 
-        /* 2. Results Header */
+        body {
+            background-color: #f1f3f6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #212121;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* Forces body to be at least the height of the screen */
+        }
+
+        /* 2. Main Layout Area (Grows to push footer down) */
+        .vilarci-layout {
+            max-width: 1400px;
+            width: 100%;
+            margin: 10px auto 40px auto; /* Space for fixed header and bottom padding */
+            padding: 0 16px;
+            flex: 1; /* This is the magic property that pushes the footer down */
+            box-sizing: border-box;
+        }
+
         .results-header {
             background: white;
-            padding: 15px 20px;
+            padding: 16px 20px;
             border-radius: 4px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            margin-bottom: 15px;
+            margin-bottom: 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
+        
         .results-title {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 600;
-            color: #212121;
-            text-transform: capitalize;
+            display: inline-block;
+            margin-right: 12px;
         }
+        
         .results-count {
             font-size: 14px;
             color: #878787;
@@ -52,100 +68,193 @@
         /* 3. GRID LAYOUT */
         .new-product-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 16px;
         }
 
         /* 4. PRODUCT CARD DESIGN */
         .v-card {
             background: white;
             border-radius: 4px;
-            padding: 12px;
+            padding: 16px;
             position: relative;
-            transition: box-shadow 0.2s ease;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
             cursor: pointer;
-            border: 1px solid #f0f0f0;
             display: flex;
             flex-direction: column;
+            border: 1px solid #f0f0f0; /* Subtle border for clean definition */
         }
         .v-card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
             transform: translateY(-2px);
+            z-index: 2;
         }
 
-        /* Image Container */
+        /* Wishlist Icon */
+        .wishlist-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            color: #c2c2c2;
+            font-size: 18px;
+            z-index: 10;
+            transition: color 0.2s;
+        }
+        .wishlist-btn:hover { color: #ff4343; }
+
+     /* -- UPGRADED IMAGE PRIORITY -- */
         .v-img-box {
-            height: 180px;
+            height: 250px; /* Significantly increased from 200px */
             width: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-bottom: 10px;
-            position: relative;
+            margin-bottom: 12px; /* Tighter margin pushes focus to the image */
+            background-color: #fafafa; /* Subtle background defines the image boundary */
+            border-radius: 4px;
+            overflow: hidden; /* Ensures zoom effect doesn't break boundaries */
         }
+
         .v-img-box img {
             max-height: 100%;
             max-width: 100%;
             object-fit: contain;
+            mix-blend-mode: multiply; /* Drops pure white image backgrounds to blend with card */
+            transition: transform 0.3s ease;
+        }
+        .v-card:hover .v-img-box img {
+            transform: scale(1.05);
         }
 
         /* Text Details */
         .v-title {
-            font-size: 14px;
+            font-size: 15px;
             color: #212121;
-            font-weight: 500;
-            margin-bottom: 4px;
+            margin-bottom: 8px;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            height: 36px; 
+            height: 42px; 
+            line-height: 1.4;
+            font-weight: 500;
         }
 
-        .v-price-row {
+        /* Ratings Badge */
+        .v-rating-row {
             display: flex;
-            align-items: baseline;
+            align-items: center;
             gap: 8px;
             margin-bottom: 12px;
         }
+        .v-badge {
+            background-color: #388e3c;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .v-rating-count {
+            color: #878787;
+            font-size: 13px;
+        }
+
+        /* Pricing Area */
+        .v-price-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
         .v-price {
-            font-size: 16px;
+            font-size: 20px;
             font-weight: 600;
             color: #212121;
+        }
+        .v-mrp {
+            font-size: 14px;
+            color: #878787;
+            text-decoration: line-through;
+        }
+        .v-discount {
+            font-size: 13px;
+            color: #388e3c;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+
+        /* Assured / Free Delivery tags */
+        .v-tags {
+            font-size: 12px;
+            font-weight: 600;
+            color: #26a541;
+            margin-bottom: 16px;
         }
 
         /* Button */
         .v-btn {
-            background: #ffc107;
+            background: #ff9f00;
             border: none;
             width: 100%;
-            padding: 8px;
-            border-radius: 4px;
+            padding: 12px;
+            border-radius: 2px;
             font-weight: 600;
-            color: #333;
-            font-size: 13px;
+            color: #fff;
+            font-size: 14px;
             cursor: pointer;
             transition: 0.2s;
             margin-top: auto;
+            opacity: 0;
+            visibility: hidden;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
-        .v-btn:hover {
-            background: #ffb300;
+        .v-card:hover .v-btn {
+            opacity: 1;
+            visibility: visible;
         }
+        .v-btn:hover { background: #f39700; }
 
         /* Mobile Adjustments */
-        @media (max-width: 480px) {
+        @media (max-width: 600px) {
             .new-product-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(2, 1fr); 
                 gap: 8px;
             }
-            .v-img-box { height: 140px; }
-            .v-title { font-size: 13px; height: 34px; }
-            .v-price { font-size: 15px; }
+            .vilarci-layout { padding: 0 8px; }
+            .v-card { padding: 8px; } /* Tighter card padding on mobile */
+            
+            .v-img-box { 
+                height: 180px; /* Increased from 140px for prominent mobile imagery */
+                margin-bottom: 8px;
+            }
+            
+            .v-title { font-size: 13px; height: 36px; }
+            .v-price { font-size: 16px; }
+            .v-mrp, .v-discount { font-size: 12px; }
+            .v-btn { 
+                opacity: 1; 
+                visibility: visible; 
+                padding: 8px; 
+                font-size: 13px; 
+            }
         }
         
-        /* Sidebar Fix */
-        #usb-overlay { z-index: 10000; }
-        #usb-sidebar { z-index: 10001; }
+        /* 5. Footer styling to sit properly */
+        footer {
+            width: 100%;
+            background: brown;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+            font-size: 14px;
+            margin-top: auto; /* Ensures it pushes to the very bottom */
+            box-sizing: border-box;
+        }
     </style>
 </head>
 <body>
@@ -158,123 +267,208 @@
     <script src="header.js"></script>
     <div id="vilarci-header"></div>
 
-    <main>
+    <main class="vilarci-layout">
         <div class="results-header">
             <div>
                 <h1 class="results-title" id="page-title">Products</h1>
-                <span class="results-count" id="result-count">Fetching...</span>
+                <span class="results-count" id="result-count">(Fetching...)</span>
             </div>
         </div>
 
         <div id="productList" class="new-product-grid">
-        </div>
+            </div>
     </main>
 
     <footer>
-        <div style="text-align:center; padding:20px; color:#fff; background:#212121; font-size:14px;">
-            ©2025 Vilarci - All Rights Reserved
-        </div>
+        ©2026 Vilarci - All Rights Reserved
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="sidebar.js"></script>
     <script>
-        // 1. Extract IDs from the URL
         const urlParams = new URLSearchParams(window.location.search);
         const categoryId = urlParams.get('category_id');
         const subCategoryId = urlParams.get('sub_category_id');
         const superSubId = urlParams.get('super_sub_id');
         const searchQuery = urlParams.get('search');
 
-        async function fetchProducts() {
+        function viewProduct(productId) {
+             window.location.href = `product_details.html?slug=${productId}`;
+        }
+
+        function toggleWishlist(event) {
+            event.stopPropagation();
+            const icon = event.currentTarget.querySelector('i');
+            if (icon.classList.contains('fa-regular')) {
+                icon.classList.replace('fa-regular', 'fa-solid');
+                icon.style.color = '#ff4343';
+            } else {
+                icon.classList.replace('fa-solid', 'fa-regular');
+                icon.style.color = '#c2c2c2';
+            }
+        }
+
+        let currentOffset = 0;
+        const LIMIT = 24;
+        let isFetching = false;
+        let allProductsLoaded = false;
+
+        async function fetchProducts(isLoadMore = false) {
             const container = document.getElementById('productList');
             const countDisplay = document.getElementById('result-count');
-            const pageLoader = document.getElementById('page-loader'); // Grab the full-screen loader
+            const pageLoader = document.getElementById('page-loader'); 
             
-            if (!container) return; 
+            if(!isLoadMore) {
+                currentOffset = 0;
+                allProductsLoaded = false; 
+                if (container) container.innerHTML = '';
+                if(pageLoader) pageLoader.style.display = 'flex';
+                if(countDisplay) countDisplay.innerText = '(Searching...)';
+            }
+
+            if (!container || isFetching || allProductsLoaded) return; 
+            isFetching = true;
 
             try {
-                // 2. Start the base query using the singleton client
+                const savedLoc = localStorage.getItem('vilarci_user_location');
+                let validSellerIds = null;
+
+                if (savedLoc) {
+                    const locObj = JSON.parse(savedLoc);
+                    let subZoneIds = [];
+
+                    if (locObj.type === 'district') {
+                        const { data } = await window.supabaseClient.from('sub_zones').select('id').eq('district_id', locObj.id);
+                        subZoneIds = data ? data.map(z => z.id) : [];
+                    } else if (locObj.type === 'main_zone') {
+                        const { data } = await window.supabaseClient.from('sub_zones').select('id').eq('main_zone_id', locObj.id);
+                        subZoneIds = data ? data.map(z => z.id) : [];
+                    } else {
+                        subZoneIds = [parseInt(locObj.id)];
+                    }
+
+                    if (subZoneIds.length > 0) {
+                        const { data: sellers } = await window.supabaseClient.from('seller_delivery_zones').select('seller_id').in('sub_zone_id', subZoneIds);
+                        validSellerIds = sellers ? [...new Set(sellers.map(s => s.seller_id))] : [];
+                    } else {
+                        validSellerIds = [];
+                    }
+                }
+
+                if (validSellerIds !== null && validSellerIds.length === 0) {
+                    if(!isLoadMore) {
+                        container.innerHTML = `
+                            <div style="text-align:center; padding: 60px 20px; grid-column: 1/-1; width:100%; background: #fff; border-radius: 4px;">
+                                <i data-lucide="map-pin-off" style="width: 56px; height: 56px; margin: 0 auto 16px; color: #cbd5e1;"></i>
+                                <h2 style="font-size: 18px; color: #334155; margin-bottom: 8px;">No Delivery Available</h2>
+                                <p style="font-weight: 400; color: #64748b;">We currently do not have sellers delivering to your selected area.</p>
+                            </div>`;
+                        if(window.lucide) window.lucide.createIcons();
+                        countDisplay.innerText = '(0 Items)';
+                    }
+                    allProductsLoaded = true;
+                    return;
+                }
+
+                if (!isLoadMore) {
+                    let countQuery = window.supabaseClient.from('products').select('*', { count: 'exact', head: true }).eq('is_active', true);
+                    if (validSellerIds !== null && validSellerIds.length > 0) countQuery = countQuery.in('seller_id', validSellerIds);
+                    if (superSubId) countQuery = countQuery.eq('super_sub_id', superSubId);
+                    else if (subCategoryId) countQuery = countQuery.eq('sub_category_id', subCategoryId);
+                    else if (categoryId) countQuery = countQuery.eq('category_id', categoryId);
+                    else if (searchQuery) countQuery = countQuery.ilike('name', `%${searchQuery}%`);
+                    
+                    const { count } = await countQuery;
+                    countDisplay.innerText = count ? `(Showing ${count} products)` : '(0 Items)';
+                }
+
                 let query = window.supabaseClient
                     .from('products')
                     .select('*')
                     .eq('is_active', true)
-                    .order('created_at', { ascending: false });
+                    .order('created_at', { ascending: false })
+                    .range(currentOffset, currentOffset + LIMIT - 1);
 
-                // 3. Apply filters dynamically based on the URL
-                if (superSubId) {
-                    query = query.eq('super_sub_id', superSubId);
-                } else if (subCategoryId) {
-                    query = query.eq('sub_category_id', subCategoryId);
-                } else if (categoryId) {
-                    query = query.eq('category_id', categoryId);
-                } else if (searchQuery) {
-                    query = query.ilike('name', `%${searchQuery}%`);
-                }
+                if (validSellerIds !== null && validSellerIds.length > 0) query = query.in('seller_id', validSellerIds);
+                if (superSubId) query = query.eq('super_sub_id', superSubId);
+                else if (subCategoryId) query = query.eq('sub_category_id', subCategoryId);
+                else if (categoryId) query = query.eq('category_id', categoryId);
+                else if (searchQuery) query = query.ilike('name', `%${searchQuery}%`);
 
-                // 4. Execute the query
                 const { data: products, error } = await query;
-
                 if (error) throw error;
 
-                // Update the item count in the header
-                countDisplay.innerText = products ? `${products.length} Items` : '0 Items';
-
-                // 5. Handle "Empty" results gracefully
                 if (!products || products.length === 0) {
-                    container.innerHTML = `
-                        <div style="text-align:center; padding: 40px; color: #64748b; grid-column: 1 / -1;">
-                            <i data-lucide="package-x" style="width: 48px; height: 48px; margin: 0 auto 10px; color: #cbd5e1;"></i>
-                            <p style="font-weight: 500;">No products found in this category.</p>
-                        </div>`;
-                    if(window.lucide) window.lucide.createIcons();
+                    if(!isLoadMore) {
+                        container.innerHTML = `
+                            <div style="text-align:center; padding: 60px 20px; background: #fff; border-radius: 4px; grid-column: 1 / -1;">
+                                <i data-lucide="package-x" style="width: 56px; height: 56px; margin: 0 auto 16px; color: #cbd5e1;"></i>
+                                <h2 style="font-size: 18px; color: #334155; margin-bottom: 8px;">No Products Found</h2>
+                                <p style="font-weight: 400; color: #64748b;">Try adjusting your search for something else.</p>
+                            </div>`;
+                        if(window.lucide) window.lucide.createIcons();
+                    }
+                    allProductsLoaded = true;
                     return;
                 }
 
-                // 6. Render the Products 
+                if (products.length < LIMIT) allProductsLoaded = true;
+                currentOffset += products.length;
+
                 let html = '';
                 products.forEach(p => {
                     const displayImage = (p.images && p.images.length > 0) ? p.images[0] : 'logo.png';
-                    const displayPrice = p.base_price ? p.base_price : 'N/A';
+                    const displayPrice = p.base_price ? parseFloat(p.base_price) : 0;
+                    
+                    const mockMRP = p.mrp ? parseFloat(p.mrp) : Math.round(displayPrice * 1.4); 
+                    const mockDiscount = mockMRP > displayPrice ? Math.round(((mockMRP - displayPrice) / mockMRP) * 100) : 0;
+                    const mockRating = (Math.random() * (5.0 - 3.5) + 3.5).toFixed(1); 
+                    const mockReviews = Math.floor(Math.random() * 500) + 10;
 
                     html += `
-                        <div class="v-card" onclick="window.location.href='product_details.html?slug=${p.slug || p.id}'">
-                            <div class="v-img-box">
-                                <img src="${displayImage}" alt="${p.name}" loading="lazy">
-                            </div>
+                        <div class="v-card" onclick="viewProduct('${p.slug || p.id}')">
+                            <div class="wishlist-btn" onclick="toggleWishlist(event)"><i class="fa-regular fa-heart"></i></div>
+                            <div class="v-img-box"><img src="${displayImage}" alt="${p.name}" loading="lazy"></div>
                             
                             <h3 class="v-title">${p.name}</h3>
                             
+                            <div class="v-rating-row">
+                                <span class="v-badge">${mockRating} <i class="fa-solid fa-star" style="font-size: 10px;"></i></span>
+                                <span class="v-rating-count">(${mockReviews})</span>
+                            </div>
+
                             <div class="v-price-row">
                                 <span class="v-price">₹${displayPrice}</span>
+                                ${mockDiscount > 0 ? `<span class="v-mrp">₹${mockMRP}</span><span class="v-discount">${mockDiscount}% off</span>` : ''}
                             </div>
                             
-                            <button class="v-btn" onclick="event.stopPropagation(); addToCart(event, '${p.id}', '${p.category_id}')">
-                                Add to Cart
-                            </button>
+                            <div class="v-tags">Free Delivery</div>
                         </div>
                     `;
                 });
                 
-                container.innerHTML = html;
-                
+                container.innerHTML += html;
                 if(window.lucide) window.lucide.createIcons();
 
             } catch (err) {
-                console.error("Error fetching products:", err);
-                container.innerHTML = `<div style="color: red; padding: 20px; text-align: center; grid-column: 1/-1;">Failed to load products: ${err.message}</div>`;
-                countDisplay.innerText = 'Error';
-            } finally {
-                // 7. FIX: Hide the full-screen loader when everything is done
-                if (pageLoader) {
-                    pageLoader.style.display = 'none';
+                console.error("Error:", err);
+                if(!isLoadMore) {
+                    container.innerHTML = `<div style="color: red; padding: 20px; text-align: center; background: #fff; grid-column: 1/-1;">Failed to load products. Please check your connection.</div>`;
+                    countDisplay.innerText = '(Error)';
                 }
+            } finally {
+                if (!isLoadMore && pageLoader) pageLoader.style.display = 'none';
+                isFetching = false;
             }
         }
 
-        // Run the function as soon as the page loads
-        document.addEventListener('DOMContentLoaded', fetchProducts);
+        window.addEventListener('scroll', () => {
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 600) fetchProducts(true);
+        });
+
+        document.addEventListener('DOMContentLoaded', () => fetchProducts(false));
+        window.addEventListener('vilarciLocationChanged', () => fetchProducts(false));
     </script>
 </body>
 </html>

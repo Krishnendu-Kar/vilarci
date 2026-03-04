@@ -76,7 +76,6 @@ const componentCSS = `
         color: #ffd54f; /* Premium Gold/Yellow */
         font-size: 11px; 
         font-weight: 800; 
-        text-transform: uppercase; 
         letter-spacing: 0.5px;
         margin-bottom: 2px;
         line-height: 1;
@@ -111,7 +110,7 @@ const componentCSS = `
         align-items: center;
         gap: 8px;
         background: #e43e3e;
-        color: #fbe1f8 !important; /* Vilarci Red text/icon */
+        color: #fffafe !important; /* Vilarci Red text/icon */
         
         border-radius: 50px !important; /* Perfect Pill Shape */
         font-weight: 800 !important;
@@ -249,6 +248,31 @@ const componentCSS = `
     .usb-loader { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
     .usb-skeleton { height: 20px; background: #e2e8f0; border-radius: 4px; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+
+
+  /* --- LOCATION MODAL STYLES --- */
+    #loc-modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 10000; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; }
+    #loc-modal-overlay.open { opacity: 1; visibility: visible; }
+    
+    .loc-modal { background: #ffffff; width: 90%; max-width: 400px; border-radius: 16px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); transform: scale(0.95) translateY(10px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); opacity: 0; }
+    #loc-modal-overlay.open .loc-modal { transform: scale(1) translateY(0); opacity: 1; }
+    
+    .loc-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .loc-modal-title { font-size: 18px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+    .loc-close-btn { background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #64748b; transition: 0.2s; }
+    .loc-close-btn:hover { background: #e2e8f0; color: #0f172a; }
+    
+    .loc-fixed-inputs { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+    .loc-input-group { background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px 14px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; color: #64748b; font-size: 14px; font-weight: 600; cursor: not-allowed; }
+    
+    .loc-label { font-size: 12px; font-weight: 700; color: #64748b; margin-bottom: 4px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+    .loc-select { width: 100%; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 15px; font-weight: 600; color: #0f172a; cursor: pointer; outline: none; appearance: none; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%2364748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>') no-repeat right 14px center; background-color: white; margin-bottom: 12px; transition: 0.2s; }
+    .loc-select:focus { border-color: #e43e3e; box-shadow: 0 0 0 3px rgba(228, 62, 62, 0.2); background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23e43e3e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>'); }
+    .loc-select:disabled { background-color: #f8fafc; cursor: not-allowed; color: #94a3b8; border-color: #e2e8f0; background-image: none; }
+    
+    .loc-save-btn { width: 100%; background: #e43e3e; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 700; font-size: 15px; margin-top: 8px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px -1px rgba(228, 62, 62, 0.3); }
+    .loc-save-btn:hover { background: #c62828; transform: translateY(-1px); }
+    .loc-save-btn:disabled { background: #cbd5e1; cursor: not-allowed; box-shadow: none; transform: none; }
 `;
 
 // 3. HTML TEMPLATES (RESTRUCTURED FOR FLEXBOX)
@@ -260,9 +284,9 @@ const headerHTML = `
                 <div class="logo-name">Vilarci</div>
             </div>
             
-            <div class="nav-address border">
-                <p class="location">Delivering to</p>
-                <div class="location-name"><i class="fa-solid fa-location-dot"></i> <span id="loc-text">Location</span></div>
+            <div class="nav-address border" onclick="openLocationModal()">
+                <p class="location">Results Based On</p>
+                <div class="location-name"><i class="fa-solid fa-location-dot"></i> <span id="loc-text">Select Location</span></div>
             </div>
             
             <div class="nav-links">
@@ -335,19 +359,19 @@ function initializeComponent() {
         console.warn("Header placeholder <div id='vilarci-header'></div> not found on this page.");
     }
 
-    // Inject Sidebar into body
+   // Inject Sidebar into body
     document.body.insertAdjacentHTML('beforeend', sidebarHTML);
+    
+    // --> ADD THIS LINE: Inject Location Modal into body
+    document.body.insertAdjacentHTML('beforeend', locationModalHTML);
 
-    // Format Location Text Safely
-    const locationElement = document.getElementById('loc-text');
-    if(locationElement) {
-        // Fallback placeholder text
-        let text = "Radhaballavpur"; 
-        
-        // If you load actual location from DB/Local storage later, update "text" variable here
-        
-        const truncatedText = text.length > 10 ? text.substring(0, 10) + "..." : text;
-        locationElement.innerText = truncatedText;
+    // --> ADD THIS BLOCK: Check Local Storage for saved location
+    const savedLoc = localStorage.getItem('vilarci_user_location');
+    if (savedLoc) {
+        const locObj = JSON.parse(savedLoc);
+        updateHeaderLocationText(locObj.name);
+    } else {
+        updateHeaderLocationText("Select Location");
     }
 
     // Initialize logic
@@ -546,5 +570,160 @@ window.loadServiceSubCategories = async function(parentId, parentName) {
     if (!error) popLoadingAndPush({ type: 'service-sub', title: parentName, data: data || [] });
 };
 
+
+// ==========================================
+// 8. LOCATION PICKER LOGIC
+// ==========================================
+
+// ==========================================
+// 8. LOCATION PICKER LOGIC (CASCADING)
+// ==========================================
+
+const locationModalHTML = `
+    <div id="loc-modal-overlay" onclick="if(event.target === this) closeLocationModal()">
+        <div class="loc-modal">
+            <div class="loc-modal-header">
+                <div class="loc-modal-title">
+                    <i class="fa-solid fa-map-location-dot" style="color: #e43e3e;"></i> 
+                    Delivery Location
+                </div>
+                <button class="loc-close-btn" onclick="closeLocationModal()">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="loc-fixed-inputs">
+                <div class="loc-input-group">
+                    <span>State</span> <span style="color: #0f172a;">West Bengal</span>
+                </div>
+            </div>
+
+            <label class="loc-label">District</label>
+            <select id="loc-district" class="loc-select">
+                <option value="1" selected>Purba Medinipur</option>
+            </select>
+
+            <label class="loc-label">Main Zone</label>
+            <select id="loc-mainzone" class="loc-select" onchange="handleMainZoneChange()">
+                <option value="dist_1">-- All of Purba Medinipur --</option>
+                <option value="1" selected>Tamluk</option>
+            </select>
+
+            <label class="loc-label">Sub Zone</label>
+            <select id="loc-subzone" class="loc-select" onchange="enableSaveBtn()">
+                <option value="" disabled selected>Loading local zones...</option>
+            </select>
+
+            <button id="loc-save-btn" class="loc-save-btn" onclick="saveLocation()" disabled>Confirm Location</button>
+        </div>
+    </div>
+`;
+
+window.openLocationModal = async function() {
+    const overlay = document.getElementById('loc-modal-overlay');
+    if (!overlay) return;
+    
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden'; 
+
+    const subZoneSelect = document.getElementById('loc-subzone');
+    
+    // Only fetch from DB if empty
+    if (subZoneSelect.options.length <= 1) {
+        await loadSubZonesForTamluk();
+    }
+};
+
+window.handleMainZoneChange = async function() {
+    const mainZoneVal = document.getElementById('loc-mainzone').value;
+    const subZoneSelect = document.getElementById('loc-subzone');
+    const saveBtn = document.getElementById('loc-save-btn');
+
+    if (mainZoneVal === 'dist_1') {
+        // User wants the whole district. Lock the sub-zone dropdown!
+        subZoneSelect.innerHTML = '<option value="dist_1" selected>All Areas Included</option>';
+        subZoneSelect.disabled = true;
+        saveBtn.disabled = false;
+    } else {
+        // User selected Tamluk. Unlock and load the specific zones.
+        subZoneSelect.disabled = false;
+        subZoneSelect.innerHTML = '<option value="" disabled selected>Loading...</option>';
+        saveBtn.disabled = true;
+        await loadSubZonesForTamluk();
+    }
+};
+
+window.loadSubZonesForTamluk = async function() {
+    const db = getDB();
+    const subZoneSelect = document.getElementById('loc-subzone');
+    if(!db) return;
+
+    const { data, error } = await db.from('sub_zones').select('id, name').eq('main_zone_id', 1).order('id');
+    
+    if (error || !data) {
+        subZoneSelect.innerHTML = '<option value="" disabled selected>Error loading zones</option>';
+        return;
+    }
+
+    subZoneSelect.innerHTML = '<option value="" disabled selected>-- Select your Area --</option>';
+    subZoneSelect.innerHTML += `<option value="main_1" style="font-weight:bold; color:#e43e3e;">All of Tamluk</option>`;
+    
+    data.forEach(zone => {
+        subZoneSelect.innerHTML += `<option value="sub_${zone.id}">${zone.name}</option>`;
+    });
+};
+
+window.enableSaveBtn = function() {
+    document.getElementById('loc-save-btn').disabled = false;
+};
+
+window.closeLocationModal = function() {
+    const overlay = document.getElementById('loc-modal-overlay');
+    if (overlay) overlay.classList.remove('open');
+    document.body.style.overflow = ''; 
+};
+
+window.saveLocation = function() {
+    const mainZoneSelect = document.getElementById('loc-mainzone');
+    const subZoneSelect = document.getElementById('loc-subzone');
+    const saveBtn = document.getElementById('loc-save-btn');
+    
+    if (saveBtn.disabled) return;
+
+    let locType = '';
+    let locId = '';
+    let selectedName = '';
+
+    // Logic to determine what they actually picked
+    if (mainZoneSelect.value === 'dist_1') {
+        locType = 'district';
+        locId = '1';
+        selectedName = 'Purba Medinipur';
+    } else if (subZoneSelect.value === 'main_1') {
+        locType = 'main_zone';
+        locId = '1';
+        selectedName = 'Tamluk';
+    } else {
+        locType = 'sub_zone';
+        locId = subZoneSelect.value.split('_')[1];
+        selectedName = subZoneSelect.options[subZoneSelect.selectedIndex].text;
+    }
+
+    const locationData = { id: locId, type: locType, name: selectedName };
+    localStorage.setItem('vilarci_user_location', JSON.stringify(locationData));
+
+    updateHeaderLocationText(selectedName);
+    closeLocationModal();
+
+    window.dispatchEvent(new CustomEvent('vilarciLocationChanged', { detail: locationData }));
+};
+
+function updateHeaderLocationText(name) {
+    const locTextEl = document.getElementById('loc-text');
+    if(locTextEl) {
+        const truncated = name.length > 13 ? name.substring(0, 13) + "..." : name;
+        locTextEl.innerText = truncated;
+    }
+}
 // Start everything on load
 document.addEventListener('DOMContentLoaded', initializeComponent);
