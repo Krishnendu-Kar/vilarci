@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <meta name="description" content="Vilarci Foods - Discover the best food options around you.">
+        <meta name="keywords" content="vilarci, foods, online food delivery, fast delivery">
+        <meta name="author" content="Krishnendu Kar">
+
+        <meta property="og:title" content="Vilarci Foods - Premium Delivery">
+        <meta property="og:image" content="https://krishnendu-kar.github.io/vilarci/logo.png">
+
+        <script src="https://cdn.tailwindcss.com"></script>
+
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        <script src="https://unpkg.com/lucide@latest"></script>
+        
+        <link rel="stylesheet" href="style.css">
+        <title>Vilarci Foods - Discover the best food</title>
+
+        <style>
+            body { 
+                font-family: 'Inter', sans-serif; 
+                background-color: #ffffff; 
+            }
+            
+            /* Custom drop shadow for food images to match the 3D Zomato feel */
+            .food-shadow {
+                box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            }
+        </style>
+    </head>
+    <body class="flex flex-col min-h-screen">
+        
+        <script src="header.js"></script>
+        <div id="vilarci-header"></div>
+
+        <section class="relative w-full overflow-hidden bg-black" style="height: calc(100vh - 136px);">
+            
+            <video autoplay loop muted playsinline class="absolute top-0 left-0 w-full h-full object-cover z-0 pointer-events-none opacity-90">
+                <source src="https://b.zmtcdn.com/data/file_assets/2627bbed9d6c068e50d2aadcca11ddbb1743095810.mp4" type="video/mp4">
+            </video>
+            
+            <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/80 z-10"></div>
+            
+            <div class="relative z-20 flex flex-col items-center justify-center h-full text-center px-4">
+                <h1 class="text-5xl md:text-7xl font-extrabold text-white tracking-tight mb-3">
+                    Vilarci
+                </h1>
+                <h2 class="text-2xl md:text-4xl font-bold text-white mb-6 tracking-wide drop-shadow-md">
+                    Tamluk's most loved online marketplace
+                </h2>
+                <p class="text-base md:text-xl text-slate-200 font-medium mb-10 max-w-2xl">
+                    Experience fast & easy online ordering on the Vilarci app
+                </p>
+
+                <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center cursor-pointer opacity-70 hover:opacity-100 transition duration-300" onclick="document.getElementById('food-options').scrollIntoView({behavior: 'smooth'})">
+                    <span class="text-white text-[11px] font-bold uppercase tracking-widest mb-2">Scroll down</span>
+                    <i class="fa-solid fa-chevron-down text-white text-lg animate-bounce"></i>
+                </div>
+            </div>
+        </section>
+
+        <section id="food-options" class="max-w-[1100px] mx-auto w-full px-4 py-16 md:py-20">
+            
+            <div class="flex items-center justify-between mb-10 md:mb-14">
+                <h3 class="text-2xl md:text-[28px] font-extrabold text-slate-900 tracking-tight">Order our best food options</h3>
+            </div>
+
+            <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-y-10 gap-x-4 justify-items-center">
+                
+                <script>
+                    const foods = [
+                        { name: 'Biryani', img: 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?w=256&h=256&fit=crop' },
+                        { name: 'Pasta', img: 'https://images.unsplash.com/photo-1621996311239-661f1b2c9ba2?w=256&h=256&fit=crop' },
+                        { name: 'Pure Veg', img: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=256&h=256&fit=crop' },
+                        { name: 'Vada', img: 'https://images.unsplash.com/photo-1604152135912-04a022e23696?w=256&h=256&fit=crop' },
+                        { name: 'Chinese', img: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=256&h=256&fit=crop' },
+                        { name: 'Paratha', img: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=256&h=256&fit=crop' },
+                        { name: 'Coffee', img: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=256&h=256&fit=crop' },
+                        { name: 'Rolls', img: 'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=256&h=256&fit=crop' },
+                        { name: 'Desserts', img: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?w=256&h=256&fit=crop' },
+                        { name: 'Jalebi', img: 'https://images.unsplash.com/photo-1626544827763-d516dce335e2?w=256&h=256&fit=crop' },
+                        { name: 'Lassi', img: 'https://images.unsplash.com/photo-1644144464407-7cb9cefb6f9c?w=256&h=256&fit=crop' },
+                        { name: 'Gulab Jamun', img: 'https://images.unsplash.com/photo-1605197148569-42bfae6ccf42?w=256&h=256&fit=crop' },
+                        { name: 'Chole Bhature', img: 'https://images.unsplash.com/photo-1585501869818-b22384a86ce9?w=256&h=256&fit=crop' },
+                        { name: 'Burger', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=256&h=256&fit=crop' }
+                    ];
+
+                    foods.forEach(food => {
+                        document.write(`
+                            <div class="group flex flex-col items-center cursor-pointer transition transform hover:-translate-y-1 w-full" onclick="window.location.href='#'">
+                                <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden mb-3 food-shadow group-hover:shadow-2xl transition duration-300 border-4 border-transparent group-hover:border-slate-50">
+                                    <img src="${food.img}" alt="${food.name}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                                </div>
+                                <span class="text-slate-800 font-semibold text-sm md:text-[15px] group-hover:text-red-600 transition">${food.name}</span>
+                            </div>
+                        `);
+                    });
+                </script>
+            </div>
+        </section>
+
+
+
+        <script>
+            // Initialize Lucide Icons if used
+            document.addEventListener('DOMContentLoaded', () => {
+                if (window.lucide) window.lucide.createIcons();
+            });
+        </script>
+    </body>
+</html>
