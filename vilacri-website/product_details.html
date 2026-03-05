@@ -57,6 +57,22 @@
     </div>
 
     <main id="product-container" class="hidden max-w-6xl mx-auto px-4 py-6 md:py-10">
+        <div id="delivery-warning" class="hidden mb-6 bg-red-50 border border-red-200 rounded-2xl p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+            <div class="flex items-center gap-4 text-left">
+                <div class="bg-red-100 p-3 rounded-full shrink-0">
+                    <i data-lucide="map-pin-off" class="w-6 h-6 text-red-600"></i>
+                </div>
+                <div>
+                    <h3 class="text-red-800 font-bold text-base sm:text-lg mb-1">Delivery Not Available</h3>
+                    <p class="text-red-600 text-sm font-medium">
+                        Seller does not offer delivery in your selected area (<span id="warning-area-name" class="font-extrabold text-red-800"></span>). Choose a different location or a different seller.
+                    </p>
+                </div>
+            </div>
+            <button onclick="window.location.href='index.html'" class="shrink-0 bg-red-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-red-700 transition shadow hover:shadow-md whitespace-nowrap w-full sm:w-auto flex items-center justify-center gap-2">
+                <i data-lucide="home" class="w-4 h-4"></i> Back Home
+            </button>
+        </div>
         <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
             <div class="grid grid-cols-1 lg:grid-cols-2">
                 
@@ -133,15 +149,15 @@
 
     <div id="action-bar" class="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-slate-200 p-3 flex gap-2 z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] transition-transform duration-300 transform translate-y-full">
         
-        <button onclick="addToCart()" class="w-14 h-14 shrink-0 bg-slate-100 text-slate-700 rounded-xl flex items-center justify-center hover:bg-slate-200 transition focus:ring-2 focus:ring-slate-300">
-            <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+        <button id="add-to-cart-btn" onclick="addToCart()" class="w-14 h-14 shrink-0 bg-slate-100 text-slate-700 rounded-xl flex items-center justify-center hover:bg-slate-200 transition focus:ring-2 focus:ring-slate-300">
+            <i style="font-size: 1.6em;" class="fa-solid fa-cart-plus"></i>
         </button>
         
         <button onclick="reservePickup()" class="flex-1 bg-white border-2 border-slate-900 text-slate-900 font-bold rounded-xl hover:bg-slate-50 transition flex justify-center items-center gap-2 text-[13px] sm:text-sm active:scale-95">
             <i data-lucide="store" class="w-4 h-4 hidden sm:block"></i> Store Pickup
         </button>
         
-        <button onclick="buyNow()" class="flex-1 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition flex justify-center items-center gap-2 text-[13px] sm:text-sm active:scale-95">
+        <button id="buy-now-btn" onclick="buyNow()" class="flex-1 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition flex justify-center items-center gap-2 text-[13px] sm:text-sm active:scale-95">
             <i data-lucide="zap" class="w-4 h-4 hidden sm:block"></i> Buy Now
         </button>
     </div>
@@ -154,6 +170,71 @@
     let currentProduct = {};
     let selectedPrice = 0;
     let selectedWeightLabel = "";
+    let isDeliveryAvailable = true; // 🌟 NEW: Tracks delivery status
+
+    // ==========================================
+    // CHECK DELIVERY AVAILABILITY
+    // ==========================================
+    async function checkDeliveryAvailability(sellerId) {
+        const warningBanner = document.getElementById('delivery-warning');
+        warningBanner.classList.add('hidden'); 
+        isDeliveryAvailable = true; 
+
+        const savedLoc = localStorage.getItem('vilarci_user_location');
+        if (!savedLoc) {
+            updateActionButtons(true);
+            return;
+        }
+
+        const locObj = JSON.parse(savedLoc);
+        let subZoneIds = [];
+
+        try {
+            if (locObj.type === 'district') {
+                const { data } = await db.from('sub_zones').select('id').eq('district_id', locObj.id);
+                subZoneIds = data ? data.map(z => z.id) : [];
+            } else if (locObj.type === 'main_zone') {
+                const { data } = await db.from('sub_zones').select('id').eq('main_zone_id', locObj.id);
+                subZoneIds = data ? data.map(z => z.id) : [];
+            } else {
+                subZoneIds = [parseInt(locObj.id)];
+            }
+
+            if (subZoneIds.length === 0) return;
+
+            const { data: mapping, error } = await db.from('seller_delivery_zones')
+                .select('seller_id')
+                .eq('seller_id', sellerId)
+                .in('sub_zone_id', subZoneIds);
+
+            if (error) throw error;
+
+            if (!mapping || mapping.length === 0) {
+                isDeliveryAvailable = false; 
+                document.getElementById('warning-area-name').innerText = locObj.name;
+                warningBanner.classList.remove('hidden');
+                if(window.lucide) window.lucide.createIcons();
+            }
+
+            updateActionButtons(isDeliveryAvailable); 
+
+        } catch (err) {
+            console.error("Delivery Check Error:", err);
+        }
+    }
+
+    function updateActionButtons(isAvailable) {
+        const cartBtn = document.getElementById('add-to-cart-btn');
+        const buyNowBtn = document.getElementById('buy-now-btn');
+        
+        if (!isAvailable) {
+            if(cartBtn) { cartBtn.disabled = true; cartBtn.style.opacity = '0.4'; cartBtn.style.pointerEvents = 'none'; }
+            if(buyNowBtn) { buyNowBtn.disabled = true; buyNowBtn.style.opacity = '0.4'; buyNowBtn.style.pointerEvents = 'none'; }
+        } else {
+            if(cartBtn) { cartBtn.disabled = false; cartBtn.style.opacity = '1'; cartBtn.style.pointerEvents = 'auto'; }
+            if(buyNowBtn) { buyNowBtn.disabled = false; buyNowBtn.style.opacity = '1'; buyNowBtn.style.pointerEvents = 'auto'; }
+        }
+    }
 
     async function initPage() {
         lucide.createIcons();
@@ -189,6 +270,9 @@
 
         // Fetch Shop Info
         fetchSellerInfo(data.seller_id);
+
+        // 🌟 ADD THIS: Check delivery right before revealing the UI
+        await checkDeliveryAvailability(data.seller_id);
 
         // Show UI
         document.getElementById('loader').classList.add('hidden');
@@ -552,7 +636,13 @@
     }
 
     function addToCart() {
-        if(!checkFashionSelection()) return;
+        // 🌟 SECURITY CHECK: Block if delivery is off
+        if (!isDeliveryAvailable) {
+            Toastify({ text: "Delivery not available here. Please use Store Pickup.", duration: 3500, gravity: "top", position: "center", style: { background: "#ef4444", borderRadius: "8px", fontWeight: "bold" } }).showToast();
+            return false;
+        }
+
+        if(!checkFashionSelection()) return false;
 
         const uniqueKey = `${currentProduct.slug}-${selectedWeightLabel.replace(/\s+/g, '-')}`;
         const cartItem = {
@@ -582,12 +672,21 @@
             gravity: "bottom", position: "center", 
             style: { background: "#22c55e", borderRadius: "8px", fontWeight: "bold" }
         }).showToast();
+
+        return true;
     }
 
     function buyNow() {
+        if (!isDeliveryAvailable) {
+            Toastify({ text: "Delivery not available here. Please use Store Pickup.", duration: 3500, gravity: "top", position: "center", style: { background: "#ef4444", borderRadius: "8px", fontWeight: "bold" } }).showToast();
+            return;
+        }
+
         if(!checkFashionSelection()) return;
-        addToCart();
-        window.location.href = 'cart.html';
+        // If addToCart succeeds, redirect
+        if(addToCart() !== false) {
+            window.location.href = 'cart.html';
+        }
     }
 
     // 🌟 NEW RESERVE PICKUP FUNCTION 🌟
@@ -613,6 +712,13 @@
         document.getElementById('loader').classList.add('hidden');
         document.getElementById('error-screen').classList.remove('hidden');
     }
+
+    // 🌟 INSTANT RELOAD WHEN LOCATION CHANGES!
+    window.addEventListener('vilarciLocationChanged', async () => {
+        if (currentProduct && currentProduct.seller_id) {
+            await checkDeliveryAvailability(currentProduct.seller_id);
+        }
+    });
 
     initPage();
     </script>

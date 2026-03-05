@@ -11,6 +11,8 @@
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link rel="stylesheet" type="text/css" href="product-card.css">
     
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
@@ -19,44 +21,28 @@
 
     <style>
         body { font-family: 'Inter', sans-serif; }
-
-        .discount-percent {
-            display:flex;
-            z-index: 20;
-            position:absolute;
-            right: 0px;
-            background-color:rgb(0, 21, 255);
-            font-size:12px;
-            padding: 4px 4px 6px 8px;
-            color:rgb(246, 246, 244);
-            border: 1px solid rgb(113, 4, 150);
-            border-top-right-radius: 5.5px;
-            clip-path: polygon(
-                0 0, 100% 0, 100% 80%, 
-                95% 100%, 85% 80%, 75% 100%, 
-                65% 80%, 55% 100%, 45% 80%, 
-                35% 100%, 25% 80%, 15% 100%, 
-                5% 80%, 0 100%
-            );        
-        } 
-        .product-name{ color:#212121 !important; }
         
-        .rating_avg{
-            font-size: 0.85rem;
-            background-color:#1b9d76;
-            color:white;
-            padding: 1px 6px;
-            border-radius: 6px;
-            font-weight: bold;
-            display: inline-flex;
-            align-items: center;
-            gap: 2px;
+        /* Tab Transition Styles */
+        .tab-btn {
+            transition: all 0.2s ease;
+            position: relative;
         }
-        .rating_count{
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: #64748b;
-            margin-left: 4px;
+        .tab-btn::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: transparent;
+            transition: background-color 0.2s ease;
+        }
+        .tab-btn.active {
+            color: #4f46e5; /* Tailwind Indigo 600 */
+            font-weight: 700;
+        }
+        .tab-btn.active::after {
+            background-color: #4f46e5;
         }
     </style>
 </head>
@@ -84,7 +70,6 @@
             <div class="bg-gradient-to-r from-indigo-50 to-white border-b border-slate-200">
                 <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
                     <div class="flex flex-row items-start gap-4">
-                        
                         <div class="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-2xl flex items-center justify-center border-2 border-indigo-100 shadow-md shrink-0">
                             <span class="text-2xl sm:text-3xl font-extrabold text-indigo-600" id="shop-initial">S</span>
                         </div>
@@ -102,8 +87,6 @@
                                     <i data-lucide="map-pin" class="w-3.5 h-3.5"></i> 
                                     <span id="shop-location">...</span>
                                 </span>
-                                <span class="text-slate-300 mr-3">|</span>
-                                <span id="product-count" class="text-indigo-600 font-bold">0 Products</span>
                             </div>
                             
                             <div class="flex flex-wrap gap-2 items-center">
@@ -112,9 +95,6 @@
                                         4.8 <i data-lucide="star" class="w-3 h-3 fill-current"></i>
                                     </span>
                                 </div>
-                               
-                                <span class="px-2.5 py-1 bg-white text-slate-600 text-xs font-bold rounded border border-slate-200 truncate max-w-[120px]" id="shop-category">General Store</span>
-                                
                                 <div id="direction" class="hidden px-3 py-1 bg-indigo-600 text-white text-xs font-bold rounded shadow-sm cursor-pointer hover:bg-indigo-700 transition items-center gap-1">
                                     <i data-lucide="navigation" class="w-3 h-3"></i> 
                                     <span class="hidden sm:inline">Direction</span>
@@ -129,45 +109,63 @@
                                 <span class="hidden sm:inline text-sm font-bold">Contact</span>
                             </button>
                         </div>
-
                     </div>
                 </div>
             </div>
             
-            <div class="max-w-7xl mx-auto px-4 py-8">
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                    <h2 class="text-xl font-bold text-slate-800 shrink-0">Shop Products</h2>
-                    
-                    <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto md:flex-1 md:justify-end">
-                        <div class="relative flex-1 md:max-w-xs">
-                            <input type="text" id="shop-search" placeholder="Search in this shop..." 
-                                class="w-full pl-9 pr-4 py-2 bg-white border border-slate-300 rounded-xl text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition shadow-sm"
-                                oninput="filterShopProducts(this.value)">
-                            <div class="absolute left-3 top-2.5 text-slate-400">
-                                <i data-lucide="search" class="w-4 h-4"></i>
-                            </div>
+            <div class="max-w-7xl mx-auto px-4 py-6">
+
+                <div id="delivery-warning" class="hidden mb-6 bg-red-50 border border-red-200 rounded-2xl p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+                    <div class="flex items-center gap-4 text-left">
+                        <div class="bg-red-100 p-3 rounded-full shrink-0">
+                            <i data-lucide="map-pin-off" class="w-6 h-6 text-red-600"></i>
                         </div>
+                        <div>
+                            <h3 class="text-red-800 font-bold text-base sm:text-lg mb-1">Delivery Not Available</h3>
+                            <p class="text-red-600 text-sm font-medium">
+                                Seller does not offer delivery in your selected area (<span id="warning-area-name" class="font-extrabold text-red-800"></span>). Choose a different location or a different seller.
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="window.location.href='index.html'" class="shrink-0 bg-red-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-red-700 transition shadow hover:shadow-md whitespace-nowrap w-full sm:w-auto flex items-center justify-center gap-2">
+                        <i data-lucide="home" class="w-4 h-4"></i> Back Home
+                    </button>
+                </div>
+                
+                <div class="flex gap-6 border-b border-slate-200 mb-6">
+                    <button class="tab-btn active pb-3 text-slate-500 hover:text-slate-800 font-medium text-sm sm:text-base" id="tab-products" onclick="switchTab('products')">
+                        Products
+                    </button>
+                    <button class="tab-btn pb-3 text-slate-500 hover:text-slate-800 font-medium text-sm sm:text-base" id="tab-services" onclick="switchTab('services')">
+                        Services
+                    </button>
+                </div>
+                
+                <div id="products-container">
+                    <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
+                        </div>
+                    <div id="empty-products" class="hidden py-16 text-center bg-white rounded-2xl border border-dashed border-slate-300">
+                        <div class="inline-flex items-center justify-center w-14 h-14 bg-slate-50 rounded-full mb-3">
+                            <i data-lucide="package-open" class="w-7 h-7 text-slate-400"></i>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-700">No products found</h3>
+                        <p class="text-xs text-slate-500">This seller hasn't listed any products yet.</p>
+                    </div>
+                </div>
 
-                        <select id="sort-dropdown" onchange="sortProducts(this.value)" class="w-full sm:w-auto bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-xl px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none shadow-sm cursor-pointer">
-                            <option value="newest">Newest First</option>
-                            <option value="low_high">Price: Low to High</option>
-                            <option value="high_low">Price: High to Low</option>
-                        </select>
+                <div id="services-container" class="hidden">
+                    <div id="services-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
+                        </div>
+                    <div id="empty-services" class="hidden py-16 text-center bg-white rounded-2xl border border-dashed border-slate-300">
+                        <div class="inline-flex items-center justify-center w-14 h-14 bg-slate-50 rounded-full mb-3">
+                            <i data-lucide="briefcase" class="w-7 h-7 text-slate-400"></i>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-700">No services found</h3>
+                        <p class="text-xs text-slate-500">This seller does not offer any services currently.</p>
                     </div>
                 </div>
-                
-                <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
-                    </div>
-                
-                <div id="empty-products" class="hidden py-16 text-center bg-white rounded-2xl border border-dashed border-slate-300">
-                    <div class="inline-flex items-center justify-center w-14 h-14 bg-slate-50 rounded-full mb-3">
-                        <i data-lucide="package-open" class="w-7 h-7 text-slate-400"></i>
-                    </div>
-                    <h3 class="text-base font-bold text-slate-700">No products found</h3>
-                    <p class="text-xs text-slate-500">Try adjusting your search or filters.</p>
-                </div>
+
             </div>
-
         </div>
     </main>
 
@@ -176,10 +174,28 @@
 
     <script>
         // ==========================================
-        // GLOBAL VARIABLES
+        // GLOBAL VARIABLES & STATE
         // ==========================================
-        const db = window.supabaseClient; // Securely fetched from config.js
-        let allShopProducts = [];
+        const db = window.supabaseClient;
+        const urlParams = new URLSearchParams(window.location.search);
+        const shopSlug = urlParams.get('slug'); 
+        
+        let resolvedSellerNumericId = null; 
+        let activeTab = 'products';
+        const LIMIT = 24;
+        let isDeliveryAvailable = true; // 🌟 NEW: Tracks delivery status globally
+
+        // Data Arrays (Needed for Add to Cart logic)
+        let loadedProducts = [];
+        
+        // Independent Pagination States
+        let productOffset = 0;
+        let isFetchingProducts = false;
+        let allProductsLoaded = false;
+
+        let serviceOffset = 0;
+        let isFetchingServices = false;
+        let allServicesLoaded = false;
 
         // ==========================================
         // INITIALIZATION
@@ -189,62 +205,51 @@
                 showError("Connection Error", "Could not connect to the database.");
                 return;
             }
-
-            const urlParams = new URLSearchParams(window.location.search);
-            const slug = urlParams.get('slug');
-
-            if (!slug) {
+            if (!shopSlug) {
                 showError("Invalid Link", "No shop ID was provided.");
                 return;
             }
 
-            // 1. Fetch Seller Data
-            const { data: seller, error } = await db
-                .from('shops_public_587') 
-                .select('*') 
-                .eq('shop_slug', slug)
-                .single();
+            try {
+                // 1. Fetch Seller Data & Resolve ID
+                const { data: seller, error } = await db
+                    .from('shops_public_587') 
+                    .select('*') 
+                    .eq('shop_slug', shopSlug)
+                    .single();
 
-            if (error || !seller) {
-                console.error("Seller Fetch Error:", error);
+                if (error || !seller) throw error;
+
+                resolvedSellerNumericId = seller.seller_numeric_id;
+                renderShopHeader(seller);
+
+                // -> ADD THIS LINE: Check if they deliver to the user's location
+                await checkDeliveryAvailability(resolvedSellerNumericId);
+
+                // 2. Fetch initial batch of products safely
+                await fetchProducts(false);
+
+                // 3. Reveal UI
+                document.getElementById('loader').classList.add('hidden');
+                document.getElementById('shop-container').classList.remove('hidden');
+
+            } catch (err) {
+                console.error("Seller Fetch Error:", err);
                 showError("Shop Unavailable", "This shop may be closed or the link is broken.");
-                return;
             }
-
-            renderShopHeader(seller);
-
-            // 2. Fetch Products for this seller
-            const { data: products, error: prodError } = await db
-                .from('products')
-                .select('*')
-                .eq('seller_id', seller.seller_numeric_id)
-                .eq('is_active', true)
-                .order('created_at', { ascending: false });
-
-            if (prodError) console.error("Products Fetch Error:", prodError);
-            
-            allShopProducts = products || [];
-            renderProductGrid(allShopProducts);
-
-            // Hide Loader, Show Content
-            document.getElementById('loader').classList.add('hidden');
-            document.getElementById('shop-container').classList.remove('hidden');
         }
 
-        // ==========================================
-        // RENDERING LOGIC
-        // ==========================================
         function renderShopHeader(seller) {
             document.getElementById('shop-name').innerText = seller.store_name || "Vilarci Partner";
-            const initial = seller.shop_name ? seller.shop_name.charAt(0).toUpperCase() : 'S';
+            const initial = (seller.store_name || seller.shop_name || 'S').charAt(0).toUpperCase();
             document.getElementById('shop-initial').innerText = initial;
             
-            document.getElementById('shop-location').innerText = `Pincode: ${seller.pincode}`;
+            document.getElementById('shop-location').innerText = seller.shop_direction ? seller.shop_direction : `Pincode: ${seller.pincode || 'N/A'}`;
             
-            // Direction Button Logic
+            // Direction Button
             const dirBtn = document.getElementById('direction');
             if (seller.direction && seller.direction.length > 0) {
-                dirBtn.onclick = () => window.open(seller.direction, '_blank'); // Opens map in new tab
+                dirBtn.onclick = () => window.open(seller.direction, '_blank');
                 dirBtn.classList.remove('hidden');
                 dirBtn.classList.add('flex');
             }
@@ -252,97 +257,273 @@
             if(seller.is_verified) {
                 document.getElementById('verified-badge').classList.remove('hidden');
             }
-        }
-
-        function renderProductGrid(products) {
-            document.getElementById('product-count').innerText = `${products.length} Products`;
-            const grid = document.getElementById('products-grid');
-            const empty = document.getElementById('empty-products');
-            
-            grid.innerHTML = '';
-
-            if (products.length === 0) {
-                grid.classList.add('hidden');
-                empty.classList.remove('hidden');
-                return;
-            }
-            
-            grid.classList.remove('hidden');
-            empty.classList.add('hidden');
-
-            grid.innerHTML = products.map(p => {
-                const img = (p.images && p.images.length > 0) ? p.images[0] : 'logo.png'; // Fallback
-                
-                let discountBadge = '';
-                if (p.original_price && p.base_price < p.original_price) {
-                    const off = Math.round(((p.original_price - p.base_price) / p.original_price) * 100);
-                    discountBadge = `<span class="discount-percent">${off}% OFF</span>`;
-                }
-
-                return `
-                <div onclick="window.location.href='product_details.html?slug=${p.slug || p.id}'" 
-                     class="bg-white border border-slate-200 rounded-xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-xl transition-all duration-300 relative group flex flex-col h-full">
-                    ${discountBadge}
-                    
-                    <div class="aspect-square bg-white flex items-center justify-center p-4 overflow-hidden relative">
-                        <img src="${img}" class="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500" loading="lazy">
-                    </div>
-                    
-                    <div class="p-3 flex flex-col flex-grow border-t border-slate-50">
-                        <h3 class="product-name text-[13px] sm:text-sm font-bold leading-tight line-clamp-2 mb-2 h-10">${p.name}</h3>
-                        
-                        <div class="flex items-center mb-2">
-                            <span class="rating_avg">
-                                ${p.rating_avg || 4.5} <i class="fa-solid fa-star text-[0.6em]"></i>
-                            </span>
-                            <span class="rating_count">(${p.rating_count || 0})</span> 
-                        </div>
-
-                        <div class="flex items-baseline gap-1.5 mt-auto">
-                            <span class="text-base sm:text-lg font-bold text-slate-900">₹${p.base_price}</span>
-                            ${p.original_price ? `<span class="text-xs text-slate-400 line-through">₹${p.original_price}</span>` : ''}
-                        </div>
-                        
-                        <button onclick="addToCart(event, '${p.id}')" class="w-full mt-3 bg-yellow-400 text-slate-900 text-xs sm:text-sm font-bold py-2 rounded-lg hover:bg-yellow-500 transition flex items-center justify-center gap-1 shadow-sm">
-                             Add <i class="fa-solid fa-cart-plus"></i>
-                        </button>
-                    </div>
-                </div>
-                `;
-            }).join('');
-            
             if(window.lucide) window.lucide.createIcons();
         }
 
+// ==========================================
+        // CHECK DELIVERY AVAILABILITY
         // ==========================================
-        // FILTER & SORT LOGIC
-        // ==========================================
-        function filterShopProducts(query) {
-            const lowerQ = query.toLowerCase();
-            const filtered = allShopProducts.filter(p => p.name.toLowerCase().includes(lowerQ));
-            const sortMode = document.getElementById('sort-dropdown').value;
-            sortAndRender(filtered, sortMode);
+        async function checkDeliveryAvailability(sellerId) {
+            const warningBanner = document.getElementById('delivery-warning');
+            warningBanner.classList.add('hidden'); // Hide by default
+            isDeliveryAvailable = true; // Default to true
+
+            const savedLoc = localStorage.getItem('vilarci_user_location');
+            if (!savedLoc) {
+                updateAddButtons(true);
+                return;
+            }
+
+            const locObj = JSON.parse(savedLoc);
+            let subZoneIds = [];
+
+            try {
+                if (locObj.type === 'district') {
+                    const { data } = await db.from('sub_zones').select('id').eq('district_id', locObj.id);
+                    subZoneIds = data ? data.map(z => z.id) : [];
+                } else if (locObj.type === 'main_zone') {
+                    const { data } = await db.from('sub_zones').select('id').eq('main_zone_id', locObj.id);
+                    subZoneIds = data ? data.map(z => z.id) : [];
+                } else {
+                    subZoneIds = [parseInt(locObj.id)];
+                }
+
+                if (subZoneIds.length === 0) return;
+
+                const { data: mapping, error } = await db.from('seller_delivery_zones')
+                    .select('seller_id')
+                    .eq('seller_id', sellerId)
+                    .in('sub_zone_id', subZoneIds);
+
+                if (error) throw error;
+
+                if (!mapping || mapping.length === 0) {
+                    isDeliveryAvailable = false; // 🌟 Lock delivery
+                    document.getElementById('warning-area-name').innerText = locObj.name;
+                    warningBanner.classList.remove('hidden');
+                    if(window.lucide) window.lucide.createIcons();
+                }
+
+                updateAddButtons(isDeliveryAvailable); // 🌟 Instantly update UI
+
+            } catch (err) {
+                console.error("Delivery Check Error:", err);
+            }
         }
 
-        function sortProducts(mode) {
-            const query = document.getElementById('shop-search').value.toLowerCase();
-            let list = allShopProducts.filter(p => p.name.toLowerCase().includes(query));
-            sortAndRender(list, mode);
+        // 🌟 NEW HELPER: Instantly visually disables/enables rendered buttons
+        function updateAddButtons(isAvailable) {
+            document.querySelectorAll('.add-btn').forEach(btn => {
+                if (!isAvailable) {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.4';
+                    btn.style.pointerEvents = 'none'; // Stops hover effects
+                } else {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.style.pointerEvents = 'auto';
+                }
+            });
         }
 
-        function sortAndRender(list, mode) {
-            if (mode === 'low_high') list.sort((a, b) => a.base_price - b.base_price);
-            else if (mode === 'high_low') list.sort((a, b) => b.base_price - a.base_price);
-            else list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // Newest
-            renderProductGrid(list);
+        // ==========================================
+        // TAB SWITCHING LOGIC
+        // ==========================================
+        function switchTab(tab) {
+            activeTab = tab;
+            
+            // UI Toggle
+            document.getElementById('tab-products').classList.remove('active');
+            document.getElementById('tab-services').classList.remove('active');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+
+            // Container Toggle
+            if (tab === 'products') {
+                document.getElementById('products-container').classList.remove('hidden');
+                document.getElementById('services-container').classList.add('hidden');
+            } else {
+                document.getElementById('products-container').classList.add('hidden');
+                document.getElementById('services-container').classList.remove('hidden');
+                
+                // Fetch services ONLY if it's the first time clicking the tab
+                if (serviceOffset === 0 && !allServicesLoaded && resolvedSellerNumericId) {
+                    fetchServices(false);
+                }
+            }
+        }
+
+        // ==========================================
+        // FETCH PRODUCTS (Infinite Scroll Support)
+        // ==========================================
+        async function fetchProducts(isLoadMore = false) {
+            if (!resolvedSellerNumericId || isFetchingProducts || allProductsLoaded) return;
+            isFetchingProducts = true;
+            
+            const grid = document.getElementById('products-grid');
+            const empty = document.getElementById('empty-products');
+
+            try {
+                const { data: products, error } = await db
+                    .from('products')
+                    .select('*')
+                    .eq('seller_id', resolvedSellerNumericId)
+                    .eq('is_active', true)
+                    .order('created_at', { ascending: false })
+                    .range(productOffset, productOffset + LIMIT - 1);
+
+                if (error) throw error;
+
+                if (!products || products.length === 0) {
+                    if (!isLoadMore) {
+                        grid.classList.add('hidden');
+                        empty.classList.remove('hidden');
+                    }
+                    allProductsLoaded = true;
+                    return;
+                }
+
+                if (products.length < LIMIT) allProductsLoaded = true;
+                productOffset += products.length;
+                loadedProducts.push(...products); // Save for cart logic
+
+                let html = products.map(p => {
+                    const img = (p.images && p.images.length > 0) ? p.images[0] : 'logo.png';
+                    let discountBadge = '';
+                    if (p.original_price && p.base_price < p.original_price) {
+                        const off = Math.round(((p.original_price - p.base_price) / p.original_price) * 100);
+                        discountBadge = `<span class="discount-percent z-10">${off}% OFF</span>`;
+                    }
+
+                    return `
+                    <div class="product-card" style="cursor:pointer;" onclick="window.location.href='product_details.html?slug=${p.slug}'">
+                        ${discountBadge}
+                        <div class="img-box"><img src="${img}" alt="${p.name}" loading="lazy"></div>
+                        <div class="details">
+                            <h4 class="product-name">${p.name}</h4>
+                            <p class="mb-2"><span class="rating_avg">${p.rating_avg || 4.5} <i class="fa-solid fa-star text-[10px]"></i></span> <span class="rating_count text-xs text-slate-500">${p.rating_count || 0} Ratings</span></p>
+                            
+                            <div class="price-area ">
+                                <span class="price">₹${p.base_price}</span>
+                                ${p.original_price ? `<span class="mrp">₹${p.original_price}</span>` : ''}
+                            </div>
+                            
+                            <div class="bottom-btn">
+                                <button class="add-btn flex items-center justify-center shrink-0" 
+                                        ${!isDeliveryAvailable ? "disabled style='opacity: 0.4;cursor: not-allowed;'" : ""} 
+                                        onclick="addToCart(event, '${p.id}')">
+                                    <i class="fa-solid fa-cart-plus"></i>
+                                </button>
+                                <style>
+                                    @media (max-width: 420px) {
+                                        .pickup-btn{
+                                            font-size: 0.7em;
+                                            font-weight: 600;
+                                        }
+                                }
+                                    </style>
+                                <button class="pickup-btn"  onclick="event.stopPropagation();">
+                                    Store Pickup <i class="fa-solid fa-motorcycle"></i> 
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+                
+                grid.innerHTML += html; // Append data
+                
+            } catch (err) {
+                console.error("Products Fetch Error:", err);
+            } finally {
+                isFetchingProducts = false;
+            }
+        }
+
+        // ==========================================
+        // FETCH SERVICES (Infinite Scroll Support)
+        // ==========================================
+        async function fetchServices(isLoadMore = false) {
+            if (!resolvedSellerNumericId || isFetchingServices || allServicesLoaded) return;
+            isFetchingServices = true;
+            
+            const grid = document.getElementById('services-grid');
+            const empty = document.getElementById('empty-services');
+
+            try {
+                const { data: services, error } = await db
+                    .from('services')
+                    .select('id, name, slug, price, image_url, duration_minutes')
+                    .eq('seller_id', resolvedSellerNumericId)
+                    .eq('is_active', true)
+                    .order('created_at', { ascending: false })
+                    .range(serviceOffset, serviceOffset + LIMIT - 1);
+
+                if (error) throw error;
+
+                if (!services || services.length === 0) {
+                    if (!isLoadMore) {
+                        grid.classList.add('hidden');
+                        empty.classList.remove('hidden');
+                    }
+                    allServicesLoaded = true;
+                    return;
+                }
+
+                if (services.length < LIMIT) allServicesLoaded = true;
+                serviceOffset += services.length;
+
+                let html = services.map(s => {
+                    const img = s.image_url ? s.image_url : 'placeholder.png';
+                    const targetSlug = s.slug || s.id;
+                    const duration = s.duration_minutes ? `<div class="text-xs text-slate-500 mb-2"><i class="fa-regular fa-clock"></i> ${s.duration_minutes} mins</div>` : '';
+
+                    return `
+                    <div class="product-card border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer" onclick="window.location.href='service_details.html?slug=${targetSlug}'">
+                        <div class="img-box h-36 bg-slate-100 flex items-center justify-center p-2">
+                            <img src="${img}" alt="${s.name}" loading="lazy" class="max-h-full max-w-full object-contain rounded">
+                        </div>
+                        <div class="details p-3">
+                            <h4 class="product-name font-bold text-slate-800 text-sm mb-1 truncate">${s.name}</h4>
+                            ${duration}
+                            <div class="price-area mt-2 mb-3">
+                                <span class="price font-bold text-indigo-600 text-sm">Starts at ₹${s.price || 0}</span>
+                            </div>
+                            <button class="w-full bg-slate-900 text-white font-medium py-1.5 rounded-lg text-sm hover:bg-slate-800 transition">
+                                View Details <i class="fa-solid fa-angles-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+                
+                grid.innerHTML += html;
+                
+            } catch (err) {
+                console.error("Services Fetch Error:", err);
+            } finally {
+                isFetchingServices = false;
+            }
         }
 
         // ==========================================
         // CART LOGIC
         // ==========================================
         function addToCart(event, id) {
-            event.stopPropagation();
-            const product = allShopProducts.find(p => String(p.id) === String(id));
+            event.stopPropagation(); // Prevent redirecting to details page
+
+            // 🌟 SECURITY CHECK: Block cart additions if delivery is off
+            if (!isDeliveryAvailable) {
+                Toastify({
+                    text: "Delivery not available here. Please use Store Pickup.",
+                    duration: 3500,
+                    gravity: "top",
+                    position: "center",
+                    style: { background: "#ef4444", borderRadius: "8px", fontSize: "14px", fontWeight: "bold" }
+                }).showToast();
+                return;
+            }
+
+            const product = loadedProducts.find(p => String(p.id) === String(id));
             if (!product) return;
 
             // Fashion Check
@@ -379,7 +560,6 @@
 
             localStorage.setItem('cart', JSON.stringify(cart));
             
-            // FIX: Trigger the global header cart update function!
             if (window.updateGlobalCartCount) window.updateGlobalCartCount();
             
             Toastify({
@@ -390,6 +570,28 @@
                 style: { background: "#22c55e", borderRadius: "8px", fontSize: "14px", fontWeight: "bold" }
             }).showToast();
         }
+        function reserveStorePickup(event, id) {
+            event.stopPropagation(); // Stops it from opening the product details page
+            const product = loadedProducts.find(p => String(p.id) === String(id));
+            if (!product) return;
+
+            // Fashion size check
+            const idString = String(product.id);
+            if (idString.substring(6, 8) === '12') {
+                Toastify({ text: "Please select a size first", duration: 2000, style: { background: "#3b82f6", borderRadius: "8px" } }).showToast();
+                setTimeout(() => window.location.href = `product_details.html?slug=${product.slug || product.id}`, 800);
+                return; 
+            }
+
+            // You can build out the logic later, but for now, show a premium confirmation toast
+            Toastify({
+                text: `${product.name} reserved for Store Pickup!`,
+                duration: 3500,
+                gravity: "top",
+                position: "center",
+                style: { background: "#0f172a", borderRadius: "8px", fontSize: "14px", fontWeight: "bold" }
+            }).showToast();
+        }
 
         function showError(title, msg) {
             document.getElementById('loader').classList.add('hidden');
@@ -397,6 +599,27 @@
             if(msg) document.getElementById('error-msg').innerText = msg;
             document.getElementById('error-screen').classList.remove('hidden');
         }
+
+        // ==========================================
+        // INFINITE SCROLL LISTENER
+        // ==========================================
+        window.addEventListener('scroll', () => {
+            // Trigger 600px before the bottom
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 600) {
+                if (activeTab === 'products') {
+                    fetchProducts(true);
+                } else if (activeTab === 'services') {
+                    fetchServices(true);
+                }
+            }
+        });
+
+        // Re-check location if user changes it via the header modal
+        window.addEventListener('vilarciLocationChanged', async () => {
+            if (resolvedSellerNumericId) {
+                await checkDeliveryAvailability(resolvedSellerNumericId);
+            }
+        });
 
         // Start Execution
         document.addEventListener('DOMContentLoaded', initShopPage);
