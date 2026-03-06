@@ -1,0 +1,15 @@
+create table public.products (
+  name  ,  slug  ,  description  ,  badge_label  ,  tags  ,  category_id  ,  sub_category_id  ,  super_sub_id  ,  base_price numeric ,  original_price numeric ,  stock_quantity  ,  
+
+ is_active,  out_of_stock    ,  images  ,  highlights  ,  specifications  ,  variants  ,  bulk_rules  ,  delivery_config  ,  rating_avg ,  rating_count   ,
+
+  created_at timestamp with time zone   now(),  id  ,  seller_id  ,  shipping_class,  amount  ,
+
+
+to be added 
+
+Use Vilarci logistics or own, Delivery Date,  Days of refund, Showing Ratings , Questions & Answers, Warranty (text) if applicable
+
+Same SUB Zone 10, same main zone 35, same distric 85
+
+Seller have one permanenet sub zone as their own shop location
