@@ -15,96 +15,191 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen flex flex-col">
 
+    <div id="image-modal" class="fixed inset-0 z-[99999] bg-black/95 hidden flex-col transition-opacity duration-300 opacity-0">
+        <div class="flex justify-end p-4 md:p-6">
+            <button onclick="closeFullscreen()" class="text-white hover:text-red-400 transition bg-white/10 p-3 rounded-full shadow-lg">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+        <div class="flex-1 flex items-center justify-center p-4 overflow-hidden" onclick="closeFullscreen()">
+            <img id="fullscreen-img" src="" class="max-w-full max-h-full object-contain cursor-zoom-out drop-shadow-2xl">
+        </div>
+    </div>
+
+    <script src="header.js"></script>
     <div id="vilarci-header"></div>
 
     <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
         
-        <div id="loader" class="flex justify-center items-center h-64">
-            <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-100 border-t-indigo-600"></div>
+        <div id="loader" class="flex flex-col items-center justify-center h-64">
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-100 border-t-indigo-600 mb-4"></div>
+            <p class="text-slate-500 font-medium animate-pulse">Loading service details...</p>
         </div>
 
         <div id="error-container" class="hidden flex flex-col items-center justify-center py-20 text-center">
             <div class="bg-red-50 text-red-500 p-4 rounded-full mb-4"><i data-lucide="alert-triangle" class="w-8 h-8"></i></div>
             <h2 class="text-2xl font-bold text-slate-900">Service Not Found</h2>
             <p class="text-slate-500 mt-2">The service you requested does not exist or has been removed.</p>
-            <a href="service_list.html" class="mt-6 text-indigo-600 font-bold hover:underline">Go Back to Services</a>
+            <a href="services.html" class="mt-6 bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-700 transition shadow-md">Go Back to Services</a>
+        </div>
+
+        <div id="service-warning" class="hidden mb-6 bg-red-50 border border-red-200 rounded-2xl p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+            <div class="flex items-center gap-4 text-left">
+                <div class="bg-red-100 p-3 rounded-full shrink-0">
+                    <i data-lucide="map-pin-off" class="w-6 h-6 text-red-600"></i>
+                </div>
+                <div>
+                    <h3 class="text-red-800 font-bold text-base sm:text-lg mb-1">Service Not Available</h3>
+                    <p class="text-red-600 text-sm font-medium">
+                        Provider does not offer services in your selected area (<span id="warning-area-name" class="font-extrabold text-red-800"></span>). Choose a different location.
+                    </p>
+                </div>
+            </div>
+            <button onclick="window.location.href='services.html'" class="shrink-0 bg-red-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-red-700 transition shadow hover:shadow-md whitespace-nowrap w-full sm:w-auto flex items-center justify-center gap-2">
+                <i data-lucide="search" class="w-4 h-4"></i> Browse Others
+            </button>
         </div>
 
         <div id="content" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
             
-            <div class="lg:col-span-8 space-y-8">
+            <div class="lg:col-span-8 space-y-6">
                 
-                <div class="relative aspect-video w-full bg-slate-200 rounded-2xl overflow-hidden shadow-sm border border-slate-200">
-                    <img id="svc-image" src="" alt="Service Cover" class="w-full h-full object-cover hidden">
+                <div class="p-4 md:p-6 bg-white border border-slate-100 rounded-3xl flex flex-col relative shadow-sm">
+                    <span id="svc-badge" class="absolute top-6 left-6 bg-red-500 text-white text-[10px] uppercase font-extrabold px-3 py-1.5 rounded-full hidden shadow-md z-10 tracking-wider"></span>
                     
-                    <div id="svc-icon-container" class="w-full h-full flex items-center justify-center bg-slate-100 hidden">
+                    <div id="svc-gallery" class="hidden flex-col">
+                        <div class="aspect-square md:aspect-video bg-slate-50 rounded-2xl overflow-hidden shadow-inner relative group flex items-center justify-center mb-4 border border-slate-100">
+                            <img id="main-svc-image" src="" class="w-full h-full object-contain p-2 md:p-4 transition-transform duration-500 group-hover:scale-105 cursor-zoom-in" onclick="openFullscreen()">
+                            <button onclick="openFullscreen()" class="absolute bottom-4 right-4 bg-white/80 backdrop-blur text-slate-800 p-2 rounded-xl shadow-md hover:bg-white hover:text-indigo-600 transition">
+                                <i data-lucide="maximize-2" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        <div id="thumbnail-grid" class="flex gap-3 overflow-x-auto no-scrollbar pb-1 hidden"></div>
+                    </div>
+
+                    <div id="svc-icon-container" class="w-full aspect-video flex items-center justify-center bg-indigo-50 rounded-2xl hidden border border-indigo-100">
                         <span id="svc-icon" class="text-8xl"></span>
                     </div>
-
-                    <div id="svc-badge" class="absolute top-4 left-4 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide hidden shadow-lg">
-                        Recommended
-                    </div>
                 </div>
 
-                <div>
-                    <h1 id="svc-title" class="text-3xl sm:text-4xl font-extrabold text-slate-900 leading-tight mb-3">...</h1>
+                <div class="px-2">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="flex items-center gap-1.5 bg-green-600 px-2 py-0.5 rounded text-white shadow-sm">
+                            <span class="text-[11px] font-bold flex items-center gap-1">4.8 <i data-lucide="star" class="w-3 h-3 fill-current"></i></span>
+                        </div>
+                        <span class="text-xs font-bold text-slate-400">124 Reviews</span>
+                    </div>
                     
-                    <div class="flex flex-wrap items-center gap-4 text-sm text-slate-600">
-                        <div id="duration-container" class="flex items-center gap-1 bg-slate-100 px-3 py-1 rounded-full">
-                            <i data-lucide="clock" class="w-4 h-4 text-indigo-600"></i>
-                            <span id="svc-duration">60 mins</span>
+                    <h1 id="svc-title" class="text-3xl md:text-4xl font-extrabold text-slate-900 leading-tight mb-4 tracking-tight">...</h1>
+                    
+                    <div class="flex flex-wrap items-center gap-3 text-sm text-slate-700 font-medium pb-5 border-b border-slate-200">
+                        <div id="duration-container" class="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg font-bold border border-indigo-100 shadow-sm">
+                            <i data-lucide="clock" class="w-4 h-4"></i>
+                            <span id="svc-duration">...</span> 
                         </div>
-                        <div id="hours-container" class="flex items-center gap-1 bg-slate-100 px-3 py-1 rounded-full">
-                            <i data-lucide="clock-4" class="w-4 h-4 text-indigo-600"></i>
-                            <span id="svc-hours">09:00 AM - 06:00 PM</span>
+                        <div class="flex items-center gap-2 bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 font-bold shadow-sm">
+                            <i data-lucide="shield-check" class="w-4 h-4 text-green-600"></i>
+                            <span>Vilarci Verified</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="prose prose-slate max-w-none border-t border-slate-100 pt-6">
-                    <h3 class="text-lg font-bold text-slate-900 mb-2">About this Service</h3>
-                    <p id="svc-desc" class="text-slate-600 leading-relaxed whitespace-pre-line">...</p>
+                <div id="provider-card" class="bg-white border-2 border-slate-100 rounded-2xl p-5 md:p-6 shadow-sm mt-4 relative group cursor-pointer hover:border-indigo-300 hover:shadow-md transition duration-300">
+                    
+                    <i data-lucide="chevron-right" class="absolute top-1/2 right-4 -translate-y-1/2 text-slate-300 group-hover:text-indigo-600 transition transform group-hover:translate-x-1 w-6 h-6 hidden md:block"></i>
+
+                    <h3 class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest mb-4">Service Provider</h3>
+                    
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex items-start gap-4">
+                            <div class="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition duration-300 shadow-sm">
+                                <i data-lucide="store" class="w-6 h-6"></i>
+                            </div>
+                            <div class="pr-8 md:pr-0">
+                                <h4 id="provider-name" class="font-extrabold text-slate-900 text-lg group-hover:text-indigo-600 transition">...</h4>
+                                <p id="provider-address" class="text-sm text-slate-500 mt-1 line-clamp-2 font-medium">...</p>
+                            </div>
+                        </div>
+                        <button id="direction-btn" class="hidden shrink-0 bg-slate-100 border border-slate-200 hover:bg-white hover:border-indigo-600 hover:text-indigo-600 text-slate-800 px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-sm z-10">
+                            <i data-lucide="navigation" class="w-4 h-4 text-indigo-600"></i> Direction
+                        </button>
+                    </div>
+
+                    <div id="schedule-container" class="mt-6 bg-slate-50 rounded-xl overflow-hidden border border-slate-200 hidden z-10 relative">
+                        <button onclick="toggleSchedule(event)" class="w-full flex items-center justify-between p-4 hover:bg-slate-100 transition focus:outline-none">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="clock-4" class="w-5 h-5 text-green-600" id="schedule-icon"></i>
+                                <span id="schedule-status" class="text-green-600 font-extrabold text-[15px]">...</span>
+                            </div>
+                            <i data-lucide="chevron-down" id="schedule-arrow" class="w-5 h-5 text-slate-400 transition-transform duration-300"></i>
+                        </button>
+                        
+                        <div id="schedule-dropdown" class="hidden px-4 pb-4 pt-2">
+                            <ul id="schedule-list" class="space-y-3 text-[13px] font-medium text-slate-600 tracking-wide">
+                                </ul>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="highlights-section" class="hidden border-t border-slate-100 pt-6">
-                    <h3 class="text-lg font-bold text-slate-900 mb-4">Service Highlights</h3>
-                    <ul id="svc-highlights" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        </ul>
+                <div class="pt-6 px-2">
+                    <h3 class="text-lg font-extrabold text-slate-900 mb-3 tracking-tight">About this Service</h3>
+                    <p id="svc-desc" class="text-slate-600 text-[15px] leading-relaxed whitespace-pre-line font-medium">...</p>
                 </div>
 
-                <div id="results-section" class="hidden border-t border-slate-100 pt-6">
-                    <h3 class="text-lg font-bold text-slate-900 mb-4">What to Expect</h3>
-                    <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-6">
-                        <ul id="svc-results" class="space-y-3">
-                            </ul>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 pb-8 px-2">
+                    <div id="highlights-section" class="hidden bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+                        <h3 class="font-extrabold text-slate-800 text-[11px] uppercase tracking-widest mb-5 flex items-center gap-2">
+                            Key Highlights
+                        </h3>
+                        <ul id="svc-highlights" class="space-y-4 text-sm text-slate-700 font-semibold"></ul>
+                    </div>
+                    
+                    <div id="results-section" class="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+                        <h3 class="font-extrabold text-slate-800 text-[11px] uppercase tracking-widest mb-5 flex items-center gap-2">
+                            Customer Reviews
+                        </h3>
+                        <div class="flex flex-col items-center justify-center text-center py-6 px-2 opacity-70">
+                            <div class="bg-slate-100 p-3 rounded-full mb-3 text-slate-400">
+                                <i data-lucide="message-square-dashed" class="w-6 h-6"></i>
+                            </div>
+                            <p class="text-[13px] font-bold text-slate-600">No reviews yet</p>
+                            <p class="text-[11px] text-slate-400 mt-1 uppercase tracking-wide">Be the first to book!</p>
+                        </div>
                     </div>
                 </div>
 
             </div>
-
+            
             <div class="lg:col-span-4">
-                <div class="sticky top-24 bg-white rounded-2xl shadow-xl shadow-indigo-100/50 border border-slate-200 p-6">
+                <div class="sticky top-24 bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-slate-100 p-6 md:p-8">
                     
-                    <div class="mb-6">
-                        <p class="text-sm text-slate-500 font-medium mb-1">Total Price</p>
-                        <div class="flex items-baseline gap-3">
-                            <span id="svc-price" class="text-4xl font-extrabold text-slate-900">₹0</span>
-                            <span id="svc-normal-price" class="text-lg text-slate-400 line-through decoration-2 hidden">₹0</span>
-                            <span id="svc-discount" class="text-sm font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded hidden">0% OFF</span>
+                    <div class="mb-6 pb-6 border-b border-slate-100">
+                        <p class="text-[11px] text-slate-400 font-extrabold uppercase tracking-widest mb-2">Total Service Price</p>
+                        <div class="flex items-end gap-3 flex-wrap">
+                            <span id="svc-price" class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">₹0</span>
+                            <div class="flex flex-col pb-1">
+                                <span id="svc-normal-price" class="text-sm font-bold text-slate-400 line-through hidden">₹0</span>
+                                <span id="svc-discount" class="text-xs font-extrabold text-green-600 hidden">0% OFF</span>
+                            </div>
                         </div>
+                        <p class="text-[10px] text-slate-400 font-bold mt-2">*Taxes and fees calculated at checkout</p>
                     </div>
 
-                    <button id="book-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-bold py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all transform active:scale-95 flex justify-center items-center gap-2 mb-3">
-                        Book Now <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                    <button id="book-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-bold py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all transform active:scale-95 flex justify-center items-center gap-2 mb-4">
+                        Book Service <i data-lucide="arrow-right" class="w-5 h-5"></i>
                     </button>
                     
-                    <p class="text-center text-xs text-slate-400 flex justify-center items-center gap-1">
-                        <i data-lucide="shield-check" class="w-3 h-3"></i> Secure booking protected by Vilarci
-                    </p>
+                    <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                        <p class="text-center text-xs text-slate-500 font-semibold flex justify-center items-center gap-1.5">
+                            <i data-lucide="shield-check" class="w-4 h-4 text-green-600"></i> Secure booking protected by Vilarci
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -112,165 +207,361 @@
     </main>
 
     <script src="config.js"></script>
-    <script src="header.js"></script>
 
     <script>
-        // ==========================================
-        // 1. GET DB CLIENT
-        // ==========================================
-        // Use the globally available client from config.js
         const db = window.supabaseClient;
+        let currentService = null;
+        let currentProvider = null;
+        let isServiceAvailable = true;
 
         // ==========================================
-        // 2. FETCH LOGIC
+        // 1. SMART TIME / SCHEDULE ENGINE
         // ==========================================
-        async function initPage() {
-            if (!db) {
-                console.error("Vilarci Error: Database client failed to load.");
-                showError();
-                return;
+        function parseTimeString(timeStr) {
+            try {
+                const parts = timeStr.trim().split(' ');
+                const timePart = parts[0];
+                const modifier = parts[1] || '';
+                
+                let [hours, minutes] = timePart.split(':').map(Number);
+                minutes = minutes || 0;
+
+                if (modifier.toUpperCase() === 'PM' && hours < 12) hours += 12;
+                if (modifier.toUpperCase() === 'AM' && hours === 12) hours = 0;
+                
+                const d = new Date();
+                d.setHours(hours, minutes, 0, 0);
+                return d;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function getRealtimeStatus(scheduleText) {
+            if (!scheduleText || scheduleText.toLowerCase() === 'closed') {
+                return { isOpen: false, text: "Closed Today", color: "text-red-500", icon: "door-closed" };
             }
 
-            const urlParams = new URLSearchParams(window.location.search);
-            const slug = urlParams.get('slug'); 
+            try {
+                // e.g., "09:00 AM - 08:00 PM"
+                const [startStr, endStr] = scheduleText.split(' - ');
+                if (!startStr || !endStr) throw new Error("Invalid Format");
 
-            if (!slug) {
-                showError();
-                return;
+                const now = new Date();
+                const startTime = parseTimeString(startStr);
+                const endTime = parseTimeString(endStr);
+
+                if (!startTime || !endTime) throw new Error("Parse Fail");
+
+                if (now >= startTime && now <= endTime) {
+                    return { isOpen: true, text: `Open until ${endStr}`, color: "text-green-600", icon: "clock" };
+                } else if (now < startTime) {
+                    return { isOpen: false, text: `Closed • Opens at ${startStr}`, color: "text-orange-500", icon: "clock-8" };
+                } else {
+                    return { isOpen: false, text: `Closed • Opens tomorrow`, color: "text-red-500", icon: "moon" };
+                }
+            } catch (e) {
+                // Fallback for weird strings like "24 Hours"
+                return { isOpen: true, text: `Open • ${scheduleText}`, color: "text-green-600", icon: "clock" };
             }
-
-            // QUERY UPDATED TO MATCH YOUR NEW TABLE SCHEMA
-            const { data: service, error } = await db
-                .from('services')
-                .select(`
-                    id, 
-                    name, 
-                    slug, 
-                    description, 
-                    price, 
-                    normal_price, 
-                    duration_minutes, 
-                    image_url, 
-                    icon, 
-                    badge_label, 
-                    opening_time, 
-                    closing_time, 
-                    highlights, 
-                    results
-                `)
-                .eq('slug', slug)
-                .eq('is_active', true) 
-                .single();
-
-            if (error || !service) {
-                console.error("Supabase Error:", error);
-                showError();
-                return;
-            }
-
-            renderService(service);
         }
 
         // ==========================================
-        // 3. RENDER LOGIC
+        // 2. IMAGE GALLERY & FULLSCREEN
         // ==========================================
-        function renderService(service) {
+        function setMainImage(url) {
+            document.getElementById('main-svc-image').src = url;
+            document.querySelectorAll('.thumb-img').forEach(el => {
+                el.classList.remove('border-indigo-600', 'shadow-md');
+                el.classList.add('border-slate-200');
+                if(el.src === url) {
+                    el.classList.add('border-indigo-600', 'shadow-md');
+                    el.classList.remove('border-slate-200');
+                }
+            });
+        }
+
+        function openFullscreen() {
+            const modal = document.getElementById('image-modal');
+            const img = document.getElementById('fullscreen-img');
+            const mainImgSrc = document.getElementById('main-svc-image').src;
             
-            // A. Basic Info
+            img.src = mainImgSrc;
+            modal.classList.remove('hidden');
+            // Tiny delay to allow CSS transition to run
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.classList.add('opacity-100');
+            }, 10);
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeFullscreen() {
+            const modal = document.getElementById('image-modal');
+            modal.classList.remove('opacity-100');
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }, 300);
+        }
+
+        // ==========================================
+        // 3. SMART AVAILABILITY CHECKER
+        // ==========================================
+        async function checkServiceAvailability(sellerId) {
+            const warningBanner = document.getElementById('service-warning');
+            warningBanner.classList.add('hidden');
+            isServiceAvailable = true;
+
+            const savedLoc = localStorage.getItem('vilarci_user_location');
+            if (!savedLoc) {
+                updateBookButton(true);
+                return;
+            }
+
+            const locObj = JSON.parse(savedLoc);
+            let subZoneIds = [];
+
+            try {
+                if (locObj.type === 'district') {
+                    const { data } = await db.from('sub_zones').select('id').eq('district_id', locObj.id);
+                    subZoneIds = data ? data.map(z => z.id) : [];
+                } else if (locObj.type === 'main_zone') {
+                    const { data } = await db.from('sub_zones').select('id').eq('main_zone_id', locObj.id);
+                    subZoneIds = data ? data.map(z => z.id) : [];
+                } else {
+                    subZoneIds = [parseInt(locObj.id)];
+                }
+
+                if (subZoneIds.length === 0) return;
+
+                const { data: mapping, error } = await db.from('seller_delivery_zones')
+                    .select('seller_id')
+                    .eq('seller_id', sellerId)
+                    .in('sub_zone_id', subZoneIds);
+
+                if (error) throw error;
+
+                if (!mapping || mapping.length === 0) {
+                    isServiceAvailable = false;
+                    document.getElementById('warning-area-name').innerText = locObj.name;
+                    warningBanner.classList.remove('hidden');
+                }
+
+                updateBookButton(isServiceAvailable);
+
+            } catch (err) {
+                console.error("Availability Check Error:", err);
+            }
+        }
+
+        function updateBookButton(isAvailable) {
+            const bookBtn = document.getElementById('book-btn');
+            if (!isAvailable) {
+                bookBtn.disabled = true;
+                bookBtn.style.opacity = '0.4';
+                bookBtn.style.pointerEvents = 'none';
+                bookBtn.innerHTML = `Not Available <i data-lucide="ban" class="w-5 h-5"></i>`;
+            } else {
+                bookBtn.disabled = false;
+                bookBtn.style.opacity = '1';
+                bookBtn.style.pointerEvents = 'auto';
+                bookBtn.innerHTML = `Book Service <i data-lucide="arrow-right" class="w-5 h-5"></i>`;
+            }
+            if(window.lucide) window.lucide.createIcons();
+        }
+
+        // ==========================================
+        // 4. MAIN FETCH & RENDER PAGE
+        // ==========================================
+        async function initPage() {
+            if (!db) return showError();
+            const urlParams = new URLSearchParams(window.location.search);
+            const slug = urlParams.get('slug'); 
+            if (!slug) return showError();
+
+            try {
+                // 🌟 Added shop_slug to fetch query
+                const { data: service, error } = await db
+                    .from('services')
+                    .select(`
+                        id, name, slug, description, price, normal_price, 
+                        service_duration, images, icon, badge_label, 
+                        highlights, results, seller_id,
+                        shops_public_587 (
+                            store_name, full_address, shop_direction, weekly_schedule, shop_slug
+                        )
+                    `)
+                    .eq('slug', slug)
+                    .eq('is_active', true) 
+                    .single();
+
+                if (error || !service) throw error;
+
+                currentService = service;
+                currentProvider = service.shops_public_587 || {};
+                renderService(service);
+                
+                await checkServiceAvailability(service.seller_id);
+                
+            } catch (err) {
+                console.error("Initialization Error:", err);
+                showError();
+            }
+        }
+
+        function renderService(service) {
             document.getElementById('svc-title').innerText = service.name;
             document.getElementById('svc-desc').innerText = service.description || "No description provided.";
             
-            if(service.duration_minutes) {
-                document.getElementById('svc-duration').innerText = service.duration_minutes + " mins";
+            // Duration
+            if(service.service_duration) {
+                document.getElementById('svc-duration').innerText = service.service_duration;
+                document.getElementById('duration-container').classList.remove('hidden');
             } else {
                 document.getElementById('duration-container').classList.add('hidden');
             }
 
-            // B. Pricing Logic
+            // Pricing
             const price = parseFloat(service.price);
             const normalPrice = service.normal_price ? parseFloat(service.normal_price) : null;
-            
             document.getElementById('svc-price').innerText = '₹' + price;
-
             if (normalPrice && normalPrice > price) {
                 document.getElementById('svc-normal-price').innerText = '₹' + normalPrice;
                 document.getElementById('svc-normal-price').classList.remove('hidden');
+                document.getElementById('svc-discount').innerText = Math.round(((normalPrice - price) / normalPrice) * 100) + '% OFF';
+                document.getElementById('svc-discount').classList.remove('hidden');
+            }
+
+            // Image Parsing & Gallery Setup
+            let imgArray = [];
+            if (Array.isArray(service.images) && service.images.length > 0) {
+                imgArray = service.images;
+            } else if (typeof service.images === 'string') {
+                try { 
+                    let parsed = JSON.parse(service.images); 
+                    imgArray = Array.isArray(parsed) ? parsed : [service.images];
+                } catch(e) { 
+                    let cleaned = service.images.replace(/^\{|\}$/g, '').split(',');
+                    imgArray = cleaned.filter(Boolean);
+                }
+            } 
+            
+            if (imgArray.length > 0) {
+                document.getElementById('svc-gallery').classList.remove('hidden');
+                document.getElementById('svc-gallery').classList.add('flex');
+                document.getElementById('main-svc-image').src = imgArray[0];
                 
-                const discount = Math.round(((normalPrice - price) / normalPrice) * 100);
-                const discountEl = document.getElementById('svc-discount');
-                discountEl.innerText = discount + '% OFF';
-                discountEl.classList.remove('hidden');
-            }
-
-            // C. Images vs Icons
-            const imgEl = document.getElementById('svc-image');
-            const iconContainer = document.getElementById('svc-icon-container');
-            const iconEl = document.getElementById('svc-icon');
-
-            if (service.image_url) {
-                imgEl.src = service.image_url;
-                imgEl.classList.remove('hidden');
-                iconContainer.classList.add('hidden');
+                if (imgArray.length > 1) {
+                    const thumbGrid = document.getElementById('thumbnail-grid');
+                    thumbGrid.classList.remove('hidden');
+                    imgArray.slice(0, 4).forEach((img, index) => {
+                        const borderClass = index === 0 ? 'border-indigo-600 shadow-md' : 'border-slate-200';
+                        thumbGrid.innerHTML += `<img src="${img}" class="thumb-img w-16 h-16 md:w-20 md:h-20 object-cover rounded-xl border-2 ${borderClass} hover:border-indigo-300 transition cursor-pointer flex-shrink-0" onmouseover="setMainImage('${img}')" onclick="setMainImage('${img}')">`;
+                    });
+                }
             } else {
-                iconEl.innerText = service.icon || '🛠️';
-                imgEl.classList.add('hidden');
-                iconContainer.classList.remove('hidden');
+                document.getElementById('svc-icon-container').classList.remove('hidden');
+                document.getElementById('svc-icon').innerText = service.icon || '🛠️';
             }
 
-            // D. Badge Label
-            if (service.badge_label) {
-                const badgeEl = document.getElementById('svc-badge');
-                badgeEl.innerText = service.badge_label;
-                badgeEl.classList.remove('hidden');
-            }
+            // Provider Linking Setup
+            document.getElementById('provider-name').innerText = currentProvider.store_name || "Vilarci Verified Provider";
+            const address = currentProvider.full_address || currentProvider.shop_direction;
+            document.getElementById('provider-address').innerText = address ? address : "Address available upon booking";
 
-            // E. Operational Hours
-            if (service.opening_time && service.closing_time) {
-                const start = service.opening_time.slice(0, 5);
-                const end = service.closing_time.slice(0, 5);
-                document.getElementById('svc-hours').innerText = `${start} - ${end}`;
-            } else {
-                document.getElementById('hours-container').classList.add('hidden');
-            }
-
-            // F. Highlights (Array)
-            if (service.highlights && service.highlights.length > 0) {
-                const list = document.getElementById('svc-highlights');
-                document.getElementById('highlights-section').classList.remove('hidden');
-                
-                service.highlights.forEach(item => {
-                    const li = document.createElement('li');
-                    li.className = "flex items-start gap-2 text-sm text-slate-700";
-                    li.innerHTML = `<i data-lucide="check-circle-2" class="w-5 h-5 text-green-500 shrink-0"></i> <span>${item}</span>`;
-                    list.appendChild(li);
-                });
-            }
-
-            // G. Results (Array)
-            if (service.results && service.results.length > 0) {
-                const list = document.getElementById('svc-results');
-                document.getElementById('results-section').classList.remove('hidden');
-
-                service.results.forEach(item => {
-                    const li = document.createElement('li');
-                    li.className = "flex items-start gap-3 text-slate-700";
-                    li.innerHTML = `<span class="bg-indigo-100 text-indigo-700 font-bold px-2 rounded text-xs mt-1">✔</span> <span>${item}</span>`;
-                    list.appendChild(li);
-                });
-            }
-
-            // Re-init icons for dynamic elements
-            if(window.lucide) window.lucide.createIcons();
-
-            // H. Booking Button
-            document.getElementById('book-btn').onclick = () => {
-                window.location.href = `booking_form.html?service=${service.slug}`;
+            // Click routing to shop profile
+            document.getElementById('provider-card').onclick = (e) => {
+                // Prevent routing if clicking the map button or schedule accordion
+                if(e.target.closest('#direction-btn') || e.target.closest('#schedule-container')) return;
+                const linkSlug = currentProvider.shop_slug || service.seller_id;
+                window.location.href = `shop_profile.html?slug=${linkSlug}`;
             };
 
-            // Reveal Content
+            if (address) {
+                const dirBtn = document.getElementById('direction-btn');
+                dirBtn.classList.remove('hidden');
+                dirBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    window.open('https://maps.google.com/?q=' + encodeURIComponent(address), '_blank');
+                };
+            }
+
+            if (currentProvider.weekly_schedule) {
+                document.getElementById('schedule-container').classList.remove('hidden');
+                renderWeeklySchedule(currentProvider.weekly_schedule);
+            }
+
+            // 🌟 GREEN CHECKMARK HIGHLIGHTS
+            if (service.highlights && service.highlights.length > 0) {
+                document.getElementById('highlights-section').classList.remove('hidden');
+                const hList = document.getElementById('svc-highlights');
+                service.highlights.forEach(h => {
+                    hList.innerHTML += `
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="check-circle-2" class="w-5 h-5 text-green-500 shrink-0 mt-0.5"></i> 
+                            <span class="leading-snug">${h}</span>
+                        </li>`;
+                });
+            }
+
+            if (service.badge_label) {
+                document.getElementById('svc-badge').innerText = service.badge_label;
+                document.getElementById('svc-badge').classList.remove('hidden');
+            }
+
+            if(window.lucide) window.lucide.createIcons();
+            
+            // Render view
             document.getElementById('loader').classList.add('hidden');
             document.getElementById('content').classList.remove('hidden');
-            document.getElementById('content').classList.add('grid');
+            
+            document.getElementById('book-btn').onclick = () => {
+                if (isServiceAvailable) {
+                    window.location.href = `booking_form.html?service=${service.slug}`;
+                }
+            };
+        }
+
+        function renderWeeklySchedule(schedule) {
+            const listEl = document.getElementById('schedule-list');
+            const daysMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+            const daysNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+            
+            const todayIndex = new Date().getDay();
+            const todayKey = daysMap[todayIndex];
+            const todaySchedule = schedule[todayKey];
+
+            // 🌟 NEW REAL-TIME STATUS ENGINE
+            const status = getRealtimeStatus(todaySchedule);
+            const statusEl = document.getElementById('schedule-status');
+            const iconEl = document.getElementById('schedule-icon');
+            
+            statusEl.innerText = status.text;
+            statusEl.className = `${status.color} font-extrabold text-[15px]`;
+            iconEl.setAttribute('data-lucide', status.icon);
+            iconEl.className = `w-5 h-5 ${status.color}`;
+
+            daysMap.forEach((dayKey, index) => {
+                const isToday = index === todayIndex;
+                const timeText = schedule[dayKey] || "Closed";
+                const rowClass = isToday ? "text-slate-900 font-extrabold" : "text-slate-500";
+                const label = isToday ? `${daysNames[index]} (Today)` : daysNames[index];
+
+                listEl.innerHTML += `
+                    <li class="flex justify-between items-center ${rowClass} py-1 border-b border-slate-100 last:border-0">
+                        <span class="w-24 uppercase text-[11px] tracking-widest">${label}</span>
+                        <span>${timeText}</span>
+                    </li>
+                `;
+            });
+        }
+
+        function toggleSchedule(e) {
+            e.stopPropagation(); // Prevents clicking through to the shop profile
+            document.getElementById('schedule-dropdown').classList.toggle('hidden');
+            document.getElementById('schedule-arrow').classList.toggle('rotate-180');
         }
 
         function showError() {
@@ -278,7 +569,12 @@
             document.getElementById('error-container').classList.remove('hidden');
         }
 
-        // Initialize Page
+        window.addEventListener('vilarciLocationChanged', async () => {
+            if (currentService && currentService.seller_id) {
+                await checkServiceAvailability(currentService.seller_id);
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', initPage);
     </script>
 </body>

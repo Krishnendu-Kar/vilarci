@@ -442,6 +442,9 @@
         // ==========================================
         // FETCH SERVICES (Infinite Scroll Support)
         // ==========================================
+        // ==========================================
+        // FETCH SERVICES (Infinite Scroll Support)
+        // ==========================================
         async function fetchServices(isLoadMore = false) {
             if (!resolvedSellerNumericId || isFetchingServices || allServicesLoaded) return;
             isFetchingServices = true;
@@ -452,7 +455,8 @@
             try {
                 const { data: services, error } = await db
                     .from('services')
-                    .select('id, name, slug, price, image_url, duration_minutes')
+                    // 🌟 FIX: Updated columns to match new optimized schema
+                    .select('id, name, slug, price, images, service_duration')
                     .eq('seller_id', resolvedSellerNumericId)
                     .eq('is_active', true)
                     .order('created_at', { ascending: false })
@@ -473,9 +477,11 @@
                 serviceOffset += services.length;
 
                 let html = services.map(s => {
-                    const img = s.image_url ? s.image_url : 'placeholder.png';
+                    // 🌟 FIX: Updated to use images array and service_duration text
+                    const imgArray = s.images || [];
+                    const img = imgArray.length > 0 ? imgArray[0] : 'logo.png';
                     const targetSlug = s.slug || s.id;
-                    const duration = s.duration_minutes ? `<div class="text-xs text-slate-500 mb-2"><i class="fa-regular fa-clock"></i> ${s.duration_minutes} mins</div>` : '';
+                    const duration = s.service_duration ? `<div class="text-xs text-slate-500 mb-2"><i class="fa-regular fa-clock"></i> ${s.service_duration}</div>` : '';
 
                     return `
                     <div class="product-card border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer" onclick="window.location.href='service_details.html?slug=${targetSlug}'">
