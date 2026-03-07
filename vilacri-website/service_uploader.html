@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Service - Vilarci Partner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen pb-20">
+
+    <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <a href="seller_service_manage.html" class="text-slate-400 hover:text-pink-600 transition">
+                        <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                    </a>
+                    <div class="text-xl font-bold text-slate-800">Add New Service</div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-lg" id="displaySellerId">Verifying...</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
+        
+        <div class="bg-pink-600 text-white rounded-2xl p-4 sm:p-6 shadow-md flex items-start gap-4">
+            <i data-lucide="wrench" class="w-6 h-6 shrink-0 mt-0.5 text-pink-200"></i>
+            <div>
+                <h2 class="font-bold text-lg">Service Listing Creator</h2>
+                <p class="text-pink-100 text-sm mt-1">Create a professional service listing. Make sure your images are clear and your highlights explain exactly what the customer will receive.</p>
+            </div>
+        </div>
+
+        <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+                <h3 class="text-slate-800 font-bold flex items-center gap-2">
+                    <i data-lucide="barcode" class="w-5 h-5 text-pink-600"></i> Service ID Generation
+                </h3>
+                <p class="text-xs text-slate-500 mt-1">A unique 12-digit code is automatically generated for this service.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="text" id="final_service_id" readonly class="bg-slate-100 text-slate-700 font-mono font-extrabold text-lg px-4 py-2 rounded-xl border border-slate-200 w-48 text-center outline-none">
+                <button type="button" onclick="generateRandomID()" class="bg-pink-50 text-pink-600 hover:bg-pink-100 p-2.5 rounded-xl transition" title="Generate New ID">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </section>
+
+        <section class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200">
+            <h3 class="text-sm font-extrabold text-pink-600 uppercase tracking-widest mb-6 border-b border-slate-100 pb-3">1. Categorization</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Service Category <span class="text-red-500">*</span></label>
+                    <select id="catSelect" onchange="handleCatChange()" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500 outline-none transition-colors">
+                        <option value="">Select Category...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Sub Category <span class="text-red-500">*</span></label>
+                    <select id="subSelect" disabled class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500 outline-none disabled:opacity-50 transition-colors">
+                        <option value="">Select Category First</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200">
+            <h3 class="text-sm font-extrabold text-pink-600 uppercase tracking-widest mb-6 border-b border-slate-100 pb-3">2. Core Details</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Service Title <span class="text-red-500">*</span></label>
+                    <input type="text" id="name" oninput="generateSlug()" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:ring-2 focus:ring-pink-500 outline-none transition-colors" placeholder="e.g., Premium AC Deep Cleaning">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Service Link (Slug)</label>
+                    <input type="text" id="slug" readonly class="w-full p-3 bg-slate-100 border border-slate-200 rounded-xl font-mono text-sm text-slate-500 outline-none transition-colors">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Service Price (₹) <span class="text-red-500">*</span></label>
+                    <input type="number" step="0.01" id="base_price" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-extrabold text-pink-700 focus:ring-2 focus:ring-pink-500 outline-none transition-colors" placeholder="499.00">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Normal Price / MRP (₹)</label>
+                    <input type="number" step="0.01" id="original_price" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-600 focus:ring-2 focus:ring-pink-500 outline-none transition-colors" placeholder="Optional">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Estimated Duration</label>
+                    <input type="text" id="duration" value="1 Hour" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500 outline-none transition-colors" placeholder="e.g., 45 Mins, 2 Hours">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Badge Label (Max 15 Chars)</label>
+                    <input type="text" id="badge" maxlength="15" placeholder="e.g., Top Rated" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500 outline-none transition-colors">
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Detailed Description</label>
+                    <textarea id="description" rows="4" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm text-slate-700 focus:ring-2 focus:ring-pink-500 outline-none transition-colors" placeholder="Describe what the service includes and any terms..."></textarea>
+                </div>
+
+            </div>
+        </section>
+
+        <section class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200">
+            <h3 class="text-sm font-extrabold text-pink-600 uppercase tracking-widest mb-6 border-b border-slate-100 pb-3">3. Media & Highlights</h3>
+            
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Gallery Image URLs (One link per line) <span class="text-red-500">*</span></label>
+                    <textarea id="images" rows="4" oninput="renderImagePreviews()" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-600 focus:ring-2 focus:ring-pink-500 outline-none transition-colors" placeholder="https://vilarci.com/img1.jpg&#10;https://vilarci.com/img2.jpg"></textarea>
+                    <div id="image-previews" class="flex gap-3 overflow-x-auto mt-3 pb-2 min-h-[4rem]"></div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Key Highlights (One per line)</label>
+                    <textarea id="highlights" rows="4" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" placeholder="Certified Professionals&#10;Eco-Friendly Products&#10;100% Satisfaction"></textarea>
+                    <p class="text-[10px] text-slate-400 mt-1 font-medium">These show up as green checkmarks detailing what the customer gets.</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="flex justify-end gap-4 pt-4 pb-8">
+            <button type="button" onclick="uploadService()" id="upload-btn" class="w-full sm:w-auto bg-pink-600 hover:bg-pink-700 text-white font-extrabold px-10 py-4 rounded-xl shadow-lg shadow-pink-200 transition-all transform hover:-translate-y-1 flex justify-center items-center gap-2 text-lg">
+                <i data-lucide="upload-cloud" class="w-5 h-5"></i> Publish Service
+            </button>
+        </div>
+
+    </main>
+
+    <script>
+        // ==========================================
+        // 1. CONFIGURATION & SECURITY
+        // ==========================================
+        const db = window.supabaseClient;
+        let currentSellerId = null;
+
+        // XSS Sanitizer
+        function sanitize(text) {
+            if (typeof text !== 'string') return text;
+            return text.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim();
+        }
+
+        async function initPage() {
+            lucide.createIcons();
+            try {
+                const { data: { session }, error: authError } = await db.auth.getSession();
+                if (authError || !session) throw new Error("Unauthorized");
+
+                const { data, error } = await db.from('shops_public_587').select('seller_numeric_id').eq('id', session.user.id).single();
+                if (error || !data) throw new Error("Seller profile not found.");
+
+                currentSellerId = data.seller_numeric_id;
+                document.getElementById('displaySellerId').innerText = `ID: ${currentSellerId}`;
+
+                loadCategories();
+                generateRandomID();
+
+            } catch (err) {
+                Toastify({ text: "Authentication Error. Redirecting...", style: { background: "#ef4444" } }).showToast();
+                setTimeout(() => window.location.href = 'login.html', 1500);
+            }
+        }
+
+        // ==========================================
+        // 2. ID GENERATION (12 DIGIT)
+        // ==========================================
+        const STATE_CODE = "10"; 
+        const SERVICE_FIX_CODE = "2";
+
+        function generateRandomID() {
+            // Generates exactly 9 random digits for the unique part
+            const uniqueCode = Math.floor(100000000 + Math.random() * 900000000).toString();
+            document.getElementById('final_service_id').value = `${STATE_CODE}${SERVICE_FIX_CODE}${uniqueCode}`;
+        }
+
+        function generateSlug() {
+            const name = document.getElementById('name').value;
+            const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+            document.getElementById('slug').value = slug + '-' + Math.floor(Math.random() * 1000);
+        }
+
+        // ==========================================
+        // 3. CATEGORY DROPDOWNS
+        // ==========================================
+        async function loadCategories() {
+            const { data } = await db.from('service_categories').select('id, name').order('name');
+            const select = document.getElementById('catSelect');
+            if(data) data.forEach(c => select.add(new Option(c.name, c.id)));
+        }
+
+        async function handleCatChange() {
+            const catId = document.getElementById('catSelect').value;
+            const sub = document.getElementById('subSelect');
+            
+            sub.innerHTML = '<option value="">Select Sub Category</option>';
+            sub.disabled = true;
+            
+            if(!catId) return;
+            const { data } = await db.from('service_sub_categories').select('id, name').eq('category_id', catId).order('name');
+            if (data) { sub.disabled = false; data.forEach(s => sub.add(new Option(s.name, s.id))); }
+        }
+
+        // ==========================================
+        // 4. IMAGE PREVIEWER
+        // ==========================================
+        window.renderImagePreviews = function() {
+            const urls = document.getElementById('images').value.split('\n').map(s=>s.trim()).filter(s=>s);
+            const container = document.getElementById('image-previews');
+            container.innerHTML = '';
+            urls.forEach(u => {
+                container.innerHTML += `<img src="${sanitize(u)}" class="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-sm bg-white" onerror="this.src='https://via.placeholder.com/64?text=Error'">`;
+            });
+        }
+
+        // ==========================================
+        // 5. UPLOAD EXECUTION
+        // ==========================================
+        async function uploadService() {
+            const btn = document.getElementById('upload-btn');
+            
+            // Validate required
+            const name = sanitize(document.getElementById('name').value);
+            const catId = document.getElementById('catSelect').value;
+            const price = parseFloat(document.getElementById('base_price').value);
+            const images = document.getElementById('images').value.split('\n').map(s=>sanitize(s)).filter(s=>s);
+
+            if(!name || !catId || isNaN(price) || images.length === 0) {
+                Toastify({ text: "Please fill Name, Category, Price, and add at least 1 Image.", duration: 4000, style: { background: "#ef4444" } }).showToast();
+                return;
+            }
+
+            btn.innerHTML = `<div class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div> Publishing...`;
+            btn.disabled = true;
+
+            const payload = {
+                id: document.getElementById('final_service_id').value,
+                seller_id: currentSellerId,
+                name: name,
+                slug: sanitize(document.getElementById('slug').value),
+                description: sanitize(document.getElementById('description').value),
+                badge_label: sanitize(document.getElementById('badge').value),
+                
+                price: price,
+                normal_price: parseFloat(document.getElementById('original_price').value) || null,
+                service_duration: sanitize(document.getElementById('duration').value) || '1 Hour',
+                
+                images: images,
+                highlights: document.getElementById('highlights').value.split('\n').map(s=>sanitize(s)).filter(s=>s),
+                
+                service_category_id: parseInt(catId),
+                service_sub_category_id: parseInt(document.getElementById('subSelect').value) || null,
+                
+                is_active: true
+            };
+
+            try {
+                const { error } = await db.from('services').insert([payload]);
+                if(error) throw error;
+                
+                Toastify({ text: "Service Published Successfully!", duration: 3000, style: { background: "#22c55e", borderRadius: "8px" } }).showToast();
+                setTimeout(() => window.location.href = 'seller_service_manage.html', 1500);
+
+            } catch(err) {
+                Toastify({ text: "Upload Failed: " + err.message, duration: 4000, style: { background: "#ef4444", borderRadius: "8px" } }).showToast();
+                console.error(err);
+                btn.innerHTML = `<i data-lucide="upload-cloud" class="w-5 h-5"></i> Publish Service`;
+                btn.disabled = false;
+                lucide.createIcons();
+            }
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', initPage);
+    </script>
+</body>
+</html>
