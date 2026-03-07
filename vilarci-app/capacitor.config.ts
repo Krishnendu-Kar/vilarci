@@ -6,7 +6,15 @@ const config: CapacitorConfig = {
   webDir: 'build',
   server: {
     url: 'https://krishnendu-kar.github.io/vilarci/',
-    cleartext: true
+    cleartext: true,
+    errorPath: 'error.html'
+  },
+  plugins: {
+    StatusBar: {
+      overlaysWebView: false,
+      style: 'DARK', // Makes battery/wifi icons white
+      backgroundColor: '#8b0000' // Matches your website header
+    }
   }
 };
 

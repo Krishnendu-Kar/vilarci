@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Offline</title>
+  <style>
+    body {
+      margin: 0; padding: 0; font-family: sans-serif;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      height: 100vh; background-color: #f3f4f6; color: #333; text-align: center;
+    }
+    h1 { color: #8b0000; font-style: italic; margin-bottom: 10px; font-size: 32px;}
+    p { margin-bottom: 30px; color: #666; font-size: 16px; padding: 0 20px;}
+    button {
+      background-color: #8b0000; color: white; border: none;
+      padding: 12px 30px; font-size: 16px; border-radius: 8px;
+      font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    button:active { background-color: #6b0000; transform: scale(0.95); }
+  </style>
+</head>
+<body>
+  <h1>Vilarci</h1>
+  <p>Please check your internet connection and try again.</p>
+  <button onclick="window.location.reload()">Retry Connection</button>
+</body>
+</html>
