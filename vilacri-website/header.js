@@ -727,3 +727,57 @@ function updateHeaderLocationText(name) {
 }
 // Start everything on load
 document.addEventListener('DOMContentLoaded', initializeComponent);
+
+
+// ==============================================================
+// VILARCI HYBRID APP LOGIC (Only runs if opened from Play Store)
+// ==============================================================
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Check if the website is running inside the Capacitor Android App
+    if (window.Capacitor && window.Capacitor.isNative) {
+        
+        // A. Add a class to the body so we know it's the app
+        document.body.classList.add('is-native-app');
+
+        // B. Dynamically inject the "App-Only" CSS to all pages
+        const nativeCSS = `
+            /* Prevent browser pull-to-refresh */
+            body.is-native-app {
+                overscroll-behavior-y: none; 
+                -webkit-user-select: none;
+                user-select: none;
+                -webkit-touch-callout: none; 
+            }
+            /* Allow typing in search and text boxes */
+            body.is-native-app input, 
+            body.is-native-app textarea {
+                -webkit-user-select: auto;
+                user-select: auto;
+            }
+            /* Hide ugly browser scrollbars but keep scrolling */
+            body.is-native-app ::-webkit-scrollbar {
+                display: none;
+            }
+        `;
+        const styleSheet = document.createElement('style');
+        styleSheet.innerText = nativeCSS;
+        document.head.appendChild(styleSheet);
+
+        // C. Global Android Hardware Back Button Fix
+        if (window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+            window.Capacitor.Plugins.App.addListener('backButton', ({ canGoBack }) => {
+                const path = window.location.pathname;
+                // Check if user is on the main Home Page (accounting for GitHub Pages URL)
+                const isHome = path === '/' || path === '/vilarci/' || path.endsWith('index.html') || path === '';
+                
+                if (canGoBack && !isHome) {
+                    // Deep in the website -> Go back 1 page
+                    window.history.back();
+                } else {
+                    // On the home page -> Close the entire App smoothly
+                    window.Capacitor.Plugins.App.exitApp();
+                }
+            });
+        }
+    }
+});
