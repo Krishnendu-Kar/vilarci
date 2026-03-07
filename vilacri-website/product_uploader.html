@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Product - Vilarci Partner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Locked field styling */
+        .is-frozen { background-color: #eef2ff !important; border-color: #c7d2fe !important; }
+        .is-frozen-dark { background-color: #1e1b4b !important; border-color: #4f46e5 !important; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2); }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen pb-20">
+
+    <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <a href="seller_product_manage.html" class="text-slate-400 hover:text-indigo-600 transition">
+                        <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                    </a>
+                    <div class="text-xl font-bold text-slate-800">Add New Product</div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="hidden sm:flex items-center gap-2 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 text-indigo-700 text-xs font-bold">
+                        <i data-lucide="zap" class="w-4 h-4"></i> Rapid Bulk Entry Active
+                    </div>
+                    <span class="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-lg" id="displaySellerId">Verifying...</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
+        
+        <div class="bg-indigo-600 text-white rounded-2xl p-4 sm:p-6 shadow-md flex items-start gap-4">
+            <i data-lucide="info" class="w-6 h-6 shrink-0 mt-0.5 text-indigo-200"></i>
+            <div>
+                <h2 class="font-bold text-lg">Pro Tip: Use the Padlocks for Bulk Uploading!</h2>
+                <p class="text-indigo-100 text-sm mt-1">Uploading 10 similar shirts? Click the padlock icon <i data-lucide="unlock" class="inline w-3 h-3 mx-1"></i> next to Category, Price, and Specs to "Freeze" them. When you hit publish, those fields won't clear, letting you upload the next shirt in seconds!</p>
+            </div>
+        </div>
+
+        <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+                <h3 class="text-slate-800 font-bold flex items-center gap-2">
+                    <i data-lucide="barcode" class="w-5 h-5 text-indigo-600"></i> Product ID Generation
+                </h3>
+                <p class="text-xs text-slate-500 mt-1">A unique 12-digit code is automatically generated for this item.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="text" id="final_product_id" readonly class="bg-slate-100 text-slate-700 font-mono font-extrabold text-lg px-4 py-2 rounded-xl border border-slate-200 w-48 text-center outline-none">
+                <button type="button" onclick="generateRandomID()" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 p-2.5 rounded-xl transition" title="Generate New ID">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </section>
+
+        <section class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 transition-colors" id="block-cat">
+            <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
+                <h3 class="text-sm font-extrabold text-indigo-600 uppercase tracking-widest">1. Categorization</h3>
+                <button type="button" onclick="toggleLock('cat')" id="lock-cat" class="text-slate-400 hover:text-indigo-600 transition flex items-center gap-1 text-xs font-bold"><i data-lucide="unlock" class="w-4 h-4"></i> Freeze</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Category <span class="text-red-500">*</span></label>
+                    <select id="catSelect" onchange="handleCatChange()" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors">
+                        <option value="">Select Category...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Sub Category <span class="text-red-500">*</span></label>
+                    <select id="subSelect" onchange="handleSubChange()" disabled class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none disabled:opacity-50 transition-colors">
+                        <option value="">Select Category First</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Super Sub Category <span class="text-red-500">*</span></label>
+                    <select id="superSelect" disabled class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none disabled:opacity-50 transition-colors">
+                        <option value="">Select Sub Category First</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200">
+            <h3 class="text-sm font-extrabold text-indigo-600 uppercase tracking-widest mb-6 border-b border-slate-100 pb-3">2. Core Details</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <div class="md:col-span-2">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">Product Name <span class="text-red-500">*</span></label>
+                        <button type="button" onclick="toggleLock('name')" id="lock-name" class="text-slate-400 hover:text-indigo-600 transition"><i data-lucide="unlock" class="w-4 h-4"></i></button>
+                    </div>
+                    <input type="text" id="name" oninput="generateSlug()" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" placeholder="e.g., Premium Cotton T-Shirt">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Product Link (Slug)</label>
+                    <input type="text" id="slug" readonly class="w-full p-3 bg-slate-100 border border-slate-200 rounded-xl font-mono text-sm text-slate-500 outline-none transition-colors">
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">Base Price (₹) <span class="text-red-500">*</span></label>
+                        <button type="button" onclick="toggleLock('price')" id="lock-price" class="text-slate-400 hover:text-indigo-600 transition"><i data-lucide="unlock" class="w-4 h-4"></i></button>
+                    </div>
+                    <input type="number" step="0.01" id="base_price" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-extrabold text-indigo-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" placeholder="299.00">
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">Original Price (₹)</label>
+                        <button type="button" onclick="toggleLock('mrp')" id="lock-mrp" class="text-slate-400 hover:text-indigo-600 transition"><i data-lucide="unlock" class="w-4 h-4"></i></button>
+                    </div>
+                    <input type="number" step="0.01" id="original_price" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" placeholder="Optional">
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">Main Stock</label>
+                        <button type="button" onclick="toggleLock('stock')" id="lock-stock" class="text-slate-400 hover:text-indigo-600 transition"><i data-lucide="unlock" class="w-4 h-4"></i></button>
+                    </div>
+                    <input type="number" id="stock" value="0" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors">
+                    <p class="text-[10px] text-slate-400 mt-1 font-medium">Leave 0 if using Variants for stock.</p>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">Badge Label (15 Chars)</label>
+                        <button type="button" onclick="toggleLock('badge')" id="lock-badge" class="text-slate-400 hover:text-indigo-600 transition"><i data-lucide="unlock" class="w-4 h-4"></i></button>
+                    </div>
+                    <input type="text" id="badge" maxlength="15" placeholder="e.g., Best Seller" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors">
+                </div>
+
+                <div class="md:col-span-2">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">Description</label>
+                        <button type="button" onclick="toggleLock('desc')" id="lock-desc" class="text-slate-400 hover:text-indigo-600 transition"><i data-lucide="unlock" class="w-4 h-4"></i></button>
+                    </div>
+                    <textarea id="description" rows="4" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" placeholder="Describe the product in detail..."></textarea>
+                </div>
+
+            </div>
+        </section>
+
+        <section class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200">
+            <h3 class="text-sm font-extrabold text-indigo-600 uppercase tracking-widest mb-6 border-b border-slate-100 pb-3">3. Media & Highlights</h3>
+            
+            <div class="space-y-6">
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">Image URLs (One per line) <span class="text-red-500">*</span></label>
+                        <button type="button" onclick="toggleLock('images')" id="lock-images" class="text-slate-400 hover:text-indigo-600 transition"><i data-lucide="unlock" class="w-4 h-4"></i></button>
+                    </div>
+                    <textarea id="images" rows="4" oninput="renderImagePreviews()" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" placeholder="https://vilarci.com/img1.jpg&#10;https://vilarci.com/img2.jpg"></textarea>
+                    <div id="image-previews" class="flex gap-3 overflow-x-auto mt-3 pb-2 min-h-[4rem]"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-bold text-slate-500 uppercase">Key Highlights (One per line)</label>
+                            <button type="button" onclick="toggleLock('high')" id="lock-high" class="text-slate-400 hover:text-indigo-600 transition"><i data-lucide="unlock" class="w-4 h-4"></i></button>
+                        </div>
+                        <textarea id="highlights" rows="4" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm text-slate-700 focus:ring-2 focus:ring-green-500 outline-none transition-colors" placeholder="100% Original&#10;1 Year Warranty"></textarea>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-bold text-slate-500 uppercase">Search Tags (Comma Separated)</label>
+                            <button type="button" onclick="toggleLock('tags')" id="lock-tags" class="text-slate-400 hover:text-indigo-600 transition"><i data-lucide="unlock" class="w-4 h-4"></i></button>
+                        </div>
+                        <textarea id="tags" rows="4" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" placeholder="tshirt, fashion, men, summer"></textarea>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 transition-colors" id="block-logistics">
+            <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
+                <h3 class="text-sm font-extrabold text-indigo-600 uppercase tracking-widest">4. Logistics & Trust Settings</h3>
+                <button type="button" onclick="toggleLock('logistics')" id="lock-logistics" class="text-slate-400 hover:text-indigo-600 transition flex items-center gap-1 text-xs font-bold"><i data-lucide="unlock" class="w-4 h-4"></i> Freeze Block</button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Delivery Class</label>
+                    <select id="delivery_class" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer transition-colors">
+                        <option value="standard">Standard (Normal Fee)</option>
+                        <option value="heavy">Heavy (+₹20 Surcharge)</option>
+                        <option value="fragile">Fragile (+₹15 Surcharge)</option>
+                    </select>
+                </div>
+
+                <div class="md:col-span-2 flex items-center bg-green-50 px-5 py-3 rounded-xl border border-green-200">
+                    <label class="flex items-center gap-3 cursor-pointer w-full">
+                        <input type="checkbox" id="is_free_delivery" class="w-5 h-5 text-green-600 rounded cursor-pointer">
+                        <div>
+                            <span class="text-sm font-bold text-green-800 block">Do you want to offer Free Delivery?</span>
+                            <span class="text-xs font-medium text-green-600">Overrides all fees and shows a FREE badge.</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Max Delivery Time (Days)</label>
+                    <input type="number" id="max_delivery" value="1" min="1" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors">
+                    <p class="text-[10px] text-slate-400 mt-1 font-medium leading-tight">1 = "Same Day". 2 = exact date calculation.</p>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Replacement Policy (Days)</label>
+                    <input type="number" id="replacement_days" value="7" min="0" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Refund Policy (Days)</label>
+                    <input type="number" id="refund_days" value="7" min="0" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors">
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 transition-colors" id="block-rating">
+            <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-3">
+                <h3 class="text-sm font-extrabold text-indigo-600 uppercase tracking-widest">5. Initial Review Boost</h3>
+                <button type="button" onclick="toggleLock('rating')" id="lock-rating" class="text-slate-400 hover:text-indigo-600 transition flex items-center gap-1 text-xs font-bold"><i data-lucide="unlock" class="w-4 h-4"></i> Freeze</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Average Rating (Max 4.2)</label>
+                    <input type="number" step="0.1" max="4.2" id="rating_avg" placeholder="4.0" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Total Ratings Count (Max 800)</label>
+                    <input type="number" max="800" id="rating_count" placeholder="120" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors">
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-slate-800 p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-700 text-white transition-colors" id="block-adv">
+            <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-3">
+                <h3 class="text-sm font-extrabold text-indigo-400 uppercase tracking-widest">6. Advanced Configuration</h3>
+                <button type="button" onclick="toggleLock('adv')" id="lock-adv" class="text-slate-400 hover:text-indigo-400 transition flex items-center gap-1 text-xs font-bold"><i data-lucide="unlock" class="w-4 h-4"></i> Freeze All</button>
+            </div>
+            
+            <div class="space-y-8">
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <div>
+                            <h4 class="font-bold text-sm">Specifications</h4>
+                            <p class="text-xs text-slate-400">Add technical details like Brand, Material, Weight.</p>
+                        </div>
+                        <button type="button" onclick="addSpecRow()" class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                            <i data-lucide="plus" class="w-3 h-3"></i> Add Spec
+                        </button>
+                    </div>
+                    <div id="specs-builder" class="space-y-2"></div>
+                </div>
+
+                <div class="pt-6 border-t border-slate-700">
+                    <div class="flex justify-between items-center mb-3">
+                        <div>
+                            <h4 class="font-bold text-sm">Variants (Fashion/Electronics)</h4>
+                            <p class="text-xs text-slate-400">Add sizes, colors, or storage capacities.</p>
+                        </div>
+                        <button type="button" onclick="addVariantRow()" class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                            <i data-lucide="plus" class="w-3 h-3"></i> Add Variant
+                        </button>
+                    </div>
+                    <div id="variants-builder" class="space-y-3"></div>
+                </div>
+
+                <div class="pt-6 border-t border-slate-700">
+                    <div class="flex justify-between items-center mb-3">
+                        <div>
+                            <h4 class="font-bold text-sm">Bulk Purchasing Rules (Groceries/Wholesale)</h4>
+                            <p class="text-xs text-slate-400">Offer dynamic pricing based on weight.</p>
+                        </div>
+                        <button type="button" onclick="addBulkRow()" class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                            <i data-lucide="plus" class="w-3 h-3"></i> Add Rule
+                        </button>
+                    </div>
+                    <div id="bulk-builder" class="space-y-3"></div>
+                </div>
+            </div>
+        </section>
+
+        <div class="flex justify-end gap-4 pt-4 pb-8">
+            <button type="button" onclick="uploadProduct()" id="upload-btn" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-10 py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all transform hover:-translate-y-1 flex justify-center items-center gap-2 text-lg">
+                <i data-lucide="upload-cloud" class="w-5 h-5"></i> Publish Product
+            </button>
+        </div>
+
+    </main>
+
+    <script>
+        // ==========================================
+        // 1. CONFIGURATION & AUTH
+        // ==========================================
+        const db = window.supabaseClient;
+        let currentSellerId = null;
+
+        // XSS Sanitizer
+        function sanitize(text) {
+            if (typeof text !== 'string') return text;
+            return text.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim();
+        }
+
+        async function initPage() {
+            lucide.createIcons();
+            try {
+                const { data: { session }, error: authError } = await db.auth.getSession();
+                if (authError || !session) throw new Error("Unauthorized");
+
+                const { data, error } = await db.from('shops_public_587').select('seller_numeric_id').eq('id', session.user.id).single();
+                if (error || !data) throw new Error("Seller profile not found.");
+
+                currentSellerId = data.seller_numeric_id;
+                document.getElementById('displaySellerId').innerText = `ID: ${currentSellerId}`;
+
+                loadCategories();
+                generateRandomID();
+                
+                // Add initial empty rows to builders
+                addSpecRow();
+                addVariantRow();
+                addBulkRow();
+
+            } catch (err) {
+                Toastify({ text: "Authentication Error. Redirecting...", style: { background: "#ef4444" } }).showToast();
+                setTimeout(() => window.location.href = 'login.html', 1500);
+            }
+        }
+
+        // ==========================================
+        // UI: RAPID LOCK SYSTEM (FIXED ICONS & DARK MODE)
+        // ==========================================
+        const lockMap = {
+            'cat': ['catSelect', 'subSelect', 'superSelect'], // Block handled via container color
+            'name': ['name'],
+            'price': ['base_price'],
+            'mrp': ['original_price'],
+            'stock': ['stock'],
+            'badge': ['badge'],
+            'desc': ['description'],
+            'images': ['images'],
+            'high': ['highlights'],
+            'tags': ['tags'],
+            'logistics': ['delivery_class', 'max_delivery', 'replacement_days', 'refund_days'], // Checkbox ignores freeze styling but retains value
+            'rating': ['rating_avg', 'rating_count'],
+            'adv': ['block-adv'] // Custom handling for dark mode builders
+        };
+
+        function toggleLock(key) {
+            const btn = document.getElementById(`lock-${key}`);
+            const isLocked = btn.classList.contains('is-locked');
+            
+            let label = "";
+            if(key === 'cat' || key === 'rating') label = " Freeze";
+            if(key === 'logistics') label = " Freeze Block";
+            if(key === 'adv') label = " Freeze All";
+
+            if (isLocked) {
+                // UNLOCKING
+                btn.classList.remove('is-locked', 'text-indigo-600', 'text-indigo-400');
+                btn.classList.add('text-slate-400');
+                btn.innerHTML = `<i data-lucide="unlock" class="w-4 h-4"></i>${label}`;
+                
+                lockMap[key].forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.classList.remove('is-frozen', 'is-frozen-dark');
+                });
+            } else {
+                // LOCKING
+                btn.classList.add('is-locked', key === 'adv' ? 'text-indigo-400' : 'text-indigo-600');
+                btn.classList.remove('text-slate-400');
+                btn.innerHTML = `<i data-lucide="lock" class="w-4 h-4"></i>${label}`;
+                
+                lockMap[key].forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) {
+                        if (id === 'block-adv') el.classList.add('is-frozen-dark');
+                        else el.classList.add('is-frozen');
+                    }
+                });
+            }
+            lucide.createIcons();
+        }
+
+        function resetUnlockedFields() {
+            // Generate new ID and reset slug automatically
+            generateRandomID();
+            document.getElementById('slug').value = '';
+
+            // Reset basic text/number fields if not locked
+            ['name', 'price', 'mrp', 'stock', 'badge', 'desc', 'images', 'high', 'tags', 'rating'].forEach(key => {
+                if(!document.getElementById(`lock-${key}`).classList.contains('is-locked')) {
+                    lockMap[key].forEach(id => {
+                        const el = document.getElementById(id);
+                        if(el && el.tagName !== 'SECTION') el.value = (id === 'stock') ? '0' : '';
+                    });
+                }
+            });
+
+            // Reset Categories
+            if(!document.getElementById('lock-cat').classList.contains('is-locked')) {
+                document.getElementById('catSelect').value = '';
+                handleCatChange(); // Resets downstream dropdowns
+            }
+
+            // Reset Logistics
+            if(!document.getElementById('lock-logistics').classList.contains('is-locked')) {
+                document.getElementById('delivery_class').value = 'standard';
+                document.getElementById('is_free_delivery').checked = false;
+                document.getElementById('max_delivery').value = '1';
+                document.getElementById('replacement_days').value = '7';
+                document.getElementById('refund_days').value = '7';
+            }
+
+            // Reset Advanced Builders
+            if(!document.getElementById('lock-adv').classList.contains('is-locked')) {
+                document.getElementById('specs-builder').innerHTML = ''; addSpecRow();
+                document.getElementById('variants-builder').innerHTML = ''; addVariantRow();
+                document.getElementById('bulk-builder').innerHTML = ''; addBulkRow();
+            }
+
+            renderImagePreviews();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+
+        // ==========================================
+        // ID GENERATION (12 DIGIT)
+        // ==========================================
+        const STATE_CODE = "10"; 
+        const FIXED_VAL = "1";
+
+        function generateRandomID() {
+            const uniqueCode = Math.floor(100000000 + Math.random() * 900000000).toString();
+            document.getElementById('final_product_id').value = `${STATE_CODE}${FIXED_VAL}${uniqueCode}`;
+        }
+
+        function generateSlug() {
+            const name = document.getElementById('name').value;
+            const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+            document.getElementById('slug').value = slug + '-' + Math.floor(Math.random() * 1000);
+        }
+
+        // ==========================================
+        // CATEGORY DROPDOWNS
+        // ==========================================
+        async function loadCategories() {
+            const { data } = await db.from('categories').select('id, name').order('name');
+            const select = document.getElementById('catSelect');
+            if(data) data.forEach(c => select.add(new Option(c.name, c.id)));
+        }
+
+        async function handleCatChange() {
+            const catId = document.getElementById('catSelect').value;
+            const sub = document.getElementById('subSelect');
+            const sup = document.getElementById('superSelect');
+            
+            sub.innerHTML = '<option value="">Select Sub Category</option>';
+            sup.innerHTML = '<option value="">Select Super Sub</option>';
+            sub.disabled = true; sup.disabled = true;
+            
+            if(!catId) return;
+            const { data } = await db.from('sub_categories').select('id, name').eq('category_id', catId).order('name');
+            if (data) { sub.disabled = false; data.forEach(s => sub.add(new Option(s.name, s.id))); }
+        }
+
+        async function handleSubChange() {
+            const subId = document.getElementById('subSelect').value;
+            const sup = document.getElementById('superSelect');
+            
+            sup.innerHTML = '<option value="">Select Super Sub</option>';
+            sup.disabled = true;
+
+            if(!subId) return;
+            const { data } = await db.from('super_sub_categories').select('id, name').eq('sub_category_id', subId).order('name');
+            if (data) { sup.disabled = false; data.forEach(s => sup.add(new Option(s.name, s.id))); }
+        }
+
+        // ==========================================
+        // IMAGE PREVIEWER
+        // ==========================================
+        window.renderImagePreviews = function() {
+            const urls = document.getElementById('images').value.split('\n').map(s=>s.trim()).filter(s=>s);
+            const container = document.getElementById('image-previews');
+            container.innerHTML = '';
+            urls.forEach(u => {
+                container.innerHTML += `<img src="${sanitize(u)}" class="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-sm bg-white" onerror="this.src='https://via.placeholder.com/64?text=Error'">`;
+            });
+        }
+
+        // ==========================================
+        // VISUAL BUILDERS
+        // ==========================================
+        function addSpecRow() {
+            const id = 'sp_' + Date.now();
+            const html = `
+                <div class="flex items-center gap-2 spec-row" id="${id}">
+                    <input type="text" placeholder="e.g. Brand" class="s-key flex-1 bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400">
+                    <span class="text-slate-500">:</span>
+                    <input type="text" placeholder="e.g. Samsung" class="s-val flex-1 bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400">
+                    <button type="button" onclick="document.getElementById('${id}').remove()" class="p-2 text-slate-500 hover:text-red-400 transition"><i data-lucide="x" class="w-4 h-4"></i></button>
+                </div>`;
+            document.getElementById('specs-builder').insertAdjacentHTML('beforeend', html);
+            lucide.createIcons();
+        }
+
+        function extractSpecs() {
+            const obj = {};
+            document.querySelectorAll('.spec-row').forEach(row => {
+                const k = sanitize(row.querySelector('.s-key').value);
+                const v = sanitize(row.querySelector('.s-val').value);
+                if(k && v) obj[k] = v;
+            });
+            return Object.keys(obj).length > 0 ? obj : null;
+        }
+
+        function addVariantRow() {
+            const id = 'vr_' + Date.now();
+            const html = `
+                <div class="var-row bg-slate-900 p-3 rounded-xl border border-slate-700 grid grid-cols-2 md:grid-cols-5 gap-3 items-end" id="${id}">
+                    <div class="col-span-2 md:col-span-1">
+                        <label class="block text-[10px] text-slate-400 mb-1">SKU</label>
+                        <input type="text" placeholder="SKU-1" class="v-sku w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400 font-mono">
+                    </div>
+                    <div class="col-span-2 md:col-span-2">
+                        <label class="block text-[10px] text-slate-400 mb-1">Variant Name</label>
+                        <input type="text" placeholder="128GB Black" class="v-size w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-slate-400 mb-1">Price (₹)</label>
+                        <input type="number" placeholder="0" class="v-price w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400">
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="block text-[10px] text-slate-400 mb-1">Stock</label>
+                            <input type="number" placeholder="0" class="v-stock w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400">
+                        </div>
+                        <button type="button" onclick="document.getElementById('${id}').remove()" class="p-2 h-9 text-slate-500 hover:text-red-400 transition self-end"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                </div>`;
+            document.getElementById('variants-builder').insertAdjacentHTML('beforeend', html);
+            lucide.createIcons();
+        }
+
+        function extractVariants() {
+            const arr = [];
+            document.querySelectorAll('.var-row').forEach(row => {
+                const sku = sanitize(row.querySelector('.v-sku').value);
+                const size = sanitize(row.querySelector('.v-size').value);
+                const price = parseFloat(row.querySelector('.v-price').value) || 0;
+                const stock = parseInt(row.querySelector('.v-stock').value) || 0;
+                if(size) arr.push({ sku, size, price, stock });
+            });
+            return arr.length > 0 ? arr : null;
+        }
+
+        function addBulkRow() {
+            const id = 'bk_' + Date.now();
+            const html = `
+                <div class="bulk-row flex flex-wrap md:flex-nowrap items-end gap-3 bg-slate-900 p-3 rounded-xl border border-slate-700" id="${id}">
+                    <div class="flex-1">
+                        <label class="block text-[10px] text-slate-400 mb-1">Quantity Threshold</label>
+                        <input type="number" placeholder="e.g. 500" class="b-qty w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-[10px] text-slate-400 mb-1">Unit</label>
+                        <select class="b-unit w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400 cursor-pointer">
+                            <option value="gm">Grams (gm)</option>
+                            <option value="kg">Kilograms (kg)</option>
+                            <option value="pc">Pieces (pc)</option>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-[10px] text-slate-400 mb-1">Discount (₹)</label>
+                        <input type="number" placeholder="e.g. 10" class="b-disc w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400">
+                    </div>
+                    <button type="button" onclick="document.getElementById('${id}').remove()" class="p-2 h-9 text-slate-500 hover:text-red-400 transition self-end"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>`;
+            document.getElementById('bulk-builder').insertAdjacentHTML('beforeend', html);
+            lucide.createIcons();
+        }
+
+        function extractBulk() {
+            const arr = [];
+            document.querySelectorAll('.bulk-row').forEach(row => {
+                const qty = parseInt(row.querySelector('.b-qty').value);
+                const unit = sanitize(row.querySelector('.b-unit').value);
+                const disc = parseFloat(row.querySelector('.b-disc').value) || 0;
+                if(qty > 0) arr.push({ min_qty: qty, unit: unit, discount_amount: disc });
+            });
+            return arr.length > 0 ? arr : null;
+        }
+
+        // ==========================================
+        // UPLOAD EXECUTION
+        // ==========================================
+        async function uploadProduct() {
+            const btn = document.getElementById('upload-btn');
+            
+            const name = sanitize(document.getElementById('name').value);
+            const catId = document.getElementById('catSelect').value;
+            const price = parseFloat(document.getElementById('base_price').value);
+            const images = document.getElementById('images').value.split('\n').map(s=>sanitize(s)).filter(s=>s);
+
+            if(!name || !catId || isNaN(price) || images.length === 0) {
+                Toastify({ text: "Please fill Name, Category, Price, and add at least 1 Image.", duration: 4000, style: { background: "#ef4444" } }).showToast();
+                return;
+            }
+
+            let rAvg = parseFloat(document.getElementById('rating_avg').value) || 0;
+            if(rAvg > 4.2) rAvg = 4.2;
+            let rCount = parseInt(document.getElementById('rating_count').value) || 0;
+            if(rCount > 800) rCount = 800;
+
+            btn.innerHTML = `<div class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div> Publishing...`;
+            btn.disabled = true;
+
+            const payload = {
+                id: document.getElementById('final_product_id').value,
+                seller_id: currentSellerId,
+                name: name,
+                slug: sanitize(document.getElementById('slug').value),
+                description: sanitize(document.getElementById('description').value),
+                badge_label: sanitize(document.getElementById('badge').value),
+                base_price: price,
+                original_price: parseFloat(document.getElementById('original_price').value) || null,
+                stock_quantity: parseInt(document.getElementById('stock').value) || 0,
+                images: images,
+                highlights: document.getElementById('highlights').value.split('\n').map(s=>sanitize(s)).filter(s=>s),
+                tags: document.getElementById('tags').value.split(',').map(s=>sanitize(s)).filter(s=>s),
+                category_id: parseInt(catId),
+                sub_category_id: parseInt(document.getElementById('subSelect').value) || null,
+                super_sub_id: parseInt(document.getElementById('superSelect').value) || null,
+                delivery_class: sanitize(document.getElementById('delivery_class').value),
+                is_free_delivery: document.getElementById('is_free_delivery').checked,
+                max_delivery_time: parseInt(document.getElementById('max_delivery').value) || 1,
+                replacement_days: parseInt(document.getElementById('replacement_days').value) || 0,
+                refund_days: parseInt(document.getElementById('refund_days').value) || 0,
+                rating_avg: rAvg,
+                rating_count: rCount,
+                is_active: true,
+                specifications: extractSpecs(),
+                variants: extractVariants(),
+                bulk_rules: extractBulk()
+            };
+
+            try {
+                const { error } = await db.from('products').insert([payload]);
+                if(error) throw error;
+                
+                Toastify({ text: "Product Published Successfully!", duration: 3000, style: { background: "#22c55e", borderRadius: "8px" } }).showToast();
+                
+                resetUnlockedFields();
+
+            } catch(err) {
+                Toastify({ text: "Upload Failed: " + err.message, duration: 4000, style: { background: "#ef4444", borderRadius: "8px" } }).showToast();
+                console.error(err);
+            } finally {
+                btn.innerHTML = `<i data-lucide="upload-cloud" class="w-5 h-5"></i> Publish Product`;
+                btn.disabled = false;
+                lucide.createIcons();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initPage);
+    </script>
+</body>
+</html>

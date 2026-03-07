@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Inventory - Vilarci</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <a href="seller_profile.html" class="text-slate-400 hover:text-indigo-600 transition">
+                        <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                    </a>
+                    <div class="text-xl font-bold text-slate-800">Inventory Manager</div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="product_uploader.html" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 transition flex items-center gap-2 shadow-sm">
+                        <i data-lucide="plus" class="w-4 h-4"></i> New Item
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row gap-4 items-end">
+            <div class="flex-1 w-full">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Category</label>
+                <select id="filter_cat" onchange="loadSubCategories()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">All Categories</option>
+                </select>
+            </div>
+            <div class="flex-1 w-full">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Sub Category</label>
+                <select id="filter_sub" onchange="loadSuperSubCategories()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50" disabled>
+                    <option value="">All Sub Categories</option>
+                </select>
+            </div>
+            <div class="flex-1 w-full">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Super Sub</label>
+                <select id="filter_super" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50" disabled>
+                    <option value="">All Super Subs</option>
+                </select>
+            </div>
+            <div class="flex gap-2 w-full md:w-auto">
+                <button onclick="loadProducts()" class="flex-1 md:flex-none bg-slate-900 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-slate-800 transition">Apply</button>
+                <button onclick="resetFilters()" class="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition"><i data-lucide="rotate-ccw" class="w-4 h-4"></i></button>
+            </div>
+        </div>
+
+        <div id="loader" class="flex flex-col items-center justify-center py-12 hidden">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-3"></div>
+            <p class="text-slate-500 font-medium">Fetching inventory...</p>
+        </div>
+
+        <div id="product-table-container" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-600">
+                    <thead class="bg-slate-50 text-slate-700 uppercase font-bold text-[10px] tracking-widest border-b border-slate-200">
+                        <tr>
+                            <th class="px-6 py-4">Product Details</th>
+                            <th class="px-6 py-4">Hierarchy</th>
+                            <th class="px-6 py-4">Status</th>
+                            <th class="px-6 py-4">Pricing & Stock</th>
+                            <th class="px-6 py-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="product-list" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+            <div id="empty-state" class="hidden p-16 text-center">
+                <div class="mx-auto w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-400">
+                    <i data-lucide="package-open" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800">No Products Found</h3>
+                <p class="text-slate-500 mt-1">Adjust your filters or add a new item to your catalog.</p>
+            </div>
+        </div>
+    </main>
+
+    <div id="edit-modal" class="fixed inset-0 bg-slate-900/60 hidden z-[60] flex items-center justify-center backdrop-blur-sm p-4 sm:p-6 transition-opacity">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl h-[95vh] sm:h-[90vh] flex flex-col overflow-hidden relative">
+            
+            <div class="bg-slate-50 px-6 py-5 border-b border-slate-200 flex justify-between items-center shrink-0">
+                <div>
+                    <h3 class="font-extrabold text-xl text-slate-800 flex items-center gap-2">
+                        <i data-lucide="edit-3" class="w-5 h-5 text-indigo-600"></i> Edit Product
+                    </h3>
+                    <p class="text-xs text-slate-500 font-mono mt-1" id="edit-slug-display">Slug: ...</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="closeModal()" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+            </div>
+
+            <div id="edit-modal-loader" class="absolute inset-0 z-10 bg-white/90 backdrop-blur flex flex-col items-center justify-center hidden">
+                <div class="animate-spin rounded-full h-10 w-10 border-4 border-indigo-100 border-t-indigo-600 mb-3"></div>
+                <p class="text-slate-600 font-bold">Loading full product data...</p>
+            </div>
+            
+            <div id="edit-modal-content" class="flex flex-col h-full overflow-hidden">
+                <div class="flex border-b border-slate-200 shrink-0 px-2 sm:px-6 bg-slate-50 overflow-x-auto no-scrollbar">
+                    <button onclick="switchTab('basic')" id="tab-basic" class="px-6 py-4 text-sm font-bold text-indigo-600 border-b-2 border-indigo-600 transition whitespace-nowrap">Basic Info</button>
+                    <button onclick="switchTab('media')" id="tab-media" class="px-6 py-4 text-sm font-bold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition whitespace-nowrap">Images & Links</button>
+                    <button onclick="switchTab('advanced')" id="tab-advanced" class="px-6 py-4 text-sm font-bold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition whitespace-nowrap">Specifications</button>
+                    <button onclick="switchTab('variants')" id="tab-variants" class="px-6 py-4 text-sm font-bold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition whitespace-nowrap">Variants & Sizes</button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-6 bg-white no-scrollbar">
+                    <form id="edit-form" class="space-y-6">
+                        <input type="hidden" id="edit_original_slug">
+
+                        <div id="content-basic" class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="col-span-1 md:col-span-2">
+                                    <label class="block text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-1">Product Name</label>
+                                    <input type="text" id="edit_name" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-slate-800 transition">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-1">Base Price (₹)</label>
+                                    <input type="number" step="0.01" id="edit_price" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-indigo-700 transition">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-1">Original MRP (₹)</label>
+                                    <input type="number" step="0.01" id="edit_mrp" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-slate-500 transition">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-1">Main Stock Quantity</label>
+                                    <input type="number" id="edit_stock" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-slate-800 transition">
+                                    <p class="text-[10px] text-slate-400 mt-1">Leave as 0 if you are using Variants for stock management.</p>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-1">Delivery Class</label>
+                                    <select id="edit_delivery_class" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-slate-800 transition cursor-pointer">
+                                        <option value="standard">Standard</option>
+                                        <option value="heavy">Heavy (+₹20)</option>
+                                        <option value="fragile">Fragile (+₹15)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-span-1 md:col-span-2 flex flex-wrap gap-6 pt-2">
+                                    <label class="flex items-center gap-3 cursor-pointer bg-slate-50 px-4 py-3 rounded-xl border border-slate-200 hover:border-indigo-300 transition">
+                                        <input type="checkbox" id="edit_active" class="w-5 h-5 text-indigo-600 rounded cursor-pointer">
+                                        <span class="text-sm font-bold text-slate-700">Product is Active (Public)</span>
+                                    </label>
+                                    <label class="flex items-center gap-3 cursor-pointer bg-slate-50 px-4 py-3 rounded-xl border border-slate-200 hover:border-green-300 transition">
+                                        <input type="checkbox" id="edit_free_del" class="w-5 h-5 text-green-600 rounded cursor-pointer">
+                                        <span class="text-sm font-bold text-slate-700">Offer Free Delivery</span>
+                                    </label>
+                                </div>
+
+                                <div class="col-span-1 md:col-span-2">
+                                    <label class="block text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-1">Description</label>
+                                    <textarea id="edit_description" rows="4" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium text-slate-700 transition"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="content-media" class="hidden space-y-6">
+                            <div>
+                                <label class="block text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-1">Image URLs (One per line)</label>
+                                <textarea id="edit_images" rows="5" oninput="renderImagePreviews()" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-mono text-slate-600 transition" placeholder="https://vilarci-storage..."></textarea>
+                                <div id="image-previews" class="flex gap-3 overflow-x-auto mt-3 pb-2"></div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-1">Highlights (Green Checkmarks - One per line)</label>
+                                <textarea id="edit_highlights" rows="5" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none text-sm font-medium text-slate-700 transition" placeholder="High Quality\n1 Year Warranty"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-1">Search Tags (Comma separated)</label>
+                                <input type="text" id="edit_tags" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-slate-700 transition" placeholder="smartwatch, fitness, digital">
+                            </div>
+                        </div>
+
+                        <div id="content-advanced" class="hidden space-y-4">
+                            <div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-sm">Product Specifications</h4>
+                                    <p class="text-xs text-slate-500">e.g., Brand: Generic, Material: Cotton</p>
+                                </div>
+                                <button type="button" onclick="addSpecRow()" class="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                                    <i data-lucide="plus" class="w-3 h-3"></i> Add Spec
+                                </button>
+                            </div>
+                            <div id="specs-builder-container" class="space-y-3">
+                                </div>
+                        </div>
+
+                        <div id="content-variants" class="hidden space-y-4">
+                            <div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-sm">Product Variants</h4>
+                                    <p class="text-xs text-slate-500">Add sizes, colors, or capacities if applicable.</p>
+                                </div>
+                                <button type="button" onclick="addVariantRow()" class="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                                    <i data-lucide="plus" class="w-3 h-3"></i> Add Variant
+                                </button>
+                            </div>
+                            <div id="variants-builder-container" class="space-y-4">
+                                </div>
+                        </div>
+
+                    </form>
+                </div>
+
+                <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end gap-3 shrink-0">
+                    <button type="button" onclick="closeModal()" class="px-6 py-2.5 text-slate-600 font-bold bg-white border border-slate-300 hover:bg-slate-100 rounded-xl transition">Cancel</button>
+                    <button onclick="saveProduct()" id="save-btn" class="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg flex items-center gap-2 transition">
+                        <i data-lucide="save" class="w-4 h-4"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const db = window.supabaseClient;
+        
+        let currentUserId = null;
+        let currentSellerNumericId = null;
+        
+        // Cache for filters
+        let catCache = [];
+        let subCache = [];
+        let superCache = [];
+
+        // Protection against XSS
+        function escapeHtml(text) {
+            if (typeof text !== 'string') return text;
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+        function unescapeHtml(text) {
+            if (typeof text !== 'string') return text;
+            return text.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, "\"").replace(/&#039;/g, "'");
+        }
+
+        // ==========================================
+        // 0. SECURE INITIALIZATION 
+        // ==========================================
+        async function initPage() {
+            lucide.createIcons();
+            try {
+                const { data: { session }, error: authError } = await db.auth.getSession();
+                if (authError || !session) throw new Error("Unauthorized");
+                currentUserId = session.user.id;
+
+                const { data, error } = await db.from('shops_public_587').select('seller_numeric_id').eq('id', currentUserId).single();
+                if (error) throw error;
+                
+                currentSellerNumericId = data.seller_numeric_id;
+
+                // Load Data
+                initFilters();
+                loadProducts();
+
+            } catch (err) {
+                console.error(err);
+                window.location.href = 'login.html';
+            }
+        }
+
+        // ==========================================
+        // 1. FILTERING SYSTEM
+        // ==========================================
+        async function initFilters() {
+            const { data } = await db.from('categories').select('id, name').order('name');
+            const sel = document.getElementById('filter_cat');
+            if(data) {
+                catCache = data;
+                data.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.name}</option>`);
+            }
+        }
+
+        async function loadSubCategories() {
+            const catId = document.getElementById('filter_cat').value;
+            const sub = document.getElementById('filter_sub');
+            const sup = document.getElementById('filter_super');
+            
+            sub.innerHTML = '<option value="">All Sub Categories</option>';
+            sup.innerHTML = '<option value="">All Super Subs</option>';
+            sup.disabled = true;
+
+            if(!catId) { sub.disabled = true; return; }
+            
+            sub.disabled = false;
+            const { data } = await db.from('sub_categories').select('id, name').eq('category_id', catId).order('name');
+            if(data) data.forEach(s => sub.innerHTML += `<option value="${s.id}">${s.name}</option>`);
+        }
+
+        async function loadSuperSubCategories() {
+            const subId = document.getElementById('filter_sub').value;
+            const sup = document.getElementById('filter_super');
+            
+            sup.innerHTML = '<option value="">All Super Subs</option>';
+
+            if(!subId) { sup.disabled = true; return; }
+            
+            sup.disabled = false;
+            const { data } = await db.from('super_sub_categories').select('id, name').eq('sub_category_id', subId).order('name');
+            if(data) data.forEach(s => sup.innerHTML += `<option value="${s.id}">${s.name}</option>`);
+        }
+
+        function resetFilters() {
+            document.getElementById('filter_cat').value = '';
+            document.getElementById('filter_sub').innerHTML = '<option value="">All Sub Categories</option>';
+            document.getElementById('filter_sub').disabled = true;
+            document.getElementById('filter_super').innerHTML = '<option value="">All Super Subs</option>';
+            document.getElementById('filter_super').disabled = true;
+            loadProducts();
+        }
+
+        // ==========================================
+        // 2. MAIN LIST FETCHING (LAZY LOAD + VARIANT STOCK CHECK)
+        // ==========================================
+        async function loadProducts() {
+            if (!currentSellerNumericId) return;
+
+            document.getElementById('product-table-container').classList.add('hidden');
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('loader').classList.remove('hidden');
+
+            let query = db.from('products')
+                // 🌟 Added 'variants' to the fetch so we can accurately check dynamic stock
+                .select(`
+                    id, name, slug, base_price, stock_quantity, is_active, images, variants,
+                    categories(name), sub_categories(name)
+                `)
+                .eq('seller_id', currentSellerNumericId)
+                .order('created_at', { ascending: false });
+
+            // Apply Filters
+            const cId = document.getElementById('filter_cat').value;
+            const sId = document.getElementById('filter_sub').value;
+            const ssId = document.getElementById('filter_super').value;
+            if(cId) query = query.eq('category_id', cId);
+            if(sId) query = query.eq('sub_category_id', sId);
+            if(ssId) query = query.eq('super_sub_id', ssId);
+
+            const { data: products, error } = await query;
+
+            document.getElementById('loader').classList.add('hidden');
+
+            if (error) { Toastify({text: error.message, style:{background:"#ef4444"}}).showToast(); return; }
+
+            if (!products || products.length === 0) {
+                document.getElementById('product-table-container').classList.remove('hidden');
+                document.getElementById('product-list').innerHTML = '';
+                document.getElementById('empty-state').classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('product-table-container').classList.remove('hidden');
+            const tbody = document.getElementById('product-list');
+            tbody.innerHTML = '';
+
+            products.forEach(p => {
+                const safeName = escapeHtml(p.name);
+                const safeSlug = escapeHtml(p.slug);
+                const safeStock = parseInt(p.stock_quantity) || 0;
+                
+                // Safe Image Parse
+                let imgUrl = 'logo.png';
+                if(Array.isArray(p.images) && p.images.length > 0) imgUrl = p.images[0];
+                else if (typeof p.images === 'string') {
+                    try { const arr = JSON.parse(p.images); if(arr.length > 0) imgUrl = arr[0]; } catch(e){}
+                }
+
+                // 🌟 Smart Variant Stock Parser
+                let vars = [];
+                if(Array.isArray(p.variants)) vars = p.variants;
+                else if(typeof p.variants === 'string') { try { vars = JSON.parse(p.variants); } catch(e){} }
+                
+                let stockBadge = '';
+                if(vars && vars.length > 0) {
+                    const stockArray = vars.map(v => parseInt(v.stock) || 0);
+                    const hasZero = stockArray.some(s => s <= 0);
+                    const stockString = stockArray.join(', ');
+                    
+                    if(hasZero) {
+                        stockBadge = `<span class="text-red-500 font-extrabold text-xs flex items-center gap-1 mt-1" title="Stock: ${stockString}"><i data-lucide="alert-circle" class="w-3 h-3"></i> Variants OOS</span>`;
+                    } else {
+                        stockBadge = `<span class="text-slate-600 font-bold text-xs mt-1" title="Variant stocks">${stockString} Units</span>`;
+                    }
+                } else {
+                    if (safeStock <= 0) {
+                        stockBadge = `<span class="text-red-500 font-extrabold text-xs flex items-center gap-1 mt-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> Out of Stock</span>`;
+                    } else {
+                        stockBadge = `<span class="text-slate-600 font-bold text-xs mt-1">${safeStock} Units</span>`;
+                    }
+                }
+
+                const catName = p.categories ? p.categories.name : 'Uncategorized';
+                const subName = p.sub_categories ? p.sub_categories.name : '-';
+
+                const statusBadge = p.is_active 
+                    ? `<span class="bg-green-100 text-green-700 border border-green-200 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase">Live</span>`
+                    : `<span class="bg-slate-100 text-slate-500 border border-slate-200 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase">Hidden</span>`;
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-indigo-50/30 transition border-b border-slate-100">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-14 h-14 bg-white rounded-xl border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                                    <img src="${imgUrl}" class="max-w-full max-h-full object-contain p-1">
+                                </div>
+                                <div>
+                                    <div class="font-extrabold text-slate-900 line-clamp-1 max-w-[200px] sm:max-w-[300px]" title="${safeName}">${safeName}</div>
+                                    <div class="text-[10px] text-slate-400 font-mono mt-0.5">${safeSlug}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-xs font-semibold text-slate-600">
+                            <span class="block">${escapeHtml(catName)}</span>
+                            <span class="text-[10px] text-slate-400 font-normal">↳ ${escapeHtml(subName)}</span>
+                        </td>
+                        <td class="px-6 py-4">${statusBadge}</td>
+                        <td class="px-6 py-4">
+                            <div class="font-extrabold text-indigo-700 mb-1">₹${p.base_price || 0}</div>
+                            ${stockBadge}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex items-center justify-end gap-3">
+                                <a href="product_details.html?slug=${safeSlug}" target="_blank" class="text-indigo-600 hover:text-indigo-800 text-xs font-bold flex items-center gap-1 bg-indigo-50 px-3 py-1.5 rounded-lg transition" title="View Live Product">
+                                    <i data-lucide="eye" class="w-3.5 h-3.5"></i> View Live
+                                </a>
+                                <button onclick="openEditModal('${safeSlug}')" class="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 p-2 rounded-lg transition" title="Edit Product">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteProduct('${safeSlug}')" class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition" title="Delete Product">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 3. FULL EDIT FETCHING & POPULATION
+        // ==========================================
+        function switchTab(tabName) {
+            ['basic', 'media', 'advanced', 'variants'].forEach(t => {
+                document.getElementById(`content-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).className = "px-6 py-4 text-sm font-bold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition whitespace-nowrap";
+            });
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabName}`).className = "px-6 py-4 text-sm font-bold text-indigo-600 border-b-2 border-indigo-600 transition whitespace-nowrap";
+        }
+
+        async function openEditModal(slug) {
+            document.getElementById('edit-modal').classList.remove('hidden');
+            document.getElementById('edit-modal-loader').classList.remove('hidden');
+            document.getElementById('edit-modal-content').classList.add('hidden');
+
+            const { data: p, error } = await db.from('products').select('*').eq('slug', slug).eq('seller_id', currentSellerNumericId).single();
+
+            if (error || !p) {
+                Toastify({text: "Failed to load product details", style:{background:"#ef4444"}}).showToast();
+                closeModal();
+                return;
+            }
+
+            document.getElementById('edit_original_slug').value = p.slug;
+            document.getElementById('edit-slug-display').innerText = `Slug: ${p.slug}`;
+            document.getElementById('edit_name').value = unescapeHtml(p.name);
+            document.getElementById('edit_description').value = unescapeHtml(p.description || '');
+            document.getElementById('edit_price').value = p.base_price || '';
+            document.getElementById('edit_mrp').value = p.original_price || '';
+            document.getElementById('edit_stock').value = p.stock_quantity || 0;
+            document.getElementById('edit_delivery_class').value = p.delivery_class || 'standard';
+            document.getElementById('edit_active').checked = p.is_active;
+            document.getElementById('edit_free_del').checked = p.is_free_delivery;
+
+            let imgArray = [];
+            if(Array.isArray(p.images)) imgArray = p.images;
+            else if(typeof p.images === 'string') { try{ imgArray = JSON.parse(p.images); }catch(e){} }
+            document.getElementById('edit_images').value = imgArray.join('\n');
+            renderImagePreviews();
+
+            let hlArray = [];
+            if(Array.isArray(p.highlights)) hlArray = p.highlights;
+            else if(typeof p.highlights === 'string') { try{ hlArray = JSON.parse(p.highlights); }catch(e){} }
+            document.getElementById('edit_highlights').value = hlArray.map(unescapeHtml).join('\n');
+            
+            let tagArray = [];
+            if(Array.isArray(p.tags)) tagArray = p.tags;
+            else if(typeof p.tags === 'string') { try{ tagArray = JSON.parse(p.tags); }catch(e){} }
+            document.getElementById('edit_tags').value = tagArray.map(unescapeHtml).join(', ');
+
+            let specs = typeof p.specifications === 'string' ? JSON.parse(p.specifications || '{}') : (p.specifications || {});
+            renderSpecs(specs);
+
+            let vars = typeof p.variants === 'string' ? JSON.parse(p.variants || '[]') : (p.variants || []);
+            renderVariants(vars);
+
+            switchTab('basic');
+            document.getElementById('edit-modal-loader').classList.add('hidden');
+            document.getElementById('edit-modal-content').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+
+        // ==========================================
+        // 4. VISUAL BUILDERS LOGIC
+        // ==========================================
+        
+        window.renderImagePreviews = function() {
+            const urls = document.getElementById('edit_images').value.split('\n').map(s=>s.trim()).filter(s=>s);
+            const container = document.getElementById('image-previews');
+            container.innerHTML = '';
+            urls.forEach(u => {
+                container.innerHTML += `<img src="${escapeHtml(u)}" class="w-16 h-16 object-cover rounded-lg border border-slate-200 bg-white" onerror="this.src='https://via.placeholder.com/64?text=Invalid'">`;
+            });
+        }
+
+        function renderSpecs(specObj) {
+            const container = document.getElementById('specs-builder-container');
+            container.innerHTML = '';
+            Object.entries(specObj).forEach(([key, val]) => injectSpecRow(key, val));
+        }
+
+        function addSpecRow() { injectSpecRow('', ''); }
+
+        function injectSpecRow(key, val) {
+            const id = 'spec_' + Date.now() + Math.random().toString().slice(2, 5);
+            const html = `
+                <div class="flex items-center gap-2 spec-row bg-white p-2 rounded-xl border border-slate-200 shadow-sm" id="${id}">
+                    <input type="text" placeholder="e.g. Brand" value="${escapeHtml(key)}" class="spec-key flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-slate-700">
+                    <span class="text-slate-400 font-bold">:</span>
+                    <input type="text" placeholder="e.g. Samsung" value="${escapeHtml(val)}" class="spec-val flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-600">
+                    <button type="button" onclick="document.getElementById('${id}').remove()" class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+            `;
+            document.getElementById('specs-builder-container').insertAdjacentHTML('beforeend', html);
+            lucide.createIcons();
+        }
+
+        function extractSpecs() {
+            const obj = {};
+            document.querySelectorAll('.spec-row').forEach(row => {
+                const k = row.querySelector('.spec-key').value.trim();
+                const v = row.querySelector('.spec-val').value.trim();
+                if(k && v) obj[k] = v;
+            });
+            return obj;
+        }
+
+        function renderVariants(varArray) {
+            const container = document.getElementById('variants-builder-container');
+            container.innerHTML = '';
+            varArray.forEach(v => injectVariantRow(v.sku, v.size || v.name || '', v.price, v.stock));
+        }
+
+        function addVariantRow() { injectVariantRow('', '', '', ''); }
+
+        function injectVariantRow(sku, size, price, stock) {
+            const id = 'var_' + Date.now() + Math.random().toString().slice(2, 5);
+            const html = `
+                <div class="var-row bg-white p-4 rounded-xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-5 gap-3 items-end" id="${id}">
+                    <div class="col-span-2 md:col-span-1">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">SKU Code</label>
+                        <input type="text" placeholder="SKU-123" value="${escapeHtml(sku)}" class="var-sku w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-slate-600">
+                    </div>
+                    <div class="col-span-2 md:col-span-2">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Variant Name / Size</label>
+                        <input type="text" placeholder="e.g. 128GB Black" value="${escapeHtml(size)}" class="var-size w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-800">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Price (₹)</label>
+                        <input type="number" placeholder="0.00" value="${price}" class="var-price w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-indigo-600">
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Stock</label>
+                            <input type="number" placeholder="0" value="${stock}" class="var-stock w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700">
+                        </div>
+                        <button type="button" onclick="document.getElementById('${id}').remove()" class="shrink-0 mb-0.5 p-2 h-9 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition self-end border border-transparent"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('variants-builder-container').insertAdjacentHTML('beforeend', html);
+            lucide.createIcons();
+        }
+
+        function extractVariants() {
+            const arr = [];
+            document.querySelectorAll('.var-row').forEach(row => {
+                const sku = row.querySelector('.var-sku').value.trim();
+                const size = row.querySelector('.var-size').value.trim();
+                const price = parseFloat(row.querySelector('.var-price').value) || 0;
+                const stock = parseInt(row.querySelector('.var-stock').value) || 0;
+                if(size) arr.push({ sku, size, price, stock });
+            });
+            return arr;
+        }
+
+        // ==========================================
+        // 5. SAVING LOGIC
+        // ==========================================
+        async function saveProduct() {
+            const btn = document.getElementById('save-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div> Saving...`;
+            btn.disabled = true;
+
+            const originalSlug = document.getElementById('edit_original_slug').value;
+
+            try {
+                const updates = {
+                    name: document.getElementById('edit_name').value.trim(),
+                    description: document.getElementById('edit_description').value.trim(),
+                    base_price: parseFloat(document.getElementById('edit_price').value) || 0,
+                    original_price: parseFloat(document.getElementById('edit_mrp').value) || null,
+                    stock_quantity: parseInt(document.getElementById('edit_stock').value) || 0,
+                    delivery_class: document.getElementById('edit_delivery_class').value,
+                    is_active: document.getElementById('edit_active').checked,
+                    is_free_delivery: document.getElementById('edit_free_del').checked,
+                    
+                    images: document.getElementById('edit_images').value.split('\n').map(s=>s.trim()).filter(s=>s),
+                    highlights: document.getElementById('edit_highlights').value.split('\n').map(s=>s.trim()).filter(s=>s),
+                    tags: document.getElementById('edit_tags').value.split(',').map(s=>s.trim()).filter(s=>s),
+                    
+                    specifications: extractSpecs(),
+                    variants: extractVariants()
+                };
+
+                const { error } = await db.from('products').update(updates).eq('slug', originalSlug).eq('seller_id', currentSellerNumericId);
+
+                if (error) throw error;
+
+                Toastify({ text: "Product Updated Successfully!", duration: 3000, style: { background: "#22c55e", borderRadius:"8px" } }).showToast();
+                closeModal();
+                loadProducts(); 
+
+            } catch (err) {
+                Toastify({ text: "Update Failed: " + err.message, duration: 4000, style: { background: "#ef4444", borderRadius:"8px" } }).showToast();
+                console.error(err);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                lucide.createIcons();
+            }
+        }
+
+        async function deleteProduct(slug) {
+            if(!confirm("Are you sure? This cannot be undone.")) return;
+            const { error } = await db.from('products').delete().eq('slug', slug).eq('seller_id', currentSellerNumericId);
+            
+            if(error) Toastify({ text: error.message, style: { background: "#ef4444" } }).showToast();
+            else {
+                Toastify({ text: "Product Deleted", style: { background: "#0f172a" } }).showToast();
+                loadProducts();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initPage);
+    </script>
+</body>
+</html>

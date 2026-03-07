@@ -100,7 +100,7 @@
         </div>
         
         <p class="text-center text-xs text-slate-400 mt-8">
-            &copy; 2025 Vilarci. Secured by Supabase Authentication.
+            &copy; 2025 Vilarci. Secured by Vilarci Enterprise Tech.
         </p>
     </div>
 
@@ -126,8 +126,9 @@
     }
 
     // 3. LOGIN LOGIC
+   // 3. LOGIN LOGIC
     form.addEventListener('submit', async (e) => {
-        e.preventDefault(); // FIX: Stops page reload
+        e.preventDefault(); 
         
         btn.disabled = true;
         btn.innerText = "Verifying...";
@@ -145,19 +146,21 @@
 
             if (authError) throw new Error("Invalid email or password.");
 
-            // B. Get Profile
-            const { data: seller, error: dbError } = await supabaseClient
-                .from('sellers_private_089')
-                .select('seller_numeric_id, is_verified, first_name, store_name')
-                .eq('id', authData.user.id)
-                .single();
+            // B. Get Profile & Verification Status Concurrently (Lightning Fast)
+            const [privateRes, publicRes] = await Promise.all([
+                supabaseClient.from('sellers_private_089').select('seller_numeric_id').eq('id', authData.user.id).single(),
+                supabaseClient.from('shops_public_587').select('is_verified').eq('id', authData.user.id).single()
+            ]);
 
-            if (dbError) throw new Error("Login successful, but profile not found.");
+            if (privateRes.error) throw new Error("Login successful, but private profile data is missing.");
+            
+            const seller = privateRes.data;
+            const shop = publicRes.data || { is_verified: false };
 
             // C. Check Verification
-            if (!seller.is_verified) {
+            if (!shop.is_verified) {
                 await supabaseClient.auth.signOut();
-                throw new Error("Account pending approval.");
+                throw new Error("Account pending approval. Please wait for Vilarci verification.");
             }
 
             // D. Success

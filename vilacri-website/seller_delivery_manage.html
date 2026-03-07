@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Management - Vilarci Partner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-slate-50 min-h-screen pb-10">
+
+    <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
+            <button onclick="window.location.href='seller_profile.html'" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </button>
+            <h1 class="text-xl font-extrabold text-slate-900">Delivery & Logistics</h1>
+        </div>
+    </nav>
+
+    <main class="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        
+        <div id="loader" class="flex flex-col justify-center items-center h-64 gap-4">
+            <div class="animate-spin rounded-full h-10 w-10 border-4 border-indigo-100 border-t-indigo-600"></div>
+            <p class="text-slate-500 font-medium">Securing connection...</p>
+        </div>
+
+        <div id="content" class="hidden space-y-8">
+            
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-6 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="store" class="text-indigo-600 w-5 h-5"></i> Shop Origin Location
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-1">This determines your primary hyper-local ranking area.</p>
+                    </div>
+                    <button onclick="saveOrigin()" id="save-origin-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition shadow-sm flex items-center gap-2">
+                        Save Origin
+                    </button>
+                </div>
+                
+                <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">State</label>
+                        <select id="sel-state" onchange="loadDistricts()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="">Loading...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">District</label>
+                        <select id="sel-dist" onchange="loadMainZones()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none disabled:opacity-50">
+                            <option value="">Select State First</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Main Zone</label>
+                        <select id="sel-main" onchange="loadSubZones()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none disabled:opacity-50">
+                            <option value="">Select District First</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Sub Zone (Exact Area)</label>
+                        <select id="sel-sub" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none disabled:opacity-50">
+                            <option value="">Select Main Zone First</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-6 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="map" class="text-green-600 w-5 h-5"></i> Active Delivery Zones
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-1">If you use Direct Fulfillment, you must add areas here.</p>
+                    </div>
+                </div>
+
+                <div class="p-6 border-b border-slate-100 bg-indigo-50/30">
+                    <h3 class="text-xs font-extrabold text-indigo-600 uppercase tracking-widest mb-3">Add New Area</h3>
+                    <div class="flex flex-col md:flex-row gap-3">
+                        <select id="add-dist" onchange="loadAddSubZones()" class="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="">1. Choose District</option>
+                        </select>
+                        <select id="add-sub" class="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 outline-none disabled:opacity-50">
+                            <option value="">2. Choose Exact Sub Zone</option>
+                        </select>
+                        <div class="relative w-full md:w-32 shrink-0">
+                            <span class="absolute left-3 top-2 text-sm font-bold text-slate-400">₹</span>
+                            <input type="number" id="add-fee" placeholder="Fee" class="w-full pl-7 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <button onclick="addDeliveryZone()" id="add-zone-btn" class="shrink-0 bg-slate-900 text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 transition">
+                            Add Zone
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-0">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-xs uppercase text-slate-400 border-b border-slate-200">
+                            <tr>
+                                <th class="px-6 py-3 font-bold">Exact Sub Zone Area</th>
+                                <th class="px-6 py-3 font-bold">Delivery Fee</th>
+                                <th class="px-6 py-3 font-bold text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="zones-table-body" class="divide-y divide-slate-100">
+                            </tbody>
+                    </table>
+                    <div id="no-zones-msg" class="hidden p-10 text-center text-slate-400 font-medium">
+                        You have not configured any custom delivery zones.
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        const db = window.supabaseClient;
+        let currentUserId = null;
+        let currentSellerNumericId = null;
+        let publicShopData = null;
+
+        async function initPage() {
+            lucide.createIcons();
+            try {
+                // 1. STRICT AUTH CHECK
+                const { data: { session }, error: authError } = await db.auth.getSession();
+                if (authError || !session) throw new Error("Unauthorized");
+                currentUserId = session.user.id;
+
+                // 2. FETCH SHOP IDENTITY
+                const { data, error } = await db.from('shops_public_587').select('*').eq('id', currentUserId).single();
+                if (error) throw error;
+                publicShopData = data;
+                currentSellerNumericId = data.seller_numeric_id;
+
+                // 3. LOAD DROPDOWNS & ZONES
+                await loadStates();
+                await fetchActiveZones();
+                await loadAddDistricts(); 
+                
+                document.getElementById('loader').classList.add('hidden');
+                document.getElementById('content').classList.remove('hidden');
+
+            } catch (err) {
+                console.error(err);
+                window.location.href = 'login.html';
+            }
+        }
+
+        // ==========================================
+        // 🌟 ORIGIN CASCADING DROPDOWNS LOGIC
+        // ==========================================
+        async function loadStates() {
+            const { data } = await db.from('states').select('id, name').order('name');
+            const sel = document.getElementById('sel-state');
+            sel.innerHTML = '<option value="">Select State</option>';
+            if(data) data.forEach(s => sel.innerHTML += `<option value="${s.id}">${s.name}</option>`);
+            
+            if(publicShopData.origin_state_id) {
+                sel.value = publicShopData.origin_state_id;
+                await loadDistricts();
+            }
+        }
+
+        async function loadDistricts() {
+            const stateId = document.getElementById('sel-state').value;
+            const sel = document.getElementById('sel-dist');
+            if(!stateId) { sel.innerHTML = '<option value="">Select State First</option>'; sel.disabled=true; return; }
+            
+            sel.disabled = false;
+            sel.innerHTML = '<option value="">Loading...</option>';
+            const { data } = await db.from('districts').select('id, name').eq('state_id', stateId).order('name');
+            sel.innerHTML = '<option value="">Select District</option>';
+            if(data) data.forEach(d => sel.innerHTML += `<option value="${d.id}">${d.name}</option>`);
+
+            if(publicShopData.origin_district_id) {
+                sel.value = publicShopData.origin_district_id;
+                await loadMainZones();
+            }
+        }
+
+        async function loadMainZones() {
+            const distId = document.getElementById('sel-dist').value;
+            const sel = document.getElementById('sel-main');
+            if(!distId) { sel.innerHTML = '<option value="">Select District First</option>'; sel.disabled=true; return; }
+            
+            sel.disabled = false;
+            sel.innerHTML = '<option value="">Loading...</option>';
+            const { data } = await db.from('main_zones').select('id, name').eq('district_id', distId).order('name');
+            sel.innerHTML = '<option value="">Select Main Zone</option>';
+            if(data) data.forEach(m => sel.innerHTML += `<option value="${m.id}">${m.name}</option>`);
+
+            if(publicShopData.origin_main_zone_id) {
+                sel.value = publicShopData.origin_main_zone_id;
+                await loadSubZones();
+            }
+        }
+
+        async function loadSubZones() {
+            const mainId = document.getElementById('sel-main').value;
+            const sel = document.getElementById('sel-sub');
+            if(!mainId) { sel.innerHTML = '<option value="">Select Main Zone First</option>'; sel.disabled=true; return; }
+            
+            sel.disabled = false;
+            sel.innerHTML = '<option value="">Loading...</option>';
+            const { data } = await db.from('sub_zones').select('id, name').eq('main_zone_id', mainId).order('name');
+            sel.innerHTML = '<option value="">Select Sub Zone</option>';
+            if(data) data.forEach(s => sel.innerHTML += `<option value="${s.id}">${s.name}</option>`);
+
+            if(publicShopData.origin_sub_zone_id) {
+                sel.value = publicShopData.origin_sub_zone_id;
+                publicShopData.origin_sub_zone_id = null; // Clear prefill
+            }
+        }
+
+        async function saveOrigin() {
+            const btn = document.getElementById('save-origin-btn');
+            btn.innerHTML = `<div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>`;
+            btn.disabled = true;
+
+            const payload = {
+                origin_state_id: parseInt(document.getElementById('sel-state').value) || null,
+                origin_district_id: parseInt(document.getElementById('sel-dist').value) || null,
+                origin_main_zone_id: parseInt(document.getElementById('sel-main').value) || null,
+                origin_sub_zone_id: parseInt(document.getElementById('sel-sub').value) || null
+            };
+
+            try {
+                const { error } = await db.from('shops_public_587').update(payload).eq('id', currentUserId);
+                if(error) throw error;
+                Toastify({ text: "Origin Location Saved!", duration: 3000, style: { background: "#22c55e", borderRadius: "8px" } }).showToast();
+            } catch(e) {
+                Toastify({ text: "Error saving origin", duration: 3000, style: { background: "#ef4444", borderRadius: "8px" } }).showToast();
+            } finally {
+                btn.innerHTML = "Save Origin";
+                btn.disabled = false;
+            }
+        }
+
+        // ==========================================
+        // 🌟 DELIVERY ZONES MAPPING LOGIC (FIXED)
+        // ==========================================
+        async function fetchActiveZones() {
+            const tbody = document.getElementById('zones-table-body');
+            const msg = document.getElementById('no-zones-msg');
+            tbody.innerHTML = '';
+            
+            try {
+                // 🌟 FIX: Querying sub_zone_id instead of non-existent id
+                const { data, error } = await db.from('seller_delivery_zones')
+                    .select('sub_zone_id, delivery_fee, sub_zones(name)')
+                    .eq('seller_id', currentSellerNumericId);
+                
+                if(error) throw error;
+
+                if(!data || data.length === 0) {
+                    msg.classList.remove('hidden');
+                } else {
+                    msg.classList.add('hidden');
+                    data.forEach(row => {
+                        const areaName = row.sub_zones ? row.sub_zones.name : "Unknown Area";
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-slate-50 transition" id="zone-row-${row.sub_zone_id}">
+                                <td class="px-6 py-4 font-semibold text-slate-800">${areaName}</td>
+                                <td class="px-6 py-4 font-extrabold text-indigo-600">₹${row.delivery_fee || 0}</td>
+                                <td class="px-6 py-4 text-right">
+                                    <button onclick="deleteZone(${row.sub_zone_id})" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition" title="Remove Zone">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    lucide.createIcons();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function loadAddDistricts() {
+            const { data } = await db.from('districts').select('id, name').order('name');
+            const sel = document.getElementById('add-dist');
+            if(data) data.forEach(d => sel.innerHTML += `<option value="${d.id}">${d.name}</option>`);
+        }
+
+        async function loadAddSubZones() {
+            const distId = document.getElementById('add-dist').value;
+            const sel = document.getElementById('add-sub');
+            if(!distId) { sel.innerHTML = '<option value="">2. Choose Exact Sub Zone</option>'; sel.disabled=true; return; }
+            
+            sel.disabled = false;
+            sel.innerHTML = '<option value="">Loading...</option>';
+            const { data } = await db.from('sub_zones').select('id, name').eq('district_id', distId).order('name');
+            sel.innerHTML = '<option value="">2. Choose Exact Sub Zone</option>';
+            if(data) data.forEach(s => sel.innerHTML += `<option value="${s.id}">${s.name}</option>`);
+        }
+
+        async function addDeliveryZone() {
+            const subId = document.getElementById('add-sub').value;
+            const fee = document.getElementById('add-fee').value;
+            const btn = document.getElementById('add-zone-btn');
+
+            if(!subId || fee === "") {
+                Toastify({ text: "Please select an area and enter a fee", duration: 3000, style: { background: "#ef4444", borderRadius: "8px" } }).showToast();
+                return;
+            }
+
+            btn.innerText = "Adding...";
+            btn.disabled = true;
+
+            try {
+                // 🌟 FIX: Querying sub_zone_id to check existence
+                const { data: exist } = await db.from('seller_delivery_zones')
+                    .select('sub_zone_id').eq('seller_id', currentSellerNumericId).eq('sub_zone_id', subId);
+                
+                if(exist && exist.length > 0) throw new Error("You already mapped this area!");
+
+                const { error } = await db.from('seller_delivery_zones').insert({
+                    seller_id: currentSellerNumericId,
+                    sub_zone_id: parseInt(subId),
+                    delivery_fee: parseFloat(fee)
+                });
+
+                if(error) throw error;
+                
+                Toastify({ text: "Zone Added Successfully!", duration: 3000, style: { background: "#22c55e", borderRadius: "8px" } }).showToast();
+                document.getElementById('add-sub').value = '';
+                document.getElementById('add-fee').value = '';
+                await fetchActiveZones(); // Refresh table
+
+            } catch (e) {
+                Toastify({ text: e.message || "Failed to add zone", duration: 3000, style: { background: "#ef4444", borderRadius: "8px" } }).showToast();
+            } finally {
+                btn.innerText = "Add Zone";
+                btn.disabled = false;
+            }
+        }
+
+        async function deleteZone(subZoneId) {
+            if(!confirm("Are you sure you want to stop delivering to this exact area?")) return;
+            
+            try {
+                // 🌟 FIX: Secure composite key deletion
+                const { error } = await db.from('seller_delivery_zones')
+                    .delete()
+                    .eq('sub_zone_id', subZoneId)
+                    .eq('seller_id', currentSellerNumericId); 
+
+                if(error) throw error;
+                
+                document.getElementById(`zone-row-${subZoneId}`).remove();
+                Toastify({ text: "Zone Removed", duration: 3000, style: { background: "#0f172a", borderRadius: "8px" } }).showToast();
+                
+                // Show empty message if table is empty
+                if(document.getElementById('zones-table-body').children.length === 0) {
+                    document.getElementById('no-zones-msg').classList.remove('hidden');
+                }
+            } catch (e) {
+                Toastify({ text: "Error removing zone", duration: 3000, style: { background: "#ef4444", borderRadius: "8px" } }).showToast();
+            }
+        }
+
+        initPage();
+    </script>
+</body>
+</html>

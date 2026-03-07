@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Schedule - Vilarci Partner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Custom Toggle Switch */
+        .toggle-checkbox:checked { right: 0; border-color: #4f46e5; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #4f46e5; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen pb-10">
+
+    <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <button onclick="window.location.href='seller_profile.html'" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+                <h1 class="text-xl font-extrabold text-slate-900">Weekly Schedule</h1>
+            </div>
+            <button onclick="saveSchedule()" id="save-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl font-bold transition shadow-md shadow-indigo-200 flex items-center gap-2">
+                <i data-lucide="save" class="w-4 h-4"></i> Save
+            </button>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div id="loader" class="flex flex-col justify-center items-center h-64 gap-4">
+            <div class="animate-spin rounded-full h-10 w-10 border-4 border-indigo-100 border-t-indigo-600"></div>
+            <p class="text-slate-500 font-medium">Loading your schedule...</p>
+        </div>
+
+        <div id="content" class="hidden bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-6 bg-slate-50 border-b border-slate-100">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="calendar-clock" class="text-indigo-600 w-5 h-5"></i> Operating Hours
+                </h2>
+                <p class="text-sm text-slate-500 mt-1">Set the times your shop or service is actively open for business.</p>
+            </div>
+
+            <div class="p-6" id="schedule-form">
+                </div>
+        </div>
+    </main>
+
+    <script>
+        const db = window.supabaseClient;
+        let currentUserId = null;
+        
+        const days = [
+            { key: 'mon', label: 'Monday' }, { key: 'tue', label: 'Tuesday' },
+            { key: 'wed', label: 'Wednesday' }, { key: 'thu', label: 'Thursday' },
+            { key: 'fri', label: 'Friday' }, { key: 'sat', label: 'Saturday' }, { key: 'sun', label: 'Sunday' }
+        ];
+
+        async function initPage() {
+            lucide.createIcons();
+            try {
+                // 1. STRICT AUTH CHECK
+                const { data: { session }, error: authError } = await db.auth.getSession();
+                if (authError || !session) throw new Error("Unauthorized");
+                currentUserId = session.user.id;
+
+                // 2. FETCH CURRENT SCHEDULE
+                const { data, error } = await db.from('shops_public_587').select('weekly_schedule').eq('id', currentUserId).single();
+                if (error) throw error;
+
+                renderForm(data.weekly_schedule || {});
+                
+                document.getElementById('loader').classList.add('hidden');
+                document.getElementById('content').classList.remove('hidden');
+            } catch (err) {
+                window.location.href = 'login.html';
+            }
+        }
+
+        // Helper: Convert "09:00 AM - 08:00 PM" -> { open: "09:00", close: "20:00", isOpen: true }
+        function parseTime(str) {
+            if (!str || str.toLowerCase() === 'closed') return { isOpen: false, open: "09:00", close: "17:00" };
+            try {
+                const parts = str.split(' - ');
+                const formatTo24 = (time12) => {
+                    const [time, modifier] = time12.split(' ');
+                    let [hours, minutes] = time.split(':');
+                    if (hours === '12') hours = '00';
+                    if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
+                    return `${hours.toString().padStart(2, '0')}:${minutes}`;
+                };
+                return { isOpen: true, open: formatTo24(parts[0]), close: formatTo24(parts[1]) };
+            } catch (e) {
+                return { isOpen: false, open: "09:00", close: "17:00" };
+            }
+        }
+
+        // Helper: Convert HTML time "14:00" -> "02:00 PM"
+        function formatTo12(time24) {
+            let [hours, minutes] = time24.split(':');
+            let h = parseInt(hours, 10);
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12 || 12;
+            return `${h.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+        }
+
+        function renderForm(schedule) {
+            const container = document.getElementById('schedule-form');
+            container.innerHTML = '';
+
+            days.forEach(day => {
+                const state = parseTime(schedule[day.key]);
+                
+                container.innerHTML += `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-5 border-b border-slate-100 last:border-0 transition-opacity" id="row-${day.key}">
+                    <div class="flex items-center gap-4 w-40 shrink-0">
+                        <div class="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" id="toggle-${day.key}" onchange="toggleDay('${day.key}')" ${state.isOpen ? 'checked' : ''} class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-slate-300 appearance-none cursor-pointer z-10 top-0 right-6"/>
+                            <label for="toggle-${day.key}" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer"></label>
+                        </div>
+                        <span class="font-bold text-slate-800">${day.label}</span>
+                    </div>
+                    
+                    <div class="flex items-center gap-3 flex-1 ${state.isOpen ? '' : 'opacity-30 pointer-events-none'}" id="inputs-${day.key}">
+                        <div class="flex-1">
+                            <input type="time" id="open-${day.key}" value="${state.open}" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <span class="text-slate-400 font-bold">to</span>
+                        <div class="flex-1">
+                            <input type="time" id="close-${day.key}" value="${state.close}" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                    </div>
+                </div>`;
+            });
+        }
+
+        window.toggleDay = function(key) {
+            const isChecked = document.getElementById(`toggle-${key}`).checked;
+            const inputs = document.getElementById(`inputs-${key}`);
+            if (isChecked) {
+                inputs.classList.remove('opacity-30', 'pointer-events-none');
+            } else {
+                inputs.classList.add('opacity-30', 'pointer-events-none');
+            }
+        }
+
+        async function saveSchedule() {
+            const btn = document.getElementById('save-btn');
+            btn.innerHTML = `<div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div> Saving`;
+            btn.disabled = true;
+
+            let newSchedule = {};
+
+            days.forEach(day => {
+                const isOpen = document.getElementById(`toggle-${day.key}`).checked;
+                if (!isOpen) {
+                    newSchedule[day.key] = "Closed";
+                } else {
+                    const openVal = document.getElementById(`open-${day.key}`).value;
+                    const closeVal = document.getElementById(`close-${day.key}`).value;
+                    newSchedule[day.key] = `${formatTo12(openVal)} - ${formatTo12(closeVal)}`;
+                }
+            });
+
+            try {
+                // UPDATE SECURELY BOUND TO USER ID
+                const { error } = await db.from('shops_public_587').update({ weekly_schedule: newSchedule }).eq('id', currentUserId);
+                if (error) throw error;
+                
+                Toastify({ text: "Schedule Updated Successfully!", duration: 3000, style: { background: "#22c55e", borderRadius: "8px" } }).showToast();
+            } catch (err) {
+                Toastify({ text: "Error saving schedule", duration: 4000, style: { background: "#ef4444", borderRadius: "8px" } }).showToast();
+            } finally {
+                btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> Save`;
+                btn.disabled = false;
+                lucide.createIcons();
+            }
+        }
+
+        initPage();
+    </script>
+</body>
+</html>

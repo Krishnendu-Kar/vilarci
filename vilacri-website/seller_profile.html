@@ -3,190 +3,207 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seller Profile - Vilarci</title>
+    <title>Seller Dashboard - Vilarci</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="config.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <style>body { font-family: 'Inter', sans-serif; }</style>
-</head>
-<body class="bg-slate-50 min-h-screen">
+    
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
-    <!-- Navbar -->
-    <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .modal-scroll::-webkit-scrollbar { width: 6px; }
+        .modal-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .modal-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .modal-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen pb-10">
+
+    <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center gap-2">
                     <div class="bg-indigo-600 text-white font-bold text-xl px-2 py-1 rounded">V</div>
-                    <div class="text-2xl font-extrabold text-indigo-900 tracking-tight">Vilarci Partner</div>
+                    <div class="text-2xl font-extrabold text-indigo-900 tracking-tight">Vilarci Seller Dashboard</div>
                 </div>
                 <div class="flex items-center gap-4">
-                    <button onclick="logout()" class="text-slate-500 hover:text-red-600 font-medium text-sm flex items-center gap-2 transition-colors">
-                        <i data-lucide="log-out" class="w-4 h-4"></i> Logout
+                    <button onclick="logout()" class="text-slate-500 hover:text-red-600 font-medium text-sm flex items-center gap-2 transition-colors bg-slate-50 hover:bg-red-50 px-4 py-2 rounded-lg border border-slate-200 hover:border-red-200">
+                        <i data-lucide="log-out" class="w-4 h-4"></i> <span class="hidden sm:inline">Logout</span>
                     </button>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+    <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         
-        <!-- Loading State -->
-        <div id="loader" class="flex justify-center items-center h-64">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div id="loader" class="flex flex-col justify-center items-center h-64 gap-4">
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-100 border-t-indigo-600"></div>
+            <p class="text-slate-500 font-medium animate-pulse">Loading Dashboard...</p>
         </div>
 
         <div id="dashboard-content" class="hidden space-y-8">
             
-            <!-- Header Section -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-10 relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-4 opacity-5">
-                    <i data-lucide="store" class="w-64 h-64 text-indigo-600"></i>
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8 relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                    <i data-lucide="layout-dashboard" class="w-64 h-64 text-indigo-600"></i>
                 </div>
                 
-                <div class="relative z-10">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div>
-                            <div class="flex items-center gap-3 mb-2">
-                                <h1 class="text-3xl font-bold text-slate-900" id="shop_name">Loading...</h1>
-                                <span id="status_badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-500">Loading...</span>
-                            </div>
-                            <p class="text-slate-500 flex items-center gap-2">
-                                <i data-lucide="user" class="w-4 h-4"></i> <span id="full_name">...</span>
-                            </p>
+                <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                        <div class="flex items-center gap-3 mb-1">
+                            <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight" id="store_name_display">Loading...</h1>
+                            <span id="status_badge" class="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest shadow-sm border">Loading</span>
                         </div>
-                        
-                        <div class="flex flex-col sm:flex-row gap-3">
-                            <a href="product uploader.html" class="flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 hover:shadow-indigo-300">
-                                <i data-lucide="package-plus" class="w-5 h-5"></i> Add Products
-                            </a>
-                            <!-- Settings Button (Placeholder) -->
-                            <button class="flex items-center justify-center gap-2 bg-white border border-slate-300 text-slate-700 px-6 py-3 rounded-xl font-bold hover:bg-slate-50 transition">
-                                <i data-lucide="settings" class="w-5 h-5"></i> Settings
-                            </button>
-                        </div>
+                        <p class="text-slate-500 flex items-center gap-2 font-medium">
+                            <i data-lucide="user" class="w-4 h-4"></i> <span id="full_name">...</span>
+                        </p>
                     </div>
+                    
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="openEditModal()" class="flex items-center justify-center gap-2 bg-white border-2 border-slate-200 text-slate-700 px-6 py-2.5 rounded-xl font-bold hover:border-indigo-600 hover:text-indigo-600 transition shadow-sm">
+                            <i data-lucide="user-cog" class="w-4 h-4"></i> Edit Profile
+                        </button>
+                    </div>
+                </div>
 
-                    <!-- ID Card -->
-                    <div class="mt-8 bg-slate-50 rounded-xl p-4 border border-slate-200 inline-flex flex-col sm:flex-row gap-4 sm:gap-8">
-                        <div>
-                            <p class="text-[10px] uppercase font-bold text-slate-400">Seller ID</p>
-                            <p class="text-xl font-mono font-bold text-slate-800 tracking-wider" id="seller_id">...</p>
-                        </div>
-                        <div class="w-px bg-slate-200 hidden sm:block"></div>
-                        <div>
-                            <p class="text-[10px] uppercase font-bold text-slate-400">Business Type</p>
-                            <p class="text-sm font-bold text-slate-700 uppercase" id="biz_type">...</p>
-                        </div>
-                        <div class="w-px bg-slate-200 hidden sm:block"></div>
-                        <div>
-                            <p class="text-[10px] uppercase font-bold text-slate-400">Location Pincode</p>
-                            <p class="text-sm font-bold text-slate-700" id="pincode">...</p>
-                        </div>
+                <div class="mt-8 bg-slate-50 rounded-2xl p-4 sm:p-6 border border-slate-200 inline-flex flex-col sm:flex-row gap-6 sm:gap-10 shadow-inner">
+                    <div>
+                        <p class="text-[10px] uppercase font-extrabold text-slate-400 tracking-widest mb-1">Seller ID</p>
+                        <p class="text-xl font-mono font-bold text-indigo-900 tracking-wider" id="seller_id_display">...</p>
+                    </div>
+                    <div class="w-px bg-slate-300 hidden sm:block"></div>
+                    <div>
+                        <p class="text-[10px] uppercase font-extrabold text-slate-400 tracking-widest mb-1">Fulfillment Mode</p>
+                        <p class="text-sm font-bold text-slate-700 uppercase flex items-center gap-1.5" id="fulfillment_display">...</p>
+                    </div>
+                    <div class="w-px bg-slate-300 hidden sm:block"></div>
+                    <div>
+                        <p class="text-[10px] uppercase font-extrabold text-slate-400 tracking-widest mb-1">Entity Type</p>
+                        <p class="text-sm font-bold text-slate-700 uppercase" id="entity_display">...</p>
                     </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
-                <!-- Left Column: Personal & Contact -->
-                <div class="space-y-8">
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition">
-                        <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                            <i data-lucide="contact" class="w-5 h-5 text-indigo-500"></i> Contact Details
-                        </h3>
-                        <div class="space-y-4 text-sm">
-                            <div>
-                                <p class="text-slate-400 text-xs uppercase font-bold">Email</p>
-                                <p class="text-slate-700 font-medium" id="email">...</p>
-                            </div>
-                            <div>
-                                <p class="text-slate-400 text-xs uppercase font-bold">Primary Mobile</p>
-                                <p class="text-slate-700 font-medium" id="mobile">...</p>
-                            </div>
-                            <div>
-                                <p class="text-slate-400 text-xs uppercase font-bold">WhatsApp</p>
-                                <p class="text-slate-700 font-medium" id="whatsapp">...</p>
-                            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                <div onclick="window.location.href='seller_product_manage.html'" class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-indigo-500 hover:shadow-md transition group cursor-pointer relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 opacity-5 group-hover:scale-110 transition duration-500"><i data-lucide="package" class="w-24 h-24"></i></div>
+                    <div class="flex justify-between items-start relative z-10">
+                        <p class="text-slate-500 text-xs font-extrabold uppercase tracking-wider group-hover:text-indigo-600 transition">Total Products</p>
+                        <i data-lucide="arrow-up-right" class="w-5 h-5 text-slate-300 group-hover:text-indigo-600 transition"></i>
+                    </div>
+                    <p class="text-4xl font-extrabold text-slate-900 mt-3 relative z-10" id="product_count">0</p>
+                </div>
+
+                <div onclick="window.location.href='seller_service_manage.html'" class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-pink-500 hover:shadow-md transition group cursor-pointer relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 opacity-5 group-hover:scale-110 transition duration-500"><i data-lucide="wrench" class="w-24 h-24"></i></div>
+                    <div class="flex justify-between items-start relative z-10">
+                        <p class="text-slate-500 text-xs font-extrabold uppercase tracking-wider group-hover:text-pink-600 transition">Total Services</p>
+                        <i data-lucide="arrow-up-right" class="w-5 h-5 text-slate-300 group-hover:text-pink-600 transition"></i>
+                    </div>
+                    <p class="text-4xl font-extrabold text-slate-900 mt-3 relative z-10" id="service_count">0</p>
+                </div>
+
+                <div onclick="window.location.href='seller_delivery_manage.html'" class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-blue-500 hover:shadow-md transition group cursor-pointer relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 opacity-5 group-hover:scale-110 transition duration-500"><i data-lucide="map" class="w-24 h-24"></i></div>
+                    <div class="flex justify-between items-start relative z-10">
+                        <p class="text-slate-500 text-xs font-extrabold uppercase tracking-wider group-hover:text-blue-600 transition">Active Zones</p>
+                        <i data-lucide="arrow-up-right" class="w-5 h-5 text-slate-300 group-hover:text-blue-600 transition"></i>
+                    </div>
+                    <p class="text-4xl font-extrabold text-slate-900 mt-3 relative z-10" id="zone_count">0</p>
+                </div>
+
+                <div class="bg-gradient-to-br from-slate-900 to-slate-800 p-5 rounded-2xl shadow-sm relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 opacity-10"><i data-lucide="wallet" class="w-24 h-24 text-white"></i></div>
+                    <p class="text-slate-300 text-xs font-extrabold uppercase tracking-wider relative z-10">Pending Payout</p>
+                    <p class="text-4xl font-extrabold text-white mt-3 relative z-10">₹0</p>
+                </div>
+            </div>
+
+            <h2 class="text-xl font-extrabold text-slate-900 mt-8 mb-4">Quick Management</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div onclick="window.location.href='seller_delivery_manage.html'" class="bg-white border border-slate-200 rounded-2xl p-6 flex items-center justify-between cursor-pointer hover:border-indigo-400 hover:shadow-md transition group">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-indigo-50 p-4 rounded-xl text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition">
+                            <i data-lucide="map-pin" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-lg">Delivery Zones</h3>
+                            <p class="text-sm text-slate-500 font-medium mt-0.5">Edit/Add Sub Zones & Main Zones</p>
                         </div>
                     </div>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition transform"></i>
+                </div>
 
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition">
-                        <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                            <i data-lucide="landmark" class="w-5 h-5 text-indigo-500"></i> Bank Information
-                        </h3>
-                        <div class="space-y-4 text-sm">
-                            <div>
-                                <p class="text-slate-400 text-xs uppercase font-bold">Bank Name</p>
-                                <p class="text-slate-700 font-medium" id="bank_name">...</p>
-                            </div>
-                            <div>
-                                <p class="text-slate-400 text-xs uppercase font-bold">Account Number</p>
-                                <p class="text-slate-700 font-medium font-mono">•••• <span id="bank_acc">...</span></p>
-                            </div>
-                            <div>
-                                <p class="text-slate-400 text-xs uppercase font-bold">IFSC Code</p>
-                                <p class="text-slate-700 font-medium font-mono" id="bank_ifsc">...</p>
+                <div onclick="window.location.href='seller_schedule_manage.html'" class="bg-white border border-slate-200 rounded-2xl p-6 flex items-center justify-between cursor-pointer hover:border-green-400 hover:shadow-md transition group">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-green-50 p-4 rounded-xl text-green-600 group-hover:bg-green-600 group-hover:text-white transition">
+                            <i data-lucide="calendar-clock" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-lg">Weekly Schedule</h3>
+                            <p class="text-sm text-slate-500 font-medium mt-0.5">Manage opening/closing hours</p>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300 group-hover:text-green-600 group-hover:translate-x-1 transition transform"></i>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
+                
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="text-sm font-extrabold text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2">
+                        <i data-lucide="shield" class="w-4 h-4 text-indigo-500"></i> Private Details
+                    </h3>
+                    <div class="grid grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-4 text-sm">
+                        <div><p class="text-slate-400 text-xs font-bold uppercase mb-1">Mobile</p><p class="font-semibold text-slate-800" id="ov_mobile">...</p></div>
+                        <div><p class="text-slate-400 text-xs font-bold uppercase mb-1">DOB</p><p class="font-semibold text-slate-800" id="ov_dob">...</p></div>
+                        <div><p class="text-slate-400 text-xs font-bold uppercase mb-1">Email</p><p class="font-semibold text-slate-800 truncate" id="ov_email">...</p></div>
+                        
+                        <div><p class="text-slate-400 text-xs font-bold uppercase mb-1">PAN Number</p><p class="font-mono font-semibold text-slate-800" id="ov_pan">...</p></div>
+                        <div><p class="text-slate-400 text-xs font-bold uppercase mb-1">GSTIN</p><p class="font-mono font-semibold text-slate-800" id="ov_gstin">...</p></div>
+                        <div><p class="text-slate-400 text-xs font-bold uppercase mb-1">EID / Alt ID</p><p class="font-mono font-semibold text-slate-800" id="ov_eid">...</p></div>
+                        
+                        <div class="col-span-2 lg:col-span-3 pt-4 border-t border-slate-100">
+                            <p class="text-slate-400 text-xs font-bold uppercase mb-2">Bank Details</p>
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row justify-between gap-4">
+                                <div>
+                                    <p class="text-[10px] uppercase text-slate-500 font-bold mb-0.5">Account Holder Name</p>
+                                    <p class="font-bold text-slate-800" id="ov_bank_holder">...</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] uppercase text-slate-500 font-bold mb-0.5">A/C Number</p>
+                                    <p class="font-mono font-bold text-slate-800" id="ov_bank_acc">...</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] uppercase text-slate-500 font-bold mb-0.5">IFSC</p>
+                                    <p class="font-mono font-bold text-slate-800" id="ov_ifsc">...</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right Column: Business Overview -->
-                <div class="lg:col-span-2 space-y-8">
-                    <!-- Quick Stats -->
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <!-- TOTAL PRODUCTS CARD (Updated to be Clickable) -->
-                        <div onclick="window.location.href='seller product manage.html'" class="cursor-pointer bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-500 hover:shadow-md hover:bg-indigo-50 transition group">
-                            <div class="flex justify-between items-start">
-                                <p class="text-slate-400 text-xs uppercase font-bold group-hover:text-indigo-500">Total Products</p>
-                                <i data-lucide="arrow-up-right" class="w-4 h-4 text-slate-300 group-hover:text-indigo-500"></i>
-                            </div>
-                            <p class="text-3xl font-bold text-slate-800 mt-2 group-hover:text-indigo-700" id="product_count">0</p>
-                            <p class="text-[10px] text-slate-400 mt-1">Click to Manage</p>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="text-sm font-extrabold text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2">
+                        <i data-lucide="store" class="w-4 h-4 text-indigo-500"></i> Public Shop Details
+                    </h3>
+                    <div class="space-y-5 text-sm">
+                        <div>
+                            <p class="text-slate-400 text-xs font-bold uppercase mb-1">Full Address</p>
+                            <p class="font-semibold text-slate-800 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100" id="ov_address">...</p>
                         </div>
-
-                        <div onclick="window.location.href='seller_service_manage.html'" class="cursor-pointer bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-500 hover:shadow-md hover:bg-indigo-50 transition group">
-                                <div class="flex justify-between items-start">
-                                    <p class="text-slate-400 text-xs uppercase font-bold group-hover:text-indigo-500">Total Services</p>
-                                    <i data-lucide="wrench" class="w-4 h-4 text-slate-300 group-hover:text-indigo-500"></i>
-                                </div>
-                                <p class="text-3xl font-bold text-slate-800 mt-2 group-hover:text-indigo-700" id="service_count">0</p>
-                                <p class="text-[10px] text-slate-400 mt-1">Click to Manage</p>
-                        </div>
-
-
-                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-200 transition">
-                            <p class="text-slate-400 text-xs uppercase font-bold">Total Orders</p>
-                            <p class="text-3xl font-bold text-slate-800 mt-2">0</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-200 transition">
-                            <p class="text-slate-400 text-xs uppercase font-bold">Pending Payout</p>
-                            <p class="text-3xl font-bold text-green-600 mt-2">₹0.00</p>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition">
-                        <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                            <i data-lucide="briefcase" class="w-5 h-5 text-indigo-500"></i> Business Profile
-                        </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><p class="text-slate-400 text-xs font-bold uppercase mb-1">Pincode</p><p class="font-semibold text-slate-800" id="ov_pincode">...</p></div>
                             <div>
-                                <p class="text-slate-400 text-xs uppercase font-bold mb-1">Entity Type</p>
-                                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 text-slate-700 font-medium" id="entity_type">...</div>
-                            </div>
-                            <div>
-                                <p class="text-slate-400 text-xs uppercase font-bold mb-1">GSTIN</p>
-                                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 text-slate-700 font-medium" id="gstin">...</div>
-                            </div>
-                            <div>
-                                <p class="text-slate-400 text-xs uppercase font-bold mb-1">ID Proof Type</p>
-                                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 text-slate-700 font-medium" id="id_type">...</div>
-                            </div>
-                            <div>
-                                <p class="text-slate-400 text-xs uppercase font-bold mb-1">ID Number</p>
-                                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 text-slate-700 font-medium" id="id_number">...</div>
+                                <p class="text-slate-400 text-xs font-bold uppercase mb-1">Direction Link</p>
+                                <a href="#" target="_blank" class="font-semibold text-indigo-600 truncate inline-block max-w-[150px]" id="ov_direction">...</a>
                             </div>
                         </div>
                     </div>
@@ -196,140 +213,346 @@
         </div>
     </main>                    
 
+    <div id="edit-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] hidden items-center justify-center p-4 sm:p-6 opacity-0 transition-opacity duration-300">
+        <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transform scale-95 transition-transform duration-300" id="edit-modal-panel">
+            
+            <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
+                <h2 class="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="file-edit" class="w-5 h-5 text-indigo-600"></i> Edit Profile Information
+                </h2>
+                <button onclick="closeEditModal()" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto modal-scroll flex-grow bg-white">
+                <form id="edit-form" class="space-y-8">
+                    
+                    <div>
+                        <h3 class="text-sm font-extrabold text-indigo-600 uppercase tracking-widest border-b-2 border-indigo-100 pb-2 mb-4">Private Information</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mobile Number</label>
+                                <input type="tel" id="in_mobile" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Date of Birth</label>
+                                <input type="date" id="in_dob" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">PAN Number</label>
+                                <input type="text" id="in_pan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">GSTIN</label>
+                                <input type="text" id="in_gstin" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition" placeholder="Optional">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">EID / Alternate ID</label>
+                                <input type="text" id="in_eid" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition" placeholder="Optional">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-extrabold text-indigo-600 uppercase tracking-widest border-b-2 border-indigo-100 pb-2 mb-4">Bank Details</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Account Holder Name</label>
+                                <input type="text" id="in_bank_holder" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Bank Name</label>
+                                <input type="text" id="in_bank_name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Account Number</label>
+                                <input type="text" id="in_bank_acc" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">IFSC Code</label>
+                                <input type="text" id="in_ifsc" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-extrabold text-indigo-600 uppercase tracking-widest border-b-2 border-indigo-100 pb-2 mb-4">Public Shop Details</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Store / Shop Name</label>
+                                <input type="text" id="in_store_name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Entity Type</label>
+                                <select id="in_entity" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition cursor-pointer">
+                                    <option value="Individual">Individual/Proprietor</option>
+                                    <option value="Partnership">Partnership</option>
+                                    <option value="Private Limited">Private Limited</option>
+                                    <option value="LLP">LLP</option>
+                                </select>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Full Shop Address</label>
+                                <textarea id="in_address" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Pincode</label>
+                                <input type="number" id="in_pincode" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Google Maps Direction Link</label>
+                                <input type="url" id="in_direction" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition" placeholder="https://maps.app.goo.gl/...">
+                            </div>
+                            
+                            <div class="sm:col-span-2 mt-2 pt-4 border-t border-slate-100">
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Order Fulfillment Mode</label>
+                                <select id="in_fulfillment" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-bold text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-indigo-50 transition cursor-pointer">
+                                    <option value="vilarci">Vilarci Logistics (Standard District Rates)</option>
+                                    <option value="seller">Direct Fulfillment (I manage my own deliveries & custom fees)</option>
+                                </select>
+                                <p class="text-[10px] text-slate-400 mt-2">*If you choose Direct Fulfillment, configure your coverage in "Delivery Zones" on the dashboard.</p>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50 shrink-0">
+                <button onclick="closeEditModal()" class="px-6 py-2.5 rounded-xl font-bold text-slate-600 bg-white border border-slate-300 hover:bg-slate-100 transition">Cancel</button>
+                <button onclick="saveProfile()" id="save-btn" class="px-8 py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 transition flex items-center gap-2">
+                    <i data-lucide="save" class="w-4 h-4"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <script>
         // ==========================================
-        // 1. CONFIGURATION
+        // 1. INITIALIZATION & CONFIGURATION
         // ==========================================
-        const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
-        
-        // ⚠️ CRITICAL: Replace this with your actual anon key from Supabase Settings (starts with eyJ...)
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dmNndWJicXRjY295Y3ZkdXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODA2MzQsImV4cCI6MjA4MDA1NjYzNH0.7Hobx-emspJQ7HLyjaWR-XQhzk948LWufq3OCimKk4w';
-        
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const db = window.supabaseClient;
         lucide.createIcons();
 
+        let currentUserId = null;
+        let currentSellerNumericId = null;
+        
+        let privateDataCache = {};
+        let publicDataCache = {};
+
         // ==========================================
-        // 2. PROFILE LOGIC
+        // SECURITY: DATA SANITIZATION (XSS PREVENTION)
+        // ==========================================
+        function sanitize(input) {
+            if (typeof input !== 'string' || !input) return input;
+            // This safely replaces any HTML tags with harmless text entities
+            return input.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim();
+        }
+
+        // ==========================================
+        // 2. DASHBOARD DATA FETCHING
         // ==========================================
         async function initProfile() {
             try {
-                // A. Check Auth Session
-                const { data: { session }, error: authError } = await supabaseClient.auth.getSession();
-                
+                if(!db) throw new Error("Database connection failed. Check config.js");
+
+                const { data: { session }, error: authError } = await db.auth.getSession();
                 if (authError || !session) {
-                    console.warn("No active session found. Redirecting to login...");
                     window.location.href = 'login.html';
                     return;
                 }
-
-                // B. Fetch Seller Data
-                // We select specific columns to ensure we aren't guessing
-                const { data: seller, error: dbError } = await supabaseClient
-                    .from('sellers_private_089')
-                    .select('*')
-                    .eq('id', session.user.id)
-                    .single();
-
-                if (dbError) {
-                    console.error("Database Error:", dbError);
-                    throw new Error("Could not load seller profile. (Check RLS Policies)");
-                }
-
-                console.log("Seller Data Loaded:", seller);
-
-                // C. Fetch Product Count
-                // Assumes 'seller_id' in products table matches 'seller_numeric_id'
-                let productCount = 0;
-                if (seller.seller_numeric_id) {
-                    const { count, error: countError } = await supabaseClient
-                        .from('products')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('seller_id', seller.seller_numeric_id);
-                    
-                    if (!countError) productCount = count;
-                    else console.warn("Product count error:", countError);
-                }
-
-                let serviceCount = 0;
-                if (seller.seller_numeric_id) {
-                    const { count, error: serviceError } = await supabaseClient
-                        .from('services')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('seller_id', seller.seller_numeric_id);
-                    
-                    if (!serviceError) serviceCount = count || 0;
-                    else console.warn("Service count error:", serviceError);
-                }
-
-                // ==========================================
-                // 3. POPULATE UI
-                // ==========================================
                 
-                // --- Header Stats ---
-                // FIX: Changed 'store_name' to 'shop_name' to match Login page logic
-                document.getElementById('shop_name').innerText = seller.store_name || "Unnamed Shop";
-                document.getElementById('full_name').innerText = `${seller.first_name || ''} ${seller.last_name || ''}`;
-                document.getElementById('seller_id').innerText = seller.seller_numeric_id || "ERR";
-                document.getElementById('product_count').innerText = productCount;
-                document.getElementById('service_count').innerText = serviceCount; 
+                currentUserId = session.user.id;
+                document.getElementById('ov_email').innerText = session.user.email;
+
+                const [privateRes, publicRes] = await Promise.all([
+                    db.from('sellers_private_089').select('*').eq('id', currentUserId).single(),
+                    db.from('shops_public_587').select('*').eq('id', currentUserId).single()
+                ]);
+
+                if (privateRes.error) throw new Error("Private profile load failed.");
+                if (publicRes.error && publicRes.error.code !== 'PGRST116') throw new Error("Public profile load failed.");
+
+                privateDataCache = privateRes.data || {};
+                publicDataCache = publicRes.data || {};
                 
-                // --- Verification Badge ---
-                const badge = document.getElementById('status_badge');
-                if (seller.is_verified) {
-                    badge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-green-100 text-green-700 border border-green-200";
-                    badge.innerText = "Verified Partner";
-                } else {
-                    badge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-yellow-100 text-yellow-700 border border-yellow-200";
-                    badge.innerText = "Pending Verification";
+                currentSellerNumericId = publicDataCache.seller_numeric_id || privateDataCache.seller_numeric_id;
+
+                let pCount = 0, sCount = 0, zCount = 0;
+                if (currentSellerNumericId) {
+                    const [pRes, sRes, zRes] = await Promise.all([
+                        db.from('products').select('*', { count: 'exact', head: true }).eq('seller_id', currentSellerNumericId),
+                        db.from('services').select('*', { count: 'exact', head: true }).eq('seller_id', currentSellerNumericId),
+                        db.from('seller_delivery_zones').select('*', { count: 'exact', head: true }).eq('seller_id', currentSellerNumericId)
+                    ]);
+                    if(!pRes.error) pCount = pRes.count;
+                    if(!sRes.error) sCount = sRes.count;
+                    if(!zRes.error) zCount = zRes.count;
                 }
 
-                // --- Contact Details ---
-                // Fallback to "N/A" if data is missing
-                document.getElementById('email').innerText = session.user.email;
-                document.getElementById('mobile').innerText = seller.mobile_number || "N/A";
-                document.getElementById('whatsapp').innerText = seller.whatsapp_number || "N/A"; 
-
-                // --- Bank Details ---
-                document.getElementById('bank_name').innerText = seller.bank_name || "Not Added";
-                document.getElementById('bank_ifsc').innerText = seller.ifsc_code || "N/A";
+                populateDashboard(pCount, sCount, zCount);
                 
-                const acc = seller.bank_account_number;
-                document.getElementById('bank_acc').innerText = acc ? acc.slice(-4) : "0000";
-
-                // --- Business Profile ---
-                document.getElementById('entity_type').innerText = seller.entity_type || "Individual/Proprietor";
-                document.getElementById('gstin').innerText = seller.gstin || "Not Applicable";
-                
-                // Logic for ID Proof
-                if(seller.pan_number) {
-                    document.getElementById('id_type').innerText = "PAN Card";
-                    document.getElementById('id_number').innerText = seller.pan_number;
-                } else {
-                    document.getElementById('id_type').innerText = "Not Submitted";
-                    document.getElementById('id_number').innerText = "---";
-                }
-
-                document.getElementById('pincode').innerText = seller.pincode || "N/A";
-                document.getElementById('biz_type').innerText = "Retailer";
-
-                // Show Content
                 document.getElementById('loader').classList.add('hidden');
                 document.getElementById('dashboard-content').classList.remove('hidden');
 
             } catch (err) {
-                alert("Error: " + err.message);
+                Toastify({text: err.message, duration: 4000, style: { background: "#ef4444" }}).showToast();
                 console.error(err);
             }
         }
 
+        function populateDashboard(pCount, sCount, zCount) {
+            // Header Stats
+            document.getElementById('store_name_display').innerText = publicDataCache.store_name || privateDataCache.store_name || "Setup Your Store";
+            document.getElementById('full_name').innerText = `${privateDataCache.first_name || ''} ${privateDataCache.last_name || ''}`;
+            document.getElementById('seller_id_display').innerText = currentSellerNumericId || "Pending";
+            
+            const badge = document.getElementById('status_badge');
+            if (publicDataCache.is_verified) {
+                badge.className = "px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-green-100 text-green-700 border border-green-200 shadow-sm";
+                badge.innerText = "Verified Partner";
+            } else {
+                badge.className = "px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-yellow-100 text-yellow-700 border border-yellow-200 shadow-sm";
+                badge.innerText = "Pending Verification";
+            }
+
+            document.getElementById('fulfillment_display').innerHTML = publicDataCache.fulfillment_type === 'seller' 
+                ? '<i data-lucide="store" class="w-4 h-4 text-orange-500"></i> Direct Fulfillment'
+                : '<i data-lucide="truck" class="w-4 h-4 text-indigo-500"></i> Vilarci Logistics';
+            
+            document.getElementById('entity_display').innerText = publicDataCache.entity_type || "Not Set";
+
+            // Metric Cards
+            document.getElementById('product_count').innerText = pCount;
+            document.getElementById('service_count').innerText = sCount;
+            document.getElementById('zone_count').innerText = zCount;
+
+            // Private Overview 
+            document.getElementById('ov_mobile').innerText = privateDataCache.mobile_number || "N/A";
+            document.getElementById('ov_pan').innerText = privateDataCache.pan_number || "N/A";
+            document.getElementById('ov_gstin').innerText = privateDataCache.gstin || "N/A";
+            document.getElementById('ov_eid').innerText = privateDataCache.eid || "N/A";
+            document.getElementById('ov_dob').innerText = privateDataCache.dob || "N/A";
+            document.getElementById('ov_bank_holder').innerText = privateDataCache.bank_holder_name || "N/A";
+            document.getElementById('ov_bank_acc').innerText = privateDataCache.bank_account_number ? `••••${privateDataCache.bank_account_number.slice(-4)}` : "N/A";
+            document.getElementById('ov_ifsc').innerText = privateDataCache.ifsc_code || "N/A";
+
+            // Public Overview
+            document.getElementById('ov_address').innerText = publicDataCache.full_address || "No address set.";
+            document.getElementById('ov_pincode').innerText = publicDataCache.pincode || "N/A";
+            
+            const dirDisplay = document.getElementById('ov_direction');
+            if(publicDataCache.shop_direction) {
+                dirDisplay.innerText = "View on Map";
+                dirDisplay.href = publicDataCache.shop_direction;
+            } else {
+                dirDisplay.innerText = "N/A";
+                dirDisplay.removeAttribute('href');
+            }
+
+            if(window.lucide) window.lucide.createIcons();
+        }
+
+        // ==========================================
+        // 3. EDIT MODAL LOGIC
+        // ==========================================
+        function openEditModal() {
+            document.getElementById('in_mobile').value = privateDataCache.mobile_number || '';
+            document.getElementById('in_dob').value = privateDataCache.dob || '';
+            document.getElementById('in_pan').value = privateDataCache.pan_number || '';
+            document.getElementById('in_gstin').value = privateDataCache.gstin || '';
+            document.getElementById('in_eid').value = privateDataCache.eid || '';
+            document.getElementById('in_bank_holder').value = privateDataCache.bank_holder_name || '';
+            document.getElementById('in_bank_name').value = privateDataCache.bank_name || '';
+            document.getElementById('in_bank_acc').value = privateDataCache.bank_account_number || '';
+            document.getElementById('in_ifsc').value = privateDataCache.ifsc_code || '';
+
+            document.getElementById('in_store_name').value = publicDataCache.store_name || '';
+            document.getElementById('in_entity').value = publicDataCache.entity_type || 'Individual';
+            document.getElementById('in_address').value = publicDataCache.full_address || '';
+            document.getElementById('in_pincode').value = publicDataCache.pincode || '';
+            document.getElementById('in_direction').value = publicDataCache.shop_direction || '';
+            document.getElementById('in_fulfillment').value = publicDataCache.fulfillment_type || 'vilarci';
+
+            const modal = document.getElementById('edit-modal');
+            const panel = document.getElementById('edit-modal-panel');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                panel.classList.remove('scale-95');
+            }, 10);
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById('edit-modal');
+            const panel = document.getElementById('edit-modal-panel');
+            modal.classList.add('opacity-0');
+            panel.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                document.body.style.overflow = 'auto';
+            }, 300);
+        }
+
+        async function saveProfile() {
+            const btn = document.getElementById('save-btn');
+            btn.innerHTML = `<div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div> Saving...`;
+            btn.disabled = true;
+
+            // 🌟 APPLIED SANITIZATION TO ALL USER INPUTS
+            const privateUpdate = {
+                mobile_number: sanitize(document.getElementById('in_mobile').value),
+                dob: sanitize(document.getElementById('in_dob').value) || null,
+                pan_number: sanitize(document.getElementById('in_pan').value) || null,
+                gstin: sanitize(document.getElementById('in_gstin').value) || null,
+                eid: sanitize(document.getElementById('in_eid').value) || null,
+                bank_holder_name: sanitize(document.getElementById('in_bank_holder').value),
+                bank_name: sanitize(document.getElementById('in_bank_name').value),
+                bank_account_number: sanitize(document.getElementById('in_bank_acc').value),
+                ifsc_code: sanitize(document.getElementById('in_ifsc').value)
+            };
+
+            const publicUpdate = {
+                store_name: sanitize(document.getElementById('in_store_name').value),
+                entity_type: sanitize(document.getElementById('in_entity').value),
+                full_address: sanitize(document.getElementById('in_address').value),
+                pincode: parseInt(document.getElementById('in_pincode').value) || null,
+                shop_direction: sanitize(document.getElementById('in_direction').value),
+                fulfillment_type: sanitize(document.getElementById('in_fulfillment').value)
+            };
+
+            try {
+                const { error: pErr } = await db.from('sellers_private_089').update(privateUpdate).eq('id', currentUserId);
+                if (pErr) throw pErr;
+
+                const { error: pubErr } = await db.from('shops_public_587').update(publicUpdate).eq('id', currentUserId);
+                if (pubErr) throw pubErr;
+
+                Toastify({ text: "Profile Updated Successfully!", duration: 3000, style: { background: "#22c55e", borderRadius: "8px" } }).showToast();
+                
+                closeEditModal();
+                initProfile(); 
+
+            } catch (err) {
+                Toastify({ text: "Failed to update: " + err.message, duration: 4000, style: { background: "#ef4444", borderRadius: "8px" } }).showToast();
+                console.error(err);
+            } finally {
+                btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> Save Changes`;
+                btn.disabled = false;
+                if(window.lucide) window.lucide.createIcons();
+            }
+        }
+
         async function logout() {
-            await supabaseClient.auth.signOut();
+            await db.auth.signOut();
             sessionStorage.clear();
             window.location.href = 'login.html';
         }
 
-        // Run
         initProfile();
     </script>
 </body>

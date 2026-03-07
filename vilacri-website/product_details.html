@@ -197,20 +197,64 @@
 
     <script src="config.js"></script>
     <script>
-    // Configuration
+// Configuration
     const db = window.supabaseClient;
     
     let currentProduct = {};
-    let currentSeller = {}; // Stores advanced seller location mapping
+    let currentSeller = {}; 
     let selectedPrice = 0;
     let selectedWeightLabel = "";
     
     let isDeliveryAvailable = true; 
-    let customDeliveryFee = null; // Used if seller uses custom fulfillment
-    let userFullLocation = null;  // Stores hierarchical structure of user's location
+    let customDeliveryFee = null; 
+    let userFullLocation = null;  
 
     // ==========================================
-    // 1. SMART DELIVERY AVAILABILITY & FETCHING
+    // 🌟 THE BULLETPROOF PRICE FINDER
+    // ==========================================
+   // ==========================================
+    // 🌟 THE BULLETPROOF PRICE FINDER (FIXED)
+    // ==========================================
+    function getRobustPrice(product, currentSelectedPrice) {
+        // 1. Trust user selection first
+        let price = parseFloat(currentSelectedPrice);
+        if (!isNaN(price) && price > 0) return price;
+
+        // 2. Scan Variants safely
+        let vars = product.variants;
+        
+        // Fix: Catch potential double-stringification from JSONB
+        if (typeof vars === 'string') {
+            try { vars = JSON.parse(vars); } catch(e) {}
+        }
+        if (typeof vars === 'string') { 
+            try { vars = JSON.parse(vars); } catch(e) {}
+        }
+
+        if (Array.isArray(vars) && vars.length > 0) {
+            const validPrices = vars.map(v => {
+                // Fix: Catch string prices with commas and different capitalizations
+                let p = v.price || v.Price || v.PRICE || 0;
+                if (typeof p === 'string') p = p.replace(/,/g, '');
+                return parseFloat(p);
+            }).filter(p => !isNaN(p) && p > 0);
+            
+            if (validPrices.length > 0) return Math.min(...validPrices);
+        }
+
+        // 3. Fallback to base_price
+        let base = parseFloat(product.base_price);
+        if (!isNaN(base) && base > 0) return base;
+        
+        // 4. Final Fallback to original_price
+        let orig = parseFloat(product.original_price);
+        if (!isNaN(orig) && orig > 0) return orig;
+
+        return 0; // Absolute fallback
+    }
+
+    // ==========================================
+    // 1. SMART DELIVERY AVAILABILITY
     // ==========================================
     async function checkDeliveryAvailability(sellerId) {
         const warningBanner = document.getElementById('delivery-warning');
@@ -229,7 +273,6 @@
         let subZoneIds = [];
 
         try {
-            // Rebuild the User's Full Geographic Location to calculate Distance Tiers later
             if (locObj.type === 'sub_zone') {
                 const { data } = await db.from('sub_zones').select('id, main_zone_id, district_id').eq('id', locObj.id).single();
                 if(data) { userFullLocation = data; subZoneIds = [data.id]; }
@@ -245,7 +288,6 @@
 
             if (subZoneIds.length === 0) return;
 
-            // Fetch availability AND the seller's custom fee (if they have one)
             const { data: mapping, error } = await db.from('seller_delivery_zones')
                 .select('seller_id, delivery_fee')
                 .eq('seller_id', sellerId)
@@ -258,12 +300,11 @@
                 document.getElementById('warning-area-name').innerText = locObj.name;
                 warningBanner.classList.remove('hidden');
             } else {
-                // Get the cheapest custom fee available for their area
-                customDeliveryFee = Math.min(...mapping.map(m => m.delivery_fee || 0));
+                customDeliveryFee = Math.min(...mapping.map(m => parseFloat(m.delivery_fee) || 0));
             }
 
             updateActionButtons(isDeliveryAvailable); 
-            recalculateDeliveryFee(); // Trigger visual update
+            recalculateDeliveryFee();
 
         } catch (err) {
             console.error("Delivery Check Error:", err);
@@ -279,7 +320,6 @@
         
         if(!feeDisplay) return;
 
-        // Block 1: No Delivery
         if (!isDeliveryAvailable) {
             feeDisplay.innerText = "Not Available";
             feeDisplay.className = "text-sm font-extrabold text-red-500";
@@ -287,7 +327,6 @@
             return;
         }
 
-        // Block 2: Missing Data Guard
         if (!currentSeller.fulfillment_type || !userFullLocation) {
             feeDisplay.innerHTML = `<span class="text-green-600">Available</span>`;
             tierBadge.classList.add('hidden');
@@ -296,29 +335,32 @@
 
         let fee = 0;
         let tierText = "";
-        let originalFee = 0; // To show cross-out prices
+        let originalFee = 0; 
 
-        // LOGIC 1: Absolute Free Delivery Override
         if (currentProduct.is_free_delivery) {
             fee = 0;
             tierText = "Promo";
         } 
-        // LOGIC 2: Custom Seller Delivery Setup
         else if (currentSeller.fulfillment_type === 'seller') {
             fee = customDeliveryFee || 0;
             tierText = "Direct Fulfillment";
         } 
-        // LOGIC 3: Vilarci Standard Proximity Rules
         else {
             let tier = 4;
             
-            // Map Distance Tier
-            if (userFullLocation.id && userFullLocation.id === currentSeller.origin_sub_zone_id) tier = 1;
-            else if (userFullLocation.main_zone_id && userFullLocation.main_zone_id === currentSeller.origin_main_zone_id) tier = 2;
-            else if (userFullLocation.district_id && userFullLocation.district_id === currentSeller.origin_district_id) tier = 3;
+            const uSub = parseInt(userFullLocation.id) || 0;
+            const sSub = parseInt(currentSeller.origin_sub_zone_id) || 0;
+            const uMain = parseInt(userFullLocation.main_zone_id) || 0;
+            const sMain = parseInt(currentSeller.origin_main_zone_id) || 0;
+            const uDist = parseInt(userFullLocation.district_id) || 0;
+            const sDist = parseInt(currentSeller.origin_district_id) || 0;
 
-            // Base Price Execution based on CURRENTLY SELECTED price
-            const comparePrice = selectedPrice > 0 ? selectedPrice : currentProduct.base_price;
+            if (uSub > 0 && sSub > 0 && uSub === sSub) tier = 1;
+            else if (uMain > 0 && sMain > 0 && uMain === sMain) tier = 2;
+            else if (uDist > 0 && sDist > 0 && uDist === sDist) tier = 3;
+
+            // 🌟 Guarantees accurate price detection for variants
+            const comparePrice = getRobustPrice(currentProduct, selectedPrice);
 
             if (tier === 1) {
                 originalFee = 15;
@@ -337,12 +379,10 @@
                 tierText = "Standard";
             }
 
-            // Surcharge Overrides
             if (currentProduct.delivery_class === 'heavy') { fee += 20; tierText += " (+Heavy)"; }
             if (currentProduct.delivery_class === 'fragile') { fee += 15; tierText += " (+Fragile)"; }
         }
 
-        // Output to UI
         if (fee === 0) {
             let crossOut = originalFee > 0 ? `<span class="line-through text-slate-400 text-xs font-medium ml-1">₹${originalFee}</span>` : '';
             feeDisplay.innerHTML = `<span class="text-green-600 bg-green-50 px-2 py-0.5 rounded border border-green-200">FREE</span> ${crossOut}`;
@@ -389,7 +429,7 @@
 
         currentProduct = data;
         renderUniversalData(data);
-        renderTrustBanner(data); // 🌟 ADD THIS LINE HERE
+        renderTrustBanner(data); 
         
         const idString = data.id.toString();
         const fashionCode = idString.length >= 8 ? idString.substring(6, 8) : "00"; 
@@ -399,7 +439,6 @@
         else if (subAreaCode === '185') renderWeightableInterface(data);
         else renderPacketInterface(data);
 
-        // Fetch advanced Seller Info BEFORE checking delivery
         await fetchSellerInfo(data.seller_id);
         await checkDeliveryAvailability(data.seller_id);
 
@@ -438,24 +477,24 @@
     }
 
     function updatePriceUI(price, mrp) {
-        selectedPrice = price; 
-        document.getElementById('price-display').innerText = `₹${price}`;
+        selectedPrice = parseFloat(price) || 0; 
+        document.getElementById('price-display').innerText = `₹${selectedPrice}`;
         
-        if (mrp && mrp > price) {
-            document.getElementById('mrp-display').innerText = `₹${mrp}`;
-            const discount = Math.round(((mrp - price) / mrp) * 100);
+        const mPrice = parseFloat(mrp) || 0;
+        if (mPrice > selectedPrice) {
+            document.getElementById('mrp-display').innerText = `₹${mPrice}`;
+            const discount = Math.round(((mPrice - selectedPrice) / mPrice) * 100);
             document.getElementById('discount-display').innerText = `${discount}% OFF`;
         } else {
             document.getElementById('mrp-display').innerText = '';
             document.getElementById('discount-display').innerText = '';
         }
 
-        // 🌟 EVERY TIME PRICE CHANGES, RE-EVALUATE DELIVERY FREE THRESHOLD!
         recalculateDeliveryFee(); 
     }
 
     // ==========================================
-    // RENDER FUNCTIONS (Universal & Interfaces)
+    // RENDER FUNCTIONS
     // ==========================================
 
     function renderUniversalData(product) {
@@ -464,15 +503,21 @@
         document.getElementById('product-title').innerText = product.name;
         document.getElementById('product-description').innerText = product.description || "No description available for this product.";
         
+        let imgArray = [];
+        if (Array.isArray(product.images)) imgArray = product.images;
+        else if (typeof product.images === 'string') {
+            try { imgArray = JSON.parse(product.images); } catch(e) {}
+        }
+
         const mainImg = document.getElementById('main-image');
         const thumbContainer = document.getElementById('thumbnails');
         thumbContainer.innerHTML = ''; 
 
-        if (product.images && product.images.length > 0) {
-            mainImg.src = product.images[0];
-            if (product.images.length > 1) {
+        if (imgArray && imgArray.length > 0) {
+            mainImg.src = imgArray[0];
+            if (imgArray.length > 1) {
                 thumbContainer.classList.remove('hidden');
-                product.images.forEach((imgUrl, index) => {
+                imgArray.forEach((imgUrl, index) => {
                     const thumb = document.createElement('img');
                     thumb.src = imgUrl;
                     thumb.className = `w-16 h-16 object-cover rounded-xl border-2 cursor-pointer transition flex-shrink-0 ${index === 0 ? 'border-indigo-600 shadow-md' : 'border-slate-200 hover:border-indigo-300'}`;
@@ -496,18 +541,29 @@
             badge.classList.remove('hidden');
         }
 
-        if (product.highlights && product.highlights.length > 0) {
+        let hlArray = [];
+        if (Array.isArray(product.highlights)) hlArray = product.highlights;
+        else if (typeof product.highlights === 'string') {
+            try { hlArray = JSON.parse(product.highlights); } catch(e) {}
+        }
+
+        if (hlArray.length > 0) {
             document.getElementById('highlights-section').classList.remove('hidden');
             const div = document.getElementById('product-highlights');
             div.innerHTML = ''; 
-            product.highlights.forEach(h => { div.innerHTML += `<div class="flex gap-2 items-start"><i data-lucide="check-circle2" class="w-4 h-4 text-green-500 mt-0.5 shrink-0"></i> <span>${h}</span></div>`; });
+            hlArray.forEach(h => { div.innerHTML += `<div class="flex gap-2 items-start"><i data-lucide="check-circle2" class="w-4 h-4 text-green-500 mt-0.5 shrink-0"></i> <span>${h}</span></div>`; });
         }
 
-        if (product.specifications) {
+        let specsObj = product.specifications;
+        if (typeof specsObj === 'string') {
+            try { specsObj = JSON.parse(specsObj); } catch(e) { specsObj = null; }
+        }
+
+        if (specsObj) {
             document.getElementById('specs-section').classList.remove('hidden');
             const grid = document.getElementById('specs-grid');
             grid.innerHTML = ''; 
-            Object.entries(product.specifications).forEach(([k, v]) => {
+            Object.entries(specsObj).forEach(([k, v]) => {
                 if(typeof v !== 'object') {
                     grid.innerHTML += `<div class="text-slate-400 font-medium truncate">${k}</div><div class="text-slate-800 font-semibold truncate text-right">${v}</div>`;
                 }
@@ -515,22 +571,16 @@
         }
     }
 
-    // ==========================================
-    // TRUST & SAFETY BANNER LOGIC
-    // ==========================================
     function renderTrustBanner(product) {
-        // 1. Delivery Date Logic (10:30 PM Cutoff)
-        let maxTime = product.max_delivery_time || 1;
+        let maxTime = parseInt(product.max_delivery_time) || 1;
         let deliveryText = "";
 
         if (maxTime === 1) {
             const now = new Date();
             const hours = now.getHours();
             const minutes = now.getMinutes();
-            
-            // If time is strictly after 22:30 (10:30 PM)
             if (hours > 22 || (hours === 22 && minutes >= 30)) {
-                deliveryText = "Tomorrow";
+                deliveryText = "Same Day or Tomorrow";
             } else {
                 deliveryText = "Same Day";
             }
@@ -538,14 +588,12 @@
         } else {
             const deliveryDate = new Date();
             deliveryDate.setDate(deliveryDate.getDate() + maxTime);
-            // Formats to e.g., "Wed, 24 Oct"
             const options = { weekday: 'short', month: 'short', day: 'numeric' };
             deliveryText = deliveryDate.toLocaleDateString('en-IN', options); 
             document.getElementById('trust-delivery-text').innerText = `By ${deliveryText}`;
         }
 
-        // 2. Replacement Logic
-        let repDays = product.replacement_days !== undefined ? product.replacement_days : 7;
+        let repDays = product.replacement_days !== undefined ? parseInt(product.replacement_days) : 7;
         if (repDays > 0) {
             document.getElementById('trust-replace-text').innerText = `${repDays} Days Replacement`;
             document.getElementById('trust-replace-icon').className = "bg-blue-50 text-blue-600 p-2 rounded-full";
@@ -556,8 +604,7 @@
             document.getElementById('trust-replace-icon').innerHTML = `<i data-lucide="ban" class="w-5 h-5"></i>`;
         }
 
-        // 3. Refund Logic
-        let refDays = product.refund_days !== undefined ? product.refund_days : 7;
+        let refDays = product.refund_days !== undefined ? parseInt(product.refund_days) : 7;
         if (refDays > 0) {
             document.getElementById('trust-refund-text').innerText = `${refDays} Days Refund`;
             document.getElementById('trust-refund-icon').className = "bg-green-50 text-green-600 p-2 rounded-full";
@@ -573,18 +620,25 @@
 
     function renderWeightableInterface(product) {
         const container = document.getElementById('dynamic-logic-container');
-        const bulkRules = product.bulk_rules || [];
+        
+        let bulkRules = [];
+        if (Array.isArray(product.bulk_rules)) bulkRules = product.bulk_rules;
+        else if (typeof product.bulk_rules === 'string') {
+            try { bulkRules = JSON.parse(product.bulk_rules); } catch(e) {}
+        }
+
+        const safeBasePrice = getRobustPrice(product, 0);
 
         let html = `<div class="space-y-4"><div class="flex items-center justify-between"><h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Select Quantity</h3></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="bulk-options-container">`;
 
         bulkRules.forEach((rule, index) => {
-            const basePricePerGram = product.base_price / 1000; 
+            const basePricePerGram = safeBasePrice / 1000; 
             let calcPrice = (rule.unit === 'gm' ? rule.min_qty : rule.min_qty * 1000) * basePricePerGram;
             let quantityLabel = rule.min_qty < 1000 && rule.unit === 'gm' ? `${rule.min_qty} gm` : `${rule.min_qty/1000} kg`;
             if(rule.unit !== 'gm' && rule.unit !== 'kg') quantityLabel = `${rule.min_qty} ${rule.unit}`;
 
-            const finalPrice = Math.round(calcPrice - (rule.discount_amount || 0));
-            const saved = Math.round(rule.discount_amount || 0);
+            const finalPrice = Math.round(calcPrice - (parseFloat(rule.discount_amount) || 0));
+            const saved = Math.round(parseFloat(rule.discount_amount) || 0);
 
             if(index === 0) {
                 updatePriceUI(finalPrice, Math.round(calcPrice));
@@ -624,45 +678,63 @@
 
     function renderFashionInterface(product) {
         const container = document.getElementById('dynamic-logic-container');
-        const variants = product.variants || []; 
-
-        let html = `<div class="space-y-4"><div class="flex justify-between items-center"><h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Select Size</h3></div><div class="flex flex-wrap gap-3">`;
-
-        if(variants.length === 0) {
-            html += `<p class="text-sm text-slate-500 w-full">No sizes available.</p>`;
-        } else {
-            variants.forEach(v => {
-                const isOutOfStock = v.stock <= 0;
-                const baseClass = "cursor-pointer border-2 rounded-xl h-12 min-w-[3rem] px-4 flex flex-col items-center justify-center transition-all relative overflow-hidden group font-bold";
-                const stockClass = isOutOfStock ? "bg-slate-50 border-slate-200 text-slate-400 opacity-60 cursor-not-allowed" : "bg-white border-slate-200 text-slate-700 hover:border-indigo-600 hover:text-indigo-600";
-                const clickAction = isOutOfStock ? "" : `selectFashionVariant(this, '${v.size}', ${v.price}, '${v.sku}')`;
-
-                html += `<div onclick="${clickAction}" class="variant-option ${baseClass} ${stockClass}">${v.size}${!isOutOfStock && v.stock < 5 ? `<span class="absolute bottom-0.5 text-[8px] text-red-500 font-extrabold uppercase">Few Left</span>` : ''}${isOutOfStock ? `<div class="absolute inset-0 flex items-center justify-center"><div class="w-full h-[2px] bg-slate-300 -rotate-45"></div></div>` : ''}</div>`;
-            });
+        
+        let variants = [];
+        if (Array.isArray(product.variants)) variants = product.variants;
+        else if (typeof product.variants === 'string') {
+            try { variants = JSON.parse(product.variants); } catch(e) {}
         }
 
-        html += `</div><div id="fashion-warning" class="hidden text-xs text-red-500 font-bold flex items-center gap-1 bg-red-50 p-2 rounded-lg"><i data-lucide="alert-triangle" class="w-4 h-4"></i> Please select a size to continue</div></div>`;
+        let startingPrice = getRobustPrice(product, 0);
+
+        let html = `<div class="space-y-4"><div class="flex justify-between items-center"><h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Select Option</h3></div><div class="flex flex-wrap gap-3">`;
+
+        if(variants.length === 0) {
+            html += `<p class="text-sm text-slate-500 w-full">No options available.</p>`;
+        } else {
+            variants.forEach(v => {
+            const isOutOfStock = parseInt(v.stock) <= 0;
+            const baseClass = "cursor-pointer border-2 rounded-xl h-12 min-w-[3rem] px-4 flex flex-col items-center justify-center transition-all relative overflow-hidden group font-bold";
+            const stockClass = isOutOfStock ? "bg-slate-50 border-slate-200 text-slate-400 opacity-60 cursor-not-allowed" : "bg-white border-slate-200 text-slate-700 hover:border-indigo-600 hover:text-indigo-600";
+            
+            const safeSize = String(v.size || '').replace(/'/g, "\\'");
+            const safeSku = String(v.sku || '').replace(/'/g, "\\'");
+            
+            // Fix: Safely parse the price, accounting for strings or commas inside the variant object
+            let rawPrice = v.price || v.Price || v.PRICE || 0;
+            if (typeof rawPrice === 'string') rawPrice = rawPrice.replace(/,/g, '');
+            const safePrice = parseFloat(rawPrice) || 0;
+
+            const clickAction = isOutOfStock ? "" : `selectFashionVariant(this, '${safeSize}', ${safePrice}, '${safeSku}')`;
+
+            html += `<div onclick="${clickAction}" class="variant-option ${baseClass} ${stockClass}">${v.size}${!isOutOfStock && parseInt(v.stock) < 5 ? `<span class="absolute bottom-0.5 text-[8px] text-red-500 font-extrabold uppercase">Few Left</span>` : ''}${isOutOfStock ? `<div class="absolute inset-0 flex items-center justify-center"><div class="w-full h-[2px] bg-slate-300 -rotate-45"></div></div>` : ''}</div>`;
+        });
+        }
+
+        html += `</div><div id="fashion-warning" class="hidden text-xs text-red-500 font-bold flex items-center gap-1 bg-red-50 p-2 rounded-lg"><i data-lucide="alert-triangle" class="w-4 h-4"></i> Please select an option to continue</div></div>`;
 
         container.innerHTML = html;
         selectedWeightLabel = ""; 
-        selectedPrice = product.base_price; 
+        selectedPrice = startingPrice; 
         updatePriceUI(selectedPrice, product.original_price);
         lucide.createIcons();
     }
 
     function renderPacketInterface(product) {
         const container = document.getElementById('dynamic-logic-container');
-        
-        let stockStatus = product.stock_quantity > 10 
+        const stck = parseInt(product.stock_quantity) || 0;
+        const safeBasePrice = getRobustPrice(product, 0);
+
+        let stockStatus = stck > 10 
             ? `<span class="text-green-600 font-bold flex items-center gap-1 text-xs uppercase tracking-wider"><i data-lucide="check-circle2" class="w-4 h-4"></i> In Stock</span>`
-            : `<span class="text-orange-500 font-bold text-xs uppercase tracking-wider flex items-center gap-1"><i data-lucide="alert-circle" class="w-4 h-4"></i> Only ${product.stock_quantity} left</span>`;
+            : `<span class="text-orange-500 font-bold text-xs uppercase tracking-wider flex items-center gap-1"><i data-lucide="alert-circle" class="w-4 h-4"></i> Only ${stck} left</span>`;
         
-        if(product.stock_quantity <= 0) stockStatus = `<span class="text-red-500 font-bold text-xs uppercase tracking-wider flex items-center gap-1"><i data-lucide="x-circle" class="w-4 h-4"></i> Out of Stock</span>`;
+        if(stck <= 0) stockStatus = `<span class="text-red-500 font-bold text-xs uppercase tracking-wider flex items-center gap-1"><i data-lucide="x-circle" class="w-4 h-4"></i> Out of Stock</span>`;
 
         container.innerHTML = `<div class="flex flex-col gap-5"><div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100"><span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Availability</span>${stockStatus}</div><div class="flex justify-between items-center"><h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Quantity</h3><div class="flex items-center bg-white border-2 border-slate-200 rounded-xl overflow-hidden shadow-sm h-11"><button onclick="updatePacketQty(-1)" class="w-11 h-full text-slate-500 hover:bg-slate-100 hover:text-indigo-600 transition font-bold text-lg flex items-center justify-center">-</button><input type="text" id="packet-qty" value="1" class="w-12 h-full text-center text-sm font-bold text-slate-900 outline-none border-x border-slate-200" readonly><button onclick="updatePacketQty(1)" class="w-11 h-full text-slate-500 hover:bg-slate-100 hover:text-indigo-600 transition font-bold text-lg flex items-center justify-center">+</button></div></div></div>`;
         
         selectedWeightLabel = product.amount || "1 Unit"; 
-        updatePriceUI(product.base_price, product.original_price);
+        updatePriceUI(safeBasePrice, product.original_price);
         lucide.createIcons();
     }
 
@@ -688,7 +760,9 @@
             return;
         }
 
-        const pricePerGram = currentProduct.base_price / 1000;
+        const safeBasePrice = getRobustPrice(currentProduct, 0);
+        const pricePerGram = safeBasePrice / 1000;
+        
         if (mode === 'weight') {
             const cost = Math.round(val * pricePerGram);
             document.getElementById('custom-cost').value = cost;
@@ -708,7 +782,8 @@
             if(!el.classList.contains('opacity-60')) el.className = "variant-option cursor-pointer border-2 border-slate-200 bg-white text-slate-700 rounded-xl h-12 min-w-[3rem] px-4 flex flex-col items-center justify-center transition-all hover:border-indigo-600 hover:text-indigo-600 relative overflow-hidden group font-bold";
         });
         element.className = "variant-option cursor-pointer border-2 border-indigo-600 bg-indigo-600 text-white rounded-xl h-12 min-w-[3rem] px-4 flex flex-col items-center justify-center transition-all relative overflow-hidden font-bold shadow-md transform scale-105";
-        selectedPrice = price; 
+        
+        selectedPrice = parseFloat(price) || 0; 
         selectedWeightLabel = `Size: ${size}`; 
         updatePriceUI(selectedPrice, currentProduct.original_price);
         document.getElementById('fashion-warning').classList.add('hidden');
@@ -717,14 +792,18 @@
     window.updatePacketQty = function(change) {
         const input = document.getElementById('packet-qty');
         let val = parseInt(input.value) + change;
+        let stck = parseInt(currentProduct.stock_quantity) || 999;
+        
         if(val < 1) val = 1;
-        if(currentProduct.stock_quantity && val > currentProduct.stock_quantity) {
-            Toastify({ text: `Max stock is ${currentProduct.stock_quantity}`, duration: 2000, style: { background: "#ef4444" } }).showToast();
-            val = currentProduct.stock_quantity;
+        if(currentProduct.stock_quantity && val > stck) {
+            Toastify({ text: `Max stock is ${stck}`, duration: 2000, style: { background: "#ef4444" } }).showToast();
+            val = stck;
         }
         input.value = val;
         selectedWeightLabel = `${val} Units`;
-        updatePriceUI(currentProduct.base_price * val, currentProduct.original_price * val);
+        
+        const safeBasePrice = getRobustPrice(currentProduct, 0);
+        updatePriceUI(safeBasePrice * val, parseFloat(currentProduct.original_price) * val);
     }
 
     // ==========================================
@@ -736,7 +815,7 @@
         const fashionCode = idString.length >= 8 ? idString.substring(6, 8) : "";
         if (fashionCode === '12' && (!selectedWeightLabel || selectedWeightLabel === "")) {
             document.getElementById('fashion-warning').classList.remove('hidden');
-            Toastify({ text: "Please select a size", duration: 3000, style: { background: "#ef4444" } }).showToast();
+            Toastify({ text: "Please select an option", duration: 3000, style: { background: "#ef4444" } }).showToast();
             return false;
         }
         return true;
@@ -749,6 +828,12 @@
         }
         if(!checkFashionSelection()) return false;
 
+        let imgArray = [];
+        if (Array.isArray(currentProduct.images)) imgArray = currentProduct.images;
+        else if (typeof currentProduct.images === 'string') {
+            try { imgArray = JSON.parse(currentProduct.images); } catch(e) {}
+        }
+
         const uniqueKey = `${currentProduct.slug}-${selectedWeightLabel.replace(/\s+/g, '-')}`;
         const cartItem = {
             cartItemId: uniqueKey,
@@ -758,7 +843,7 @@
             price: selectedPrice,
             originalPrice: currentProduct.original_price || selectedPrice,
             amount: selectedWeightLabel,
-            image: (currentProduct.images && currentProduct.images.length > 0) ? currentProduct.images[0] : "",
+            image: (imgArray && imgArray.length > 0) ? imgArray[0] : "",
             quantity: 1
         };
 
@@ -807,6 +892,6 @@
     });
 
     initPage();
-    </script>
+</script>
 </body>
 </html>

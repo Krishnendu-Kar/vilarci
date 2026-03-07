@@ -295,7 +295,7 @@ const headerHTML = `
                     <span class="profile-text">Profile</span>
                 </a>
                 
-                <a class="border seller-link" href="seller home.html">Become a Seller</a>
+                <a class="border seller-link" href="seller-home.html">Become a Seller</a>
                 <a class="border feedback-link" href="feedback.html">Feedback</a>
             </div>
         </div>
