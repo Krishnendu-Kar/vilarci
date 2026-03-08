@@ -740,20 +740,25 @@ function initializeNativeApp() {
         if (document.body.classList.contains('is-native-app')) return;
         document.body.classList.add('is-native-app');
 
-        // 2. NATIVE STATUS BAR FIX: The 45px Bumper
-        // First, push the website content down further so it doesn't hide behind the taller header
+        // 2. NATIVE STATUS BAR FIX: The Flawless Bumper
         const headerPlaceholder = document.getElementById('vilarci-header');
         if (headerPlaceholder) {
-            // Original 136px + 45px notch = 181px
-            headerPlaceholder.style.marginBottom = "181px"; 
+            // Original height (106px) + 45px status bar = 151px
+            headerPlaceholder.style.marginBottom = "151px"; 
         }
 
         const nativeCSS = `
-            /* Force the header to stretch down from the top 45px */
-            body.is-native-app header {
-                padding-top: 45px !important; 
-                background-color: #d32f2f !important;
-                height: auto !important;
+            /* Stretch the red navbar behind the status bar */
+            body.is-native-app .navbar {
+                padding-top: 45px !important;
+                height: 101px !important; /* 56px + 45px */
+                align-items: flex-end !important; /* Pushes text/logo to the bottom */
+                padding-bottom: 8px !important;
+            }
+            
+            /* Push the floating cart down so it aligns with the search bar */
+            body.is-native-app .cart {
+                top: 106px !important; 
             }
             
             /* Native lockdown to prevent web-like behaviors */

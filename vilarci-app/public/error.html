@@ -40,14 +40,20 @@
     const retryBtn = document.getElementById('retry-btn');
     const targetUrl = 'https://krishnendu-kar.github.io/vilarci/';
 
-    // 🔴 MASTERMIND FIX 3: Safe Re-entry Routing
+    // 🔴 MASTERMIND FIX 3: Smart State-Retention Routing
     function executeReconnect() {
       statusText.innerHTML = "Reconnecting...";
       spinner.style.display = 'block';
       retryBtn.style.display = 'none';
       
       setTimeout(() => {
-        window.location.href = targetUrl; // The allowNavigation shield makes this safe now
+        // If the app has history, go back to the exact product they were viewing
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            // Only go to the home page if they opened the app completely offline
+            window.location.href = 'https://krishnendu-kar.github.io/vilarci/';
+        }
       }, 500);
     }
 
