@@ -736,13 +736,19 @@ document.addEventListener('DOMContentLoaded', initializeComponent);
 // VILARCI IFRAME COMMUNICATION LOGIC
 // ==============================================================
 function initializeNativeApp() {
-    // Only run if the URL tells us we are inside the Vilarci App iframe
-    if (!window.location.href.includes('source=vilarci_app')) return;
+    // 1. Securely remember we are in the app, even if the URL changes
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('source') === 'vilarci_app') {
+        sessionStorage.setItem('is_vilarci_app', 'true');
+    }
+    
+    // If we aren't in the app, do nothing
+    if (sessionStorage.getItem('is_vilarci_app') !== 'true') return;
     
     if (document.body.classList.contains('is-native-app')) return;
     document.body.classList.add('is-native-app');
 
-    // NATIVE LOCKDOWN (No status bar padding needed, App.js handles it perfectly!)
+    // NATIVE LOCKDOWN 
     const nativeCSS = `
         body.is-native-app {
             overscroll-behavior-y: none; 
@@ -758,7 +764,7 @@ function initializeNativeApp() {
     styleSheet.innerText = nativeCSS;
     document.head.appendChild(styleSheet);
 
-    // LISTEN FOR HARDWARE BACK BUTTON FROM APP.JS
+    // 2. LISTEN FOR HARDWARE BACK BUTTON FROM APP.JS
     window.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'HARDWARE_BACK') {
             const sidebar = document.getElementById('usb-overlay');
