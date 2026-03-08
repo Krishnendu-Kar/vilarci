@@ -730,26 +730,34 @@ document.addEventListener('DOMContentLoaded', initializeComponent);
 
 
 // ==============================================================
-// VILARCI HYBRID APP LOGIC (Only runs if opened from Play Store)
-// ==============================================================
-// ==============================================================
 // VILARCI NATIVE DIRECT-CONNECT LOGIC
 // ==============================================================
-document.addEventListener('DOMContentLoaded', () => {
+function initializeNativeApp() {
     // 1. Check if running directly inside the Capacitor Android App
     if (window.Capacitor && window.Capacitor.isNative) {
         
+        // Prevent running twice
+        if (document.body.classList.contains('is-native-app')) return;
         document.body.classList.add('is-native-app');
 
-        // 2. NATIVE STATUS BAR FIX: Absorbs the notch directly on the website
+        // 2. NATIVE STATUS BAR FIX: The 45px Bumper
+        // First, push the website content down further so it doesn't hide behind the taller header
+        const headerPlaceholder = document.getElementById('vilarci-header');
+        if (headerPlaceholder) {
+            // Original 136px + 45px notch = 181px
+            headerPlaceholder.style.marginBottom = "181px"; 
+        }
+
         const nativeCSS = `
+            /* Force the header to stretch down from the top 45px */
             body.is-native-app header {
-                padding-top: max(env(safe-area-inset-top), 40px) !important;
+                padding-top: 45px !important; 
                 background-color: #d32f2f !important;
                 height: auto !important;
             }
+            
+            /* Native lockdown to prevent web-like behaviors */
             body.is-native-app {
-                padding-top: max(env(safe-area-inset-top), 40px) !important;
                 overscroll-behavior-y: none; 
                 -webkit-user-select: none;
                 user-select: none;
@@ -767,7 +775,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
             window.Capacitor.Plugins.App.addListener('backButton', ({ canGoBack }) => {
                 
-                // A. Close Sidebar if open
                 const sidebar = document.getElementById('usb-overlay');
                 if (sidebar && sidebar.classList.contains('open')) {
                     if (typeof sidebarGoBack === 'function' && typeof menuStack !== 'undefined' && menuStack.length > 1) {
@@ -778,23 +785,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     return; 
                 }
                 
-                // B. Close Location Modal if open
                 const locModal = document.getElementById('loc-modal-overlay');
                 if (locModal && locModal.classList.contains('open')) {
                     if (typeof closeLocationModal === 'function') closeLocationModal();
                     return; 
                 }
 
-                // C. Handle True Navigation
                 const path = window.location.pathname;
                 const isHome = path === '/' || path === '/vilarci/' || path.endsWith('index.html') || path === '';
                 
                 if (canGoBack && !isHome) {
-                    window.history.back(); // Android natively goes back a page
+                    window.history.back(); 
                 } else {
-                    window.Capacitor.Plugins.App.exitApp(); // Exits app if on home page
+                    window.Capacitor.Plugins.App.exitApp(); 
                 }
             });
         }
     }
-});
+}
+
+// Run the initialization safely
+document.addEventListener('DOMContentLoaded', initializeNativeApp);
+// Failsafe in case Capacitor injects a millisecond late
+setTimeout(initializeNativeApp, 500);
