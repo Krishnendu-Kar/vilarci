@@ -733,40 +733,27 @@ document.addEventListener('DOMContentLoaded', initializeComponent);
 // VILARCI HYBRID APP LOGIC (Only runs if opened from Play Store)
 // ==============================================================
 // ==============================================================
-// VILARCI HYBRID APP LOGIC (Perfected for Iframe Bridge)
+// VILARCI NATIVE DIRECT-CONNECT LOGIC
 // ==============================================================
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Detect App Mode securely via URL or Session Storage
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('source') === 'vilarci_app') {
-        sessionStorage.setItem('is_vilarci_app', 'true');
-    }
-    
-    const isNativeApp = sessionStorage.getItem('is_vilarci_app') === 'true';
-
-    if (isNativeApp) {
+    // 1. Check if running directly inside the Capacitor Android App
+    if (window.Capacitor && window.Capacitor.isNative) {
+        
         document.body.classList.add('is-native-app');
 
-        // 2. Inject App-Only CSS
+        // 2. NATIVE STATUS BAR FIX: Absorbs the notch directly on the website
         const nativeCSS = `
-            /* The Native React wrapper handles the status bar padding now! 
-               We just anchor the header to the top of the iframe perfectly. */
             body.is-native-app header {
-                top: 0 !important;
-                padding-top: 0 !important;
+                padding-top: max(env(safe-area-inset-top), 40px) !important;
+                background-color: #d32f2f !important;
+                height: auto !important;
             }
-            
-            /* Prevent browser pull-to-refresh & text highlighting */
             body.is-native-app {
+                padding-top: max(env(safe-area-inset-top), 40px) !important;
                 overscroll-behavior-y: none; 
                 -webkit-user-select: none;
                 user-select: none;
                 -webkit-touch-callout: none; 
-            }
-            body.is-native-app input, 
-            body.is-native-app textarea {
-                -webkit-user-select: auto;
-                user-select: auto;
             }
             body.is-native-app ::-webkit-scrollbar {
                 display: none;
@@ -776,45 +763,38 @@ document.addEventListener('DOMContentLoaded', () => {
         styleSheet.innerText = nativeCSS;
         document.head.appendChild(styleSheet);
 
-        // 3. Two-Way Communication for the Hardware Back Button
-        // ==============================================================
-// 🔴 MASTERMIND FIX: BULLETPROOF HARDWARE BACK BUTTON RECEIVER
-// ==============================================================
-window.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'HARDWARE_BACK') {
-        
-        // 1. Check for Open Overlays First
-        const sidebar = document.getElementById('usb-overlay');
-        const locModal = document.getElementById('loc-modal-overlay');
-        
-        if (sidebar && sidebar.classList.contains('open')) {
-            if (typeof sidebarGoBack === 'function' && typeof menuStack !== 'undefined' && menuStack.length > 1) {
-                sidebarGoBack();
-            } else if (typeof closeSidebar === 'function') {
-                closeSidebar();
-            }
-            return; // Stop here, don't change the page
-        }
-        
-        if (locModal && locModal.classList.contains('open')) {
-            if (typeof closeLocationModal === 'function') {
-                closeLocationModal();
-            }
-            return; // Stop here
-        }
+        // 3. THE PERFECT HARDWARE BACK BUTTON LISTENER
+        if (window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+            window.Capacitor.Plugins.App.addListener('backButton', ({ canGoBack }) => {
+                
+                // A. Close Sidebar if open
+                const sidebar = document.getElementById('usb-overlay');
+                if (sidebar && sidebar.classList.contains('open')) {
+                    if (typeof sidebarGoBack === 'function' && typeof menuStack !== 'undefined' && menuStack.length > 1) {
+                        sidebarGoBack();
+                    } else if (typeof closeSidebar === 'function') {
+                        closeSidebar();
+                    }
+                    return; 
+                }
+                
+                // B. Close Location Modal if open
+                const locModal = document.getElementById('loc-modal-overlay');
+                if (locModal && locModal.classList.contains('open')) {
+                    if (typeof closeLocationModal === 'function') closeLocationModal();
+                    return; 
+                }
 
-        // 2. Handle Page Navigation
-        const path = window.location.pathname;
-        const isHome = path === '/' || path === '/vilarci/' || path.endsWith('index.html') || path === '';
-        
-        // 3. Failsafe: If on home page OR if browser history is empty, exit the app
-        if (isHome || window.history.length <= 1) {
-            window.parent.postMessage({ type: 'EXIT_APP' }, '*');
-        } else {
-            // Otherwise, go back one page smoothly
-            window.history.back();
+                // C. Handle True Navigation
+                const path = window.location.pathname;
+                const isHome = path === '/' || path === '/vilarci/' || path.endsWith('index.html') || path === '';
+                
+                if (canGoBack && !isHome) {
+                    window.history.back(); // Android natively goes back a page
+                } else {
+                    window.Capacitor.Plugins.App.exitApp(); // Exits app if on home page
+                }
+            });
         }
-    }
-});
     }
 });

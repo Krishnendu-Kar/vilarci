@@ -3,11 +3,11 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.vilarci.customer',
   appName: 'Vilarci',
-  webDir: 'build',
+  webDir: 'public', // 🔴 Changed to 'public' so it directly grabs your offline page
   server: {
-    // 🔴 REMOVED 'url' - Capacitor MUST load your local App.js shell!
+    url: 'https://krishnendu-kar.github.io/vilarci/', // 🔴 THE DIRECT NATIVE CONNECTION
     cleartext: true,
-    errorPath: 'error.html', 
+    errorPath: 'error.html',
     allowNavigation: [
       "*krishnendu-kar.github.io*",
       "*.github.io"
