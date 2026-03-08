@@ -732,36 +732,75 @@ document.addEventListener('DOMContentLoaded', initializeComponent);
 // ==============================================================
 // VILARCI NATIVE DIRECT-CONNECT LOGIC
 // ==============================================================
+// ==============================================================
+// VILARCI NATIVE DIRECT-CONNECT LOGIC & OFFLINE MANAGER
+// ==============================================================
 function initializeNativeApp() {
-    // 1. Check if running directly inside the Capacitor Android App
+    
+    // --- 1. THE FOOLPROOF OFFLINE OVERLAY ---
+    // Injects a native-looking offline screen directly over the website
+    const offlineHTML = `
+        <div id="vilarci-offline-overlay" style="display: none; position: fixed; inset: 0; background: #ffffff; z-index: 9999999; flex-direction: column; align-items: center; justify-content: center; font-family: system-ui, -apple-system, sans-serif; text-align: center;">
+            <svg style="width: 70px; height: 70px; opacity: 0.3; margin-bottom: 20px" viewBox="0 0 24 24" fill="none" stroke="#d32f2f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path><path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+            <h1 style="color: #d32f2f; font-style: italic; margin: 0 0 5px 0; font-size: 28px; font-weight: 900; letter-spacing: -1px;">Vilarci</h1>
+            <p style="margin: 0 0 25px 0; color: #6b7280; font-size: 15px; line-height: 1.4; padding: 0 40px;">You're offline.<br>Waiting for connection...</p>
+            <div style="border: 3px solid #f3f3f3; border-top: 3px solid #d32f2f; border-radius: 50%; width: 26px; height: 26px; animation: spin 0.8s linear infinite;"></div>
+            <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', offlineHTML);
+
+    const overlay = document.getElementById('vilarci-offline-overlay');
+    
+    // Listen for internet drops
+    window.addEventListener('offline', () => { overlay.style.display = 'flex'; });
+    window.addEventListener('online', () => { 
+        overlay.style.display = 'none'; 
+        // When internet returns, reload the page to perfectly fetch the "Product Not Found" data
+        window.location.reload(); 
+    });
+    
+    // Check immediately on load
+    if (!navigator.onLine) { overlay.style.display = 'flex'; }
+
+
+    // --- 2. NATIVE ANDROID LOGIC ---
     if (window.Capacitor && window.Capacitor.isNative) {
         
         // Prevent running twice
         if (document.body.classList.contains('is-native-app')) return;
         document.body.classList.add('is-native-app');
 
-        // 2. NATIVE STATUS BAR FIX: The Flawless Bumper
+        // NATIVE STATUS BAR FIX: The "Solid Block" Method
         const headerPlaceholder = document.getElementById('vilarci-header');
         if (headerPlaceholder) {
-            // Original height (106px) + 45px status bar = 151px
-            headerPlaceholder.style.marginBottom = "151px"; 
+            headerPlaceholder.style.marginBottom = "180px"; // Give extra room for content below
         }
 
         const nativeCSS = `
-            /* Stretch the red navbar behind the status bar */
-            body.is-native-app .navbar {
-                padding-top: 45px !important;
-                height: 101px !important; /* 56px + 45px */
-                align-items: flex-end !important; /* Pushes text/logo to the bottom */
-                padding-bottom: 8px !important;
+            /* 1. Create a fake solid red block at the very top for the battery icons */
+            body.is-native-app::before {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 45px;
+                background: linear-gradient(90deg, #d32f2f, #e43e3e);
+                z-index: 99999;
             }
             
-            /* Push the floating cart down so it aligns with the search bar */
+            /* 2. Push the entire original header down exactly 45px below the fake block */
+            body.is-native-app header {
+                top: 45px !important;
+            }
+            
+            /* 3. Push the floating cart down so it doesn't overlap the search bar */
             body.is-native-app .cart {
                 top: 106px !important; 
             }
             
-            /* Native lockdown to prevent web-like behaviors */
+            /* 4. Lockdown scrolling to feel like a real app */
             body.is-native-app {
                 overscroll-behavior-y: none; 
                 -webkit-user-select: none;
@@ -776,7 +815,7 @@ function initializeNativeApp() {
         styleSheet.innerText = nativeCSS;
         document.head.appendChild(styleSheet);
 
-        // 3. THE PERFECT HARDWARE BACK BUTTON LISTENER
+        // THE PERFECT HARDWARE BACK BUTTON LISTENER
         if (window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
             window.Capacitor.Plugins.App.addListener('backButton', ({ canGoBack }) => {
                 
