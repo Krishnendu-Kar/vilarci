@@ -736,14 +736,10 @@ document.addEventListener('DOMContentLoaded', initializeComponent);
 // VILARCI IFRAME COMMUNICATION LOGIC
 // ==============================================================
 function initializeNativeApp() {
-    // 1. Securely remember we are in the app, even if the URL changes
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('source') === 'vilarci_app') {
-        sessionStorage.setItem('is_vilarci_app', 'true');
-    }
-    
-    // If we aren't in the app, do nothing
-    if (sessionStorage.getItem('is_vilarci_app') !== 'true') return;
+    // 🔴 BULLETPROOF NATIVE DETECTION
+    // If the website is inside an iframe, it is the App. No storage needed!
+    const inIframe = window !== window.parent;
+    if (!inIframe) return;
     
     if (document.body.classList.contains('is-native-app')) return;
     document.body.classList.add('is-native-app');
@@ -764,7 +760,7 @@ function initializeNativeApp() {
     styleSheet.innerText = nativeCSS;
     document.head.appendChild(styleSheet);
 
-    // 2. LISTEN FOR HARDWARE BACK BUTTON FROM APP.JS
+    // 🔴 LISTEN FOR HARDWARE BACK BUTTON FROM APP.JS
     window.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'HARDWARE_BACK') {
             const sidebar = document.getElementById('usb-overlay');
@@ -785,9 +781,9 @@ function initializeNativeApp() {
             const isHome = path === '/' || path === '/vilarci/' || path.endsWith('index.html') || path === '';
             
             if (!isHome && window.history.length > 1) {
-                window.history.back(); 
+                window.history.back(); // Natively go back one page!
             } else {
-                window.parent.postMessage({ type: 'EXIT_APP' }, '*');
+                window.parent.postMessage({ type: 'EXIT_APP' }, '*'); // Close app!
             }
         }
     });
