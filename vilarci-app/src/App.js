@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { App as CapacitorApp } from '@capacitor/app'; // 🔴 THE CRITICAL BRIDGE FIX
+import { App as CapacitorApp } from '@capacitor/app';
 
 function App() {
   const iframeRef = useRef(null);
@@ -25,24 +25,30 @@ function App() {
     };
   }, []);
 
-  // 2. Hardware Back Button Native Bridge
+  // 2. BULLETPROOF HARDWARE BACK BUTTON BRIDGE
   useEffect(() => {
+    let backListener = null;
+
     const setupBackButton = async () => {
-      await CapacitorApp.addListener('backButton', () => {
+      backListener = await CapacitorApp.addListener('backButton', () => {
         if (iframeRef.current && iframeRef.current.contentWindow) {
-          // Fire the signal deep into the website
+          // Fire the signal deep into the live website
           iframeRef.current.contentWindow.postMessage({ type: 'HARDWARE_BACK' }, '*');
         }
       });
     };
+    
     setupBackButton();
     
+    // Clean up ONLY this specific listener so React doesn't accidentally break it
     return () => {
-      CapacitorApp.removeAllListeners();
+      if (backListener) {
+        backListener.remove();
+      }
     };
   }, []);
 
-  // 3. Exit App Listener (Receives signal from the website to close the app)
+  // 3. Exit App Listener
   useEffect(() => {
     const handleMessage = (event) => {
       if (event.data && event.data.type === 'EXIT_APP') {

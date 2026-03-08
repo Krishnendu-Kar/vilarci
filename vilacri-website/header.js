@@ -777,43 +777,44 @@ document.addEventListener('DOMContentLoaded', () => {
         document.head.appendChild(styleSheet);
 
         // 3. Two-Way Communication for the Hardware Back Button
-        window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'HARDWARE_BACK') {
-                
-                // --- PREMIUM UX: Check for Open Overlays First ---
-                const sidebar = document.getElementById('usb-overlay');
-                const locModal = document.getElementById('loc-modal-overlay');
-                
-                // A. Is the Sidebar open?
-                if (sidebar && sidebar.classList.contains('open')) {
-                    if (typeof sidebarGoBack === 'function' && typeof menuStack !== 'undefined' && menuStack.length > 1) {
-                        sidebarGoBack(); // Go back one level in the menu
-                    } else if (typeof closeSidebar === 'function') {
-                        closeSidebar(); // Close the sidebar completely
-                    }
-                    return; // Stop execution here so we don't change the page
-                }
-                
-                // B. Is the Location Modal open?
-                if (locModal && locModal.classList.contains('open')) {
-                    if (typeof closeLocationModal === 'function') {
-                        closeLocationModal();
-                    }
-                    return; // Stop execution here
-                }
-
-                // --- STANDARD UX: Handle Page Navigation ---
-                const path = window.location.pathname;
-                const isHome = path === '/' || path === '/vilarci/' || path.endsWith('index.html') || path === '';
-                
-                if (!isHome) {
-                    // Deep in the website -> Go back 1 page smoothly
-                    window.history.back();
-                } else {
-                    // On the home page -> Tell the native wrapper to close the app
-                    window.parent.postMessage({ type: 'EXIT_APP' }, '*');
-                }
+        // ==============================================================
+// 🔴 MASTERMIND FIX: BULLETPROOF HARDWARE BACK BUTTON RECEIVER
+// ==============================================================
+window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'HARDWARE_BACK') {
+        
+        // 1. Check for Open Overlays First
+        const sidebar = document.getElementById('usb-overlay');
+        const locModal = document.getElementById('loc-modal-overlay');
+        
+        if (sidebar && sidebar.classList.contains('open')) {
+            if (typeof sidebarGoBack === 'function' && typeof menuStack !== 'undefined' && menuStack.length > 1) {
+                sidebarGoBack();
+            } else if (typeof closeSidebar === 'function') {
+                closeSidebar();
             }
-        });
+            return; // Stop here, don't change the page
+        }
+        
+        if (locModal && locModal.classList.contains('open')) {
+            if (typeof closeLocationModal === 'function') {
+                closeLocationModal();
+            }
+            return; // Stop here
+        }
+
+        // 2. Handle Page Navigation
+        const path = window.location.pathname;
+        const isHome = path === '/' || path === '/vilarci/' || path.endsWith('index.html') || path === '';
+        
+        // 3. Failsafe: If on home page OR if browser history is empty, exit the app
+        if (isHome || window.history.length <= 1) {
+            window.parent.postMessage({ type: 'EXIT_APP' }, '*');
+        } else {
+            // Otherwise, go back one page smoothly
+            window.history.back();
+        }
+    }
+});
     }
 });
