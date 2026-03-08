@@ -733,95 +733,59 @@ document.addEventListener('DOMContentLoaded', initializeComponent);
 // VILARCI NATIVE DIRECT-CONNECT LOGIC
 // ==============================================================
 // ==============================================================
-// VILARCI NATIVE DIRECT-CONNECT LOGIC & OFFLINE MANAGER
-// ==============================================================
-// ==============================================================
-// VILARCI NATIVE DIRECT-CONNECT LOGIC & OFFLINE MANAGER
+// VILARCI IFRAME COMMUNICATION LOGIC
 // ==============================================================
 function initializeNativeApp() {
+    // Only run if the URL tells us we are inside the Vilarci App iframe
+    if (!window.location.href.includes('source=vilarci_app')) return;
     
-    // --- 1. THE FOOLPROOF OFFLINE OVERLAY ---
-    const offlineHTML = `
-        <div id="vilarci-offline-overlay" style="display: none; position: fixed; inset: 0; background: #ffffff; z-index: 9999999; flex-direction: column; align-items: center; justify-content: center; font-family: system-ui, -apple-system, sans-serif; text-align: center;">
-            <svg style="width: 70px; height: 70px; opacity: 0.3; margin-bottom: 20px" viewBox="0 0 24 24" fill="none" stroke="#d32f2f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path><path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
-            <h1 style="color: #d32f2f; font-style: italic; margin: 0 0 5px 0; font-size: 28px; font-weight: 900; letter-spacing: -1px;">Vilarci</h1>
-            <p style="margin: 0 0 25px 0; color: #6b7280; font-size: 15px; line-height: 1.4; padding: 0 40px;">You're offline.<br>Waiting for connection...</p>
-            <div style="border: 3px solid #f3f3f3; border-top: 3px solid #d32f2f; border-radius: 50%; width: 26px; height: 26px; animation: spin 0.8s linear infinite;"></div>
-            <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
-        </div>
+    if (document.body.classList.contains('is-native-app')) return;
+    document.body.classList.add('is-native-app');
+
+    // NATIVE LOCKDOWN (No status bar padding needed, App.js handles it perfectly!)
+    const nativeCSS = `
+        body.is-native-app {
+            overscroll-behavior-y: none; 
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none; 
+        }
+        body.is-native-app ::-webkit-scrollbar {
+            display: none;
+        }
     `;
-    document.body.insertAdjacentHTML('beforeend', offlineHTML);
+    const styleSheet = document.createElement('style');
+    styleSheet.innerText = nativeCSS;
+    document.head.appendChild(styleSheet);
 
-    const overlay = document.getElementById('vilarci-offline-overlay');
-    
-    window.addEventListener('offline', () => { overlay.style.display = 'flex'; });
-    window.addEventListener('online', () => { 
-        overlay.style.display = 'none'; 
-        window.location.reload(); 
+    // LISTEN FOR HARDWARE BACK BUTTON FROM APP.JS
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'HARDWARE_BACK') {
+            const sidebar = document.getElementById('usb-overlay');
+            if (sidebar && sidebar.classList.contains('open')) {
+                if (typeof sidebarGoBack === 'function' && typeof menuStack !== 'undefined' && menuStack.length > 1) {
+                    sidebarGoBack();
+                } else if (typeof closeSidebar === 'function') closeSidebar();
+                return; 
+            }
+            
+            const locModal = document.getElementById('loc-modal-overlay');
+            if (locModal && locModal.classList.contains('open')) {
+                if (typeof closeLocationModal === 'function') closeLocationModal();
+                return; 
+            }
+
+            const path = window.location.pathname;
+            const isHome = path === '/' || path === '/vilarci/' || path.endsWith('index.html') || path === '';
+            
+            if (!isHome && window.history.length > 1) {
+                window.history.back(); 
+            } else {
+                window.parent.postMessage({ type: 'EXIT_APP' }, '*');
+            }
+        }
     });
-    
-    if (!navigator.onLine) { overlay.style.display = 'flex'; }
-
-
-    // --- 2. NATIVE ANDROID LOGIC ---
-    // Instantly recognizes the app via URL, even before Capacitor finishes loading
-    const isApp = (window.Capacitor && window.Capacitor.isNative) || window.location.href.includes('source=vilarci_app');
-
-    if (isApp) {
-        if (document.body.classList.contains('is-native-app')) return;
-        document.body.classList.add('is-native-app');
-
-        // NATIVE LOCKDOWN (Android OS handles the status bar padding now!)
-        const nativeCSS = `
-            body.is-native-app {
-                overscroll-behavior-y: none; 
-                -webkit-user-select: none;
-                user-select: none;
-                -webkit-touch-callout: none; 
-            }
-            body.is-native-app ::-webkit-scrollbar {
-                display: none;
-            }
-        `;
-        const styleSheet = document.createElement('style');
-        styleSheet.innerText = nativeCSS;
-        document.head.appendChild(styleSheet);
-
-        // THE BULLETPROOF HARDWARE BACK BUTTON LISTENER
-        const initBackButton = setInterval(() => {
-            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-                clearInterval(initBackButton); // Stop checking once loaded
-                window.Capacitor.Plugins.App.addListener('backButton', ({ canGoBack }) => {
-                    
-                    const sidebar = document.getElementById('usb-overlay');
-                    if (sidebar && sidebar.classList.contains('open')) {
-                        if (typeof sidebarGoBack === 'function' && typeof menuStack !== 'undefined' && menuStack.length > 1) {
-                            sidebarGoBack();
-                        } else if (typeof closeSidebar === 'function') {
-                            closeSidebar();
-                        }
-                        return; 
-                    }
-                    
-                    const locModal = document.getElementById('loc-modal-overlay');
-                    if (locModal && locModal.classList.contains('open')) {
-                        if (typeof closeLocationModal === 'function') closeLocationModal();
-                        return; 
-                    }
-
-                    const path = window.location.pathname;
-                    const isHome = path === '/' || path === '/vilarci/' || path.endsWith('index.html') || path === '';
-                    
-                    if (canGoBack && !isHome) {
-                        window.history.back(); 
-                    } else {
-                        window.Capacitor.Plugins.App.exitApp(); 
-                    }
-                });
-            }
-        }, 300); // Check every 300ms until Android is ready
-    }
 }
 
 document.addEventListener('DOMContentLoaded', initializeNativeApp);
-setTimeout(initializeNativeApp, 1000);
+setTimeout(initializeNativeApp, 500);

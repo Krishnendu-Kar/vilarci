@@ -3,10 +3,8 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.vilarci.customer',
   appName: 'Vilarci',
-  webDir: 'public', 
+  webDir: 'build', // 🔴 Back to 'build' so it loads your local App.js
   server: {
-    // We added ?source=vilarci_app so the website instantly knows it's the app!
-    url: 'https://krishnendu-kar.github.io/vilarci/?source=vilarci_app', 
     cleartext: true,
     errorPath: 'error.html',
     allowNavigation: [
@@ -16,9 +14,8 @@ const config: CapacitorConfig = {
   },
   plugins: {
     StatusBar: {
-      overlaysWebView: false, // 🔴 ANDROID WILL NOW PUSH THE WEBSITE DOWN
-      style: 'DARK', // Keeps the battery icons white
-      backgroundColor: '#d32f2f' // 🔴 PAINTS THE NATIVE STATUS BAR VILARCI RED
+      overlaysWebView: true, // Lets the React app go underneath the battery icons
+      style: 'DARK' 
     }
   }
 };
