@@ -64,12 +64,21 @@ function App() {
         <div style={{ border: '3px solid #f3f3f3', borderTop: '3px solid #d32f2f', borderRadius: '50%', width: '26px', height: '26px', animation: 'spin 0.8s linear infinite' }}><style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style></div>
       </div>
 
-      {/* THE APP IFRAME: Rendered once, never resets! Note we removed the URL parameters to keep routing clean. */}
+      {/* THE APP IFRAME: Rendered once, never resets! */}
       <iframe 
         ref={iframeRef}
         src="https://krishnendu-kar.github.io/vilarci/" 
         title="Vilarci App"
-        style={{ flex: 1, width: '100%', border: 'none', display: 'block', margin: 0, padding: 0, backgroundColor: '#ffffff' }}
+        style={{ 
+          flex: 1, 
+          height: '100%', /* 🔴 ONLY THIS CHANGED: Forces the iframe to be scrollable */
+          width: '100%', 
+          border: 'none', 
+          display: 'block', 
+          margin: 0, 
+          padding: 0, 
+          backgroundColor: '#ffffff' 
+        }}
         allow="geolocation; microphone; camera"
       />
     </div>

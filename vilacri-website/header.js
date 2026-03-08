@@ -745,13 +745,8 @@ function initializeNativeApp() {
     document.body.classList.add('is-native-app');
 
     // NATIVE LOCKDOWN 
+    // 🔴 ONLY THIS CHANGED: Removed touch-blocking rules to restore scrolling
     const nativeCSS = `
-        body.is-native-app {
-            overscroll-behavior-y: none; 
-            -webkit-user-select: none;
-            user-select: none;
-            -webkit-touch-callout: none; 
-        }
         body.is-native-app ::-webkit-scrollbar {
             display: none;
         }
