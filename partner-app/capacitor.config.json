@@ -2,7 +2,5 @@
   "appId": "com.vilarci.partner",
   "appName": "Vilarci Partner",
   "webDir": "dist",
-  "server": {
-    "cleartext": true 
-  }
+  "bundledWebRuntime": false
 }

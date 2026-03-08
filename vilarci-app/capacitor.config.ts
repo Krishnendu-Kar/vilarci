@@ -5,15 +5,18 @@ const config: CapacitorConfig = {
   appName: 'Vilarci',
   webDir: 'build',
   server: {
-    url: 'https://krishnendu-kar.github.io/vilarci/',
+    // 🔴 REMOVED 'url' - Capacitor MUST load your local App.js shell!
     cleartext: true,
-    errorPath: 'error.html'
+    errorPath: 'error.html', 
+    allowNavigation: [
+      "*krishnendu-kar.github.io*",
+      "*.github.io"
+    ]
   },
   plugins: {
     StatusBar: {
-      overlaysWebView: false,
-      style: 'DARK', // Makes battery/wifi icons white
-      backgroundColor: '#8b0000' // Matches your website header
+      overlaysWebView: true,
+      style: 'DARK' 
     }
   }
 };

@@ -1,3 +1,18 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* VILARCI NATIVE APP LOCKDOWN */
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #d32f2f; /* Prevents any white flashes during load */
+  overflow: hidden; /* Stops the whole app shell from bouncing */
+  overscroll-behavior-y: none; /* Kills pull-to-refresh on the wrapper */
+  -webkit-user-select: none; /* Disables text selection */
+  user-select: none;
+  -webkit-touch-callout: none; /* Disables long-press image/link popups */
+  -webkit-tap-highlight-color: transparent; /* Removes blue tap boxes */
+}

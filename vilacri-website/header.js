@@ -732,29 +732,42 @@ document.addEventListener('DOMContentLoaded', initializeComponent);
 // ==============================================================
 // VILARCI HYBRID APP LOGIC (Only runs if opened from Play Store)
 // ==============================================================
+// ==============================================================
+// VILARCI HYBRID APP LOGIC (Perfected for Iframe Bridge)
+// ==============================================================
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Check if the website is running inside the Capacitor Android App
-    if (window.Capacitor && window.Capacitor.isNative) {
-        
-        // A. Add a class to the body so we know it's the app
+    // 1. Detect App Mode securely via URL or Session Storage
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('source') === 'vilarci_app') {
+        sessionStorage.setItem('is_vilarci_app', 'true');
+    }
+    
+    const isNativeApp = sessionStorage.getItem('is_vilarci_app') === 'true';
+
+    if (isNativeApp) {
         document.body.classList.add('is-native-app');
 
-        // B. Dynamically inject the "App-Only" CSS to all pages
+        // 2. Inject App-Only CSS
         const nativeCSS = `
-            /* Prevent browser pull-to-refresh */
+            /* The Native React wrapper handles the status bar padding now! 
+               We just anchor the header to the top of the iframe perfectly. */
+            body.is-native-app header {
+                top: 0 !important;
+                padding-top: 0 !important;
+            }
+            
+            /* Prevent browser pull-to-refresh & text highlighting */
             body.is-native-app {
                 overscroll-behavior-y: none; 
                 -webkit-user-select: none;
                 user-select: none;
                 -webkit-touch-callout: none; 
             }
-            /* Allow typing in search and text boxes */
             body.is-native-app input, 
             body.is-native-app textarea {
                 -webkit-user-select: auto;
                 user-select: auto;
             }
-            /* Hide ugly browser scrollbars but keep scrolling */
             body.is-native-app ::-webkit-scrollbar {
                 display: none;
             }
@@ -763,21 +776,44 @@ document.addEventListener('DOMContentLoaded', () => {
         styleSheet.innerText = nativeCSS;
         document.head.appendChild(styleSheet);
 
-        // C. Global Android Hardware Back Button Fix
-        if (window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-            window.Capacitor.Plugins.App.addListener('backButton', ({ canGoBack }) => {
+        // 3. Two-Way Communication for the Hardware Back Button
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'HARDWARE_BACK') {
+                
+                // --- PREMIUM UX: Check for Open Overlays First ---
+                const sidebar = document.getElementById('usb-overlay');
+                const locModal = document.getElementById('loc-modal-overlay');
+                
+                // A. Is the Sidebar open?
+                if (sidebar && sidebar.classList.contains('open')) {
+                    if (typeof sidebarGoBack === 'function' && typeof menuStack !== 'undefined' && menuStack.length > 1) {
+                        sidebarGoBack(); // Go back one level in the menu
+                    } else if (typeof closeSidebar === 'function') {
+                        closeSidebar(); // Close the sidebar completely
+                    }
+                    return; // Stop execution here so we don't change the page
+                }
+                
+                // B. Is the Location Modal open?
+                if (locModal && locModal.classList.contains('open')) {
+                    if (typeof closeLocationModal === 'function') {
+                        closeLocationModal();
+                    }
+                    return; // Stop execution here
+                }
+
+                // --- STANDARD UX: Handle Page Navigation ---
                 const path = window.location.pathname;
-                // Check if user is on the main Home Page (accounting for GitHub Pages URL)
                 const isHome = path === '/' || path === '/vilarci/' || path.endsWith('index.html') || path === '';
                 
-                if (canGoBack && !isHome) {
-                    // Deep in the website -> Go back 1 page
+                if (!isHome) {
+                    // Deep in the website -> Go back 1 page smoothly
                     window.history.back();
                 } else {
-                    // On the home page -> Close the entire App smoothly
-                    window.Capacitor.Plugins.App.exitApp();
+                    // On the home page -> Tell the native wrapper to close the app
+                    window.parent.postMessage({ type: 'EXIT_APP' }, '*');
                 }
-            });
-        }
+            }
+        });
     }
 });
