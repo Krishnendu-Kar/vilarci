@@ -735,10 +735,12 @@ document.addEventListener('DOMContentLoaded', initializeComponent);
 // ==============================================================
 // VILARCI NATIVE DIRECT-CONNECT LOGIC & OFFLINE MANAGER
 // ==============================================================
+// ==============================================================
+// VILARCI NATIVE DIRECT-CONNECT LOGIC & OFFLINE MANAGER
+// ==============================================================
 function initializeNativeApp() {
     
     // --- 1. THE FOOLPROOF OFFLINE OVERLAY ---
-    // Injects a native-looking offline screen directly over the website
     const offlineHTML = `
         <div id="vilarci-offline-overlay" style="display: none; position: fixed; inset: 0; background: #ffffff; z-index: 9999999; flex-direction: column; align-items: center; justify-content: center; font-family: system-ui, -apple-system, sans-serif; text-align: center;">
             <svg style="width: 70px; height: 70px; opacity: 0.3; margin-bottom: 20px" viewBox="0 0 24 24" fill="none" stroke="#d32f2f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path><path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
@@ -752,55 +754,25 @@ function initializeNativeApp() {
 
     const overlay = document.getElementById('vilarci-offline-overlay');
     
-    // Listen for internet drops
     window.addEventListener('offline', () => { overlay.style.display = 'flex'; });
     window.addEventListener('online', () => { 
         overlay.style.display = 'none'; 
-        // When internet returns, reload the page to perfectly fetch the "Product Not Found" data
         window.location.reload(); 
     });
     
-    // Check immediately on load
     if (!navigator.onLine) { overlay.style.display = 'flex'; }
 
 
     // --- 2. NATIVE ANDROID LOGIC ---
-    if (window.Capacitor && window.Capacitor.isNative) {
-        
-        // Prevent running twice
+    // Instantly recognizes the app via URL, even before Capacitor finishes loading
+    const isApp = (window.Capacitor && window.Capacitor.isNative) || window.location.href.includes('source=vilarci_app');
+
+    if (isApp) {
         if (document.body.classList.contains('is-native-app')) return;
         document.body.classList.add('is-native-app');
 
-        // NATIVE STATUS BAR FIX: The "Solid Block" Method
-        const headerPlaceholder = document.getElementById('vilarci-header');
-        if (headerPlaceholder) {
-            headerPlaceholder.style.marginBottom = "180px"; // Give extra room for content below
-        }
-
+        // NATIVE LOCKDOWN (Android OS handles the status bar padding now!)
         const nativeCSS = `
-            /* 1. Create a fake solid red block at the very top for the battery icons */
-            body.is-native-app::before {
-                content: '';
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 45px;
-                background: linear-gradient(90deg, #d32f2f, #e43e3e);
-                z-index: 99999;
-            }
-            
-            /* 2. Push the entire original header down exactly 45px below the fake block */
-            body.is-native-app header {
-                top: 45px !important;
-            }
-            
-            /* 3. Push the floating cart down so it doesn't overlap the search bar */
-            body.is-native-app .cart {
-                top: 106px !important; 
-            }
-            
-            /* 4. Lockdown scrolling to feel like a real app */
             body.is-native-app {
                 overscroll-behavior-y: none; 
                 -webkit-user-select: none;
@@ -815,40 +787,41 @@ function initializeNativeApp() {
         styleSheet.innerText = nativeCSS;
         document.head.appendChild(styleSheet);
 
-        // THE PERFECT HARDWARE BACK BUTTON LISTENER
-        if (window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-            window.Capacitor.Plugins.App.addListener('backButton', ({ canGoBack }) => {
-                
-                const sidebar = document.getElementById('usb-overlay');
-                if (sidebar && sidebar.classList.contains('open')) {
-                    if (typeof sidebarGoBack === 'function' && typeof menuStack !== 'undefined' && menuStack.length > 1) {
-                        sidebarGoBack();
-                    } else if (typeof closeSidebar === 'function') {
-                        closeSidebar();
+        // THE BULLETPROOF HARDWARE BACK BUTTON LISTENER
+        const initBackButton = setInterval(() => {
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+                clearInterval(initBackButton); // Stop checking once loaded
+                window.Capacitor.Plugins.App.addListener('backButton', ({ canGoBack }) => {
+                    
+                    const sidebar = document.getElementById('usb-overlay');
+                    if (sidebar && sidebar.classList.contains('open')) {
+                        if (typeof sidebarGoBack === 'function' && typeof menuStack !== 'undefined' && menuStack.length > 1) {
+                            sidebarGoBack();
+                        } else if (typeof closeSidebar === 'function') {
+                            closeSidebar();
+                        }
+                        return; 
                     }
-                    return; 
-                }
-                
-                const locModal = document.getElementById('loc-modal-overlay');
-                if (locModal && locModal.classList.contains('open')) {
-                    if (typeof closeLocationModal === 'function') closeLocationModal();
-                    return; 
-                }
+                    
+                    const locModal = document.getElementById('loc-modal-overlay');
+                    if (locModal && locModal.classList.contains('open')) {
+                        if (typeof closeLocationModal === 'function') closeLocationModal();
+                        return; 
+                    }
 
-                const path = window.location.pathname;
-                const isHome = path === '/' || path === '/vilarci/' || path.endsWith('index.html') || path === '';
-                
-                if (canGoBack && !isHome) {
-                    window.history.back(); 
-                } else {
-                    window.Capacitor.Plugins.App.exitApp(); 
-                }
-            });
-        }
+                    const path = window.location.pathname;
+                    const isHome = path === '/' || path === '/vilarci/' || path.endsWith('index.html') || path === '';
+                    
+                    if (canGoBack && !isHome) {
+                        window.history.back(); 
+                    } else {
+                        window.Capacitor.Plugins.App.exitApp(); 
+                    }
+                });
+            }
+        }, 300); // Check every 300ms until Android is ready
     }
 }
 
-// Run the initialization safely
 document.addEventListener('DOMContentLoaded', initializeNativeApp);
-// Failsafe in case Capacitor injects a millisecond late
-setTimeout(initializeNativeApp, 500);
+setTimeout(initializeNativeApp, 1000);
