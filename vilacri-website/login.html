@@ -4,179 +4,162 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seller Login - Vilarci</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!--For React App-->
-    <script src="vilarci-bridge.js"></script>
-    <!-- Supabase Client -->
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Inter Font -->
+    
+    <script src="config.js"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
 <body class="bg-slate-50 min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
 
     <div class="sm:mx-auto sm:w-full sm:max-w-md">
-        <!-- Logo Area -->
         <div class="flex justify-center items-center gap-2 mb-8">
-            <div class="bg-indigo-600 text-white font-bold text-2xl px-3 py-1 rounded-lg shadow-sm">V</div>
-            <div class="text-4xl font-extrabold text-indigo-900 tracking-tight">Vilarci</div>
+            <div class="bg-indigo-600 text-white font-bold text-2xl px-4 py-2 rounded-lg shadow-lg">V</div>
+            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Vilarci <span class="text-indigo-600">Seller</span></h1>
         </div>
-        
-        <h2 class="text-center text-2xl font-bold text-slate-900">Sign in to Seller Central</h2>
-        <p class="mt-2 text-center text-sm text-slate-600">
-            Or <a href="seller registration.html" class="font-medium text-indigo-600 hover:text-indigo-500 hover:underline transition">register a new partner account</a>
-        </p>
+        <h2 class="mt-2 text-center text-sm text-slate-600">
+            Manage your store, products, and deliveries.
+        </h2>
     </div>
 
     <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div class="bg-white py-8 px-10 shadow-xl rounded-2xl border border-slate-100">
+        <div class="bg-white py-8 px-4 shadow-xl sm:rounded-xl sm:px-10 border border-slate-100">
             
-            <!-- Error Alert Box -->
-            <div id="alert-box" class="hidden rounded-lg bg-red-50 p-4 mb-6 border border-red-100 animate-pulse">
+            <div id="alertBox" class="hidden mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
                 <div class="flex">
-                    <div class="flex-shrink-0 text-red-500">
-                        <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                    <div class="flex-shrink-0">
+                        <i data-lucide="alert-circle" class="h-5 w-5 text-red-500"></i>
                     </div>
                     <div class="ml-3">
-                        <h3 class="text-sm font-bold text-red-800" id="alert-title">Login Failed</h3>
-                        <div class="mt-1 text-sm text-red-700 leading-relaxed" id="alert-msg"></div>
+                        <h3 id="alertTitle" class="text-sm font-medium text-red-800">Error</h3>
+                        <div class="mt-1 text-sm text-red-700">
+                            <p id="alertMsg">Something went wrong.</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Login Form -->
-            <form class="space-y-6" id="loginForm">
-                
-                <!-- Email Input -->
+            <form id="loginForm" class="space-y-6" onsubmit="event.preventDefault();">
                 <div>
-                    <label for="email" class="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                            <i data-lucide="mail" class="w-5 h-5"></i>
+                    <label for="identifier" class="block text-sm font-medium text-slate-700">WhatsApp Number or Email</label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i data-lucide="user" class="h-5 w-5 text-slate-400"></i>
                         </div>
-                        <input id="email" name="email" type="email" autocomplete="email" required 
-                            class="pl-10 appearance-none block w-full px-3 py-3 border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition shadow-sm"
-                            placeholder="you@example.com">
+                        <input id="identifier" name="identifier" type="text" required class="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors" placeholder="10-digit number or Email">
                     </div>
                 </div>
 
-                <!-- Password Input -->
                 <div>
-                    <label for="password" class="block text-sm font-medium text-slate-700 mb-1">Password</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                            <i data-lucide="lock" class="w-5 h-5"></i>
+                    <label for="password" class="block text-sm font-medium text-slate-700">Password</label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i data-lucide="lock" class="h-5 w-5 text-slate-400"></i>
                         </div>
-                        <input id="password" name="password" type="password" autocomplete="current-password" required 
-                            class="pl-10 pr-10 appearance-none block w-full px-3 py-3 border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition shadow-sm"
-                            placeholder="••••••••">
-                        
-                        <!-- Toggle Password Visibility -->
-                        <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-indigo-600 cursor-pointer focus:outline-none">
-                            <i data-lucide="eye" class="w-5 h-5"></i>
-                        </button>
+                        <input id="password" name="password" type="password" required class="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors" placeholder="••••••••">
                     </div>
                 </div>
 
-                <!-- Options -->
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <input id="remember_me" name="remember_me" type="checkbox" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded cursor-pointer">
-                        <label for="remember_me" class="ml-2 block text-sm text-slate-600 cursor-pointer select-none">Remember me</label>
-                    </div>
-                    <div class="text-sm">
-                        <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500 transition">Forgot password?</a>
-                    </div>
-                </div>
-
-                <!-- Submit Button -->
                 <div>
-                    <button type="submit" id="loginBtn" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all transform active:scale-[0.98]">
-                        Sign In
+                    <button type="submit" id="loginBtn" class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all">
+                        Sign In to Dashboard
                     </button>
                 </div>
             </form>
+
+            <div class="mt-6">
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-slate-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-white text-slate-500">New to Vilarci Sellers?</span>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <a href="seller registration.html" class="w-full flex justify-center py-2.5 px-4 border border-slate-300 rounded-lg shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all">
+                        Create new seller account
+                    </a>
+                </div>
+            </div>
         </div>
-        
-        <p class="text-center text-xs text-slate-400 mt-8">
-            &copy; 2025 Vilarci. Secured by Vilarci Enterprise Tech.
-        </p>
     </div>
 
-   <script>
-    // 1. CONFIGURATION
-    const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dmNndWJicXRjY295Y3ZkdXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODA2MzQsImV4cCI6MjA4MDA1NjYzNH0.7Hobx-emspJQ7HLyjaWR-XQhzk948LWufq3OCimKk4w';
+    <script>
+        lucide.createIcons();
 
-    // FIX: Renamed to 'supabaseClient' to avoid name conflict
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    lucide.createIcons();
-
-    // 2. DOM ELEMENTS
-    const form = document.getElementById('loginForm');
-    const btn = document.getElementById('loginBtn');
-    const alertBox = document.getElementById('alert-box');
-    const alertTitle = document.getElementById('alert-title');
-    const alertMsg = document.getElementById('alert-msg');
-
-    function togglePassword() {
-        const input = document.getElementById('password');
-        input.type = input.type === "password" ? "text" : "password";
-    }
-
-    // 3. LOGIN LOGIC
-   // 3. LOGIN LOGIC
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault(); 
-        
-        btn.disabled = true;
-        btn.innerText = "Verifying...";
-        alertBox.classList.add('hidden');
-
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-
-        try {
-            // A. Authenticate
-            const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
-                email: email,
-                password: password
-            });
-
-            if (authError) throw new Error("Invalid email or password.");
-
-            // B. Get Profile & Verification Status Concurrently (Lightning Fast)
-            const [privateRes, publicRes] = await Promise.all([
-                supabaseClient.from('sellers_private_089').select('seller_numeric_id').eq('id', authData.user.id).single(),
-                supabaseClient.from('shops_public_587').select('is_verified').eq('id', authData.user.id).single()
-            ]);
-
-            if (privateRes.error) throw new Error("Login successful, but private profile data is missing.");
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            const btn = document.getElementById('loginBtn');
+            const alertBox = document.getElementById('alertBox');
+            const alertTitle = document.getElementById('alertTitle');
+            const alertMsg = document.getElementById('alertMsg');
             
-            const seller = privateRes.data;
-            const shop = publicRes.data || { is_verified: false };
+            btn.disabled = true;
+            btn.innerText = "Authenticating...";
+            alertBox.classList.add('hidden');
 
-            // C. Check Verification
-            if (!shop.is_verified) {
-                await supabaseClient.auth.signOut();
-                throw new Error("Account pending approval. Please wait for Vilarci verification.");
+            try {
+                const identifier = document.getElementById('identifier').value.trim();
+                const password = document.getElementById('password').value;
+
+                // Format identifier for Unified Login
+                let loginData = {};
+                let finalIdentifier = identifier;
+                if (/^\d{10}$/.test(identifier)) {
+                    finalIdentifier = "+91" + identifier;
+                }
+
+                if (finalIdentifier.includes('@')) {
+                    loginData = { email: finalIdentifier, password: password };
+                } else {
+                    loginData = { phone: finalIdentifier, password: password };
+                }
+
+                const supabase = window.supabaseClient;
+
+                // A. Attempt Auth
+                const { data: authData, error: authError } = await supabase.auth.signInWithPassword(loginData);
+
+                if (authError) throw new Error("Invalid credentials. Please check your number/email and password.");
+
+                // B. Get Profile & Verification Status Concurrently
+                const [privateRes, publicRes] = await Promise.all([
+                    supabase.from('sellers_private_089').select('seller_numeric_id').eq('id', authData.user.id).single(),
+                    supabase.from('shops_public_587').select('is_verified').eq('id', authData.user.id).single()
+                ]);
+
+                // C. The "Not a Seller" Check
+                if (privateRes.error || !privateRes.data) {
+                    await supabase.auth.signOut(); // Sign them back out to keep things clean
+                    throw new Error("You do not have a registered Seller account yet. Please click 'Create new seller account' below.");
+                }
+                
+                const seller = privateRes.data;
+                const shop = publicRes.data || { is_verified: false };
+
+                // D. Check Verification
+                if (!shop.is_verified) {
+                    await supabase.auth.signOut();
+                    throw new Error("Account pending approval. Please wait for Vilarci verification.");
+                }
+
+                // E. Success
+                sessionStorage.setItem('vilarci_seller_id', seller.seller_numeric_id);
+                window.location.href = 'seller_profile.html';
+
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerText = "Sign In to Dashboard";
+                alertTitle.innerText = "Login Failed";
+                alertMsg.innerText = err.message;
+                alertBox.classList.remove('hidden');
             }
-
-            // D. Success
-            sessionStorage.setItem('vilarci_seller_id', seller.seller_numeric_id);
-            window.location.href = 'seller_profile.html';
-
-        } catch (err) {
-            btn.disabled = false;
-            btn.innerText = "Sign In";
-            alertTitle.innerText = "Login Failed";
-            alertMsg.innerText = err.message;
-            alertBox.classList.remove('hidden');
-        }
-    });
-</script>
+        });
+    </script>
 </body>
 </html>

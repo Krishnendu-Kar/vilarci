@@ -394,35 +394,29 @@
                         discountBadge = `<span class="discount-percent z-10">${off}% OFF</span>`;
                     }
 
-                    return `
-                    <div class="product-card" style="cursor:pointer;" onclick="window.location.href='product_details.html?slug=${p.slug}'">
+                   return `
+                    <div class="product-card flex flex-col justify-between h-full" style="cursor:pointer;" onclick="window.location.href='product_details.html?slug=${p.slug}'">
                         ${discountBadge}
                         <div class="img-box"><img src="${img}" alt="${p.name}" loading="lazy"></div>
-                        <div class="details">
+                        <div class="details flex flex-col flex-grow">
                             <h4 class="product-name">${p.name}</h4>
                             <p class="mb-2"><span class="rating_avg">${p.rating_avg || 4.5} <i class="fa-solid fa-star text-[10px]"></i></span> <span class="rating_count text-xs text-slate-500">${p.rating_count || 0} Ratings</span></p>
                             
-                            <div class="price-area ">
-                                <span class="price">₹${p.base_price}</span>
-                                ${p.original_price ? `<span class="mrp">₹${p.original_price}</span>` : ''}
+                            <div class="price-area mb-3 mt-auto">
+                                <span class="price font-bold text-lg text-slate-900">₹${p.base_price}</span>
+                                ${p.original_price ? `<span class="mrp text-sm text-slate-400 line-through ml-2">₹${p.original_price}</span>` : ''}
                             </div>
                             
-                            <div class="bottom-btn">
-                                <button class="add-btn flex items-center justify-center shrink-0" 
+                            <div class="bottom-btn flex gap-2">
+                                <button class="add-btn" 
                                         ${!isDeliveryAvailable ? "disabled style='opacity: 0.4;cursor: not-allowed;'" : ""} 
-                                        onclick="addToCart(event, '${p.id}')">
+                                        onclick="event.stopPropagation(); window.vilarciAddToCart('${p.id}', ${p.base_price}, '1 Unit', ${p.is_rapid_eligible});">
                                     <i class="fa-solid fa-cart-plus"></i>
                                 </button>
-                                <style>
-                                    @media (max-width: 420px) {
-                                        .pickup-btn{
-                                            font-size: 0.7em;
-                                            font-weight: 600;
-                                        }
-                                }
-                                    </style>
-                                <button class="pickup-btn"  onclick="event.stopPropagation();">
-                                    Store Pickup <i class="fa-solid fa-motorcycle"></i> 
+                                
+                                <button class="pickup-btn"  
+                                        onclick="event.stopPropagation(); window.vilarciStorePickup('${p.id}', ${p.base_price}, '1 Unit');">
+                                    Pickup <i class="fa-solid fa-motorcycle"></i> 
                                 </button>
                             </div>
                         </div>

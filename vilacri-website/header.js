@@ -70,10 +70,10 @@ const componentCSS = `
         flex-direction: column; 
         justify-content: center; 
         padding: 4px 10px;
-        margin-right: auto; /* Pushes the links to the far right */
+        margin-right: auto; 
     }
     .location { 
-        color: #ffd54f; /* Premium Gold/Yellow */
+        color: #ffd54f; 
         font-size: 11px; 
         font-weight: 800; 
         letter-spacing: 0.5px;
@@ -104,16 +104,16 @@ const componentCSS = `
         padding: 8px 12px; 
         white-space: nowrap;
     }
-/* --- ULTRA PREMIUM PROFILE BUTTON --- */
+    /* --- ULTRA PREMIUM PROFILE BUTTON --- */
     .profile-btn {
         display: flex;
         align-items: center;
         gap: 8px;
         background: #e43e3e;
-        color: #fffafe !important; /* Vilarci Red text/icon */
+        color: #fffafe !important; 
         
-        border-radius: 50px !important; /* Perfect Pill Shape */
-        font-weight: 800 !important;
+        border-radius: 50px !important; 
+        font-weight: 700 !important;
         font-size: 15px;
         text-decoration: none;
          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -123,12 +123,12 @@ const componentCSS = `
     }
     .profile-btn:hover {
         background: #fff9f9;
-        color: #c62828 !important; /* Darker red on hover */
+        color: #c62828 !important; 
         box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
-        border-color: #ce093a; /* Premium gold ring on hover */
+        border-color: #ce093a; 
     }
     @media (max-width: 300px) {
-        .profile-text { display: none; } /* Hides text on mobile */
+        .profile-text { display: none; } 
         .profile-btn { padding: 6px 12px !important; }
     }
         
@@ -166,7 +166,7 @@ const componentCSS = `
         display: flex; 
         flex-grow: 1; 
         max-width: 700px;
-        margin-right: 65px; /* Leaves room for the floating cart */
+        margin-right: 65px; 
         border-radius: 6px;
         overflow: hidden;
     }
@@ -199,7 +199,7 @@ const componentCSS = `
     .cart { 
         position: fixed; 
         right: 12px; 
-        top: 61px; /* Perfectly aligned to right of search bar */
+        top: 61px; 
         height: 38px; 
         width: 48px; 
         background: linear-gradient(135deg, #ffffff, #ffe082); 
@@ -275,8 +275,10 @@ const componentCSS = `
     .loc-save-btn:disabled { background: #cbd5e1; cursor: not-allowed; box-shadow: none; transform: none; }
 `;
 
-// 3. HTML TEMPLATES (RESTRUCTURED FOR FLEXBOX)
+// 3. HTML TEMPLATES
 const headerHTML = `
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" xintegrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <header>
         <div class="navbar">
             <div class="nav-logo border" onclick="window.location.href='index.html'">
@@ -290,9 +292,9 @@ const headerHTML = `
             </div>
             
             <div class="nav-links">
-                <a class="profile-btn" href="profile.html">
-                    <i class="fa-regular fa-circle-user"></i>
-                    <span class="profile-text">Profile</span>
+                <a class="profile-btn" href="user_login.html" id="header-profile-btn">
+                    <i class="fa-regular fa-circle-user" id="header-profile-icon"></i>
+                    <span class="profile-text" id="header-user-name">Login / Sign Up</span>
                 </a>
                 
                 <a class="border seller-link" href="seller-home.html">Become a Seller</a>
@@ -318,7 +320,7 @@ const headerHTML = `
         
         <div class="message-box1">
             <div class="message-box2">
-                <div class="message-text">🔥 Super Deals Live! Lightning-fast delivery at incredible prices. Order Now!</div>
+                <div class="message-text">🚀 Super Deals Live! Lightning-fast delivery at incredible prices. Order Now!</div>
             </div>
         </div>
     </header>
@@ -354,18 +356,18 @@ function initializeComponent() {
     if (headerPlaceholder) {
         headerPlaceholder.innerHTML = headerHTML;
         headerPlaceholder.style.display = "block";
-        headerPlaceholder.style.marginBottom = "136px"; // Perfectly spaces <main> below header
+        headerPlaceholder.style.marginBottom = "136px"; 
     } else {
         console.warn("Header placeholder <div id='vilarci-header'></div> not found on this page.");
     }
 
-   // Inject Sidebar into body
+    // Inject Sidebar into body
     document.body.insertAdjacentHTML('beforeend', sidebarHTML);
     
-    // --> ADD THIS LINE: Inject Location Modal into body
+    // Inject Location Modal into body
     document.body.insertAdjacentHTML('beforeend', locationModalHTML);
 
-    // --> ADD THIS BLOCK: Check Local Storage for saved location
+    // Check Local Storage for saved location
     const savedLoc = localStorage.getItem('vilarci_user_location');
     if (savedLoc) {
         const locObj = JSON.parse(savedLoc);
@@ -377,14 +379,64 @@ function initializeComponent() {
     // Initialize logic
     updateGlobalCartCount();
     renderSidebar();
+    
+    // 🌟 EXECUTE IDENTITY CHECK
+    checkUserAuthAndUpdateHeader();
 }
 
-// Global Cart Counter
-window.updateGlobalCartCount = function() {
-    let cart = JSON.parse(localStorage.getItem('cart')) || [];
-    let count = cart.reduce((acc, item) => acc + item.quantity, 0);
-    const badge = document.getElementById('cart-count-badge');
-    if (badge) badge.innerText = count;
+
+// 🌟 DYNAMIC HEADER IDENTITY CHECK
+async function checkUserAuthAndUpdateHeader() {
+    const db = getDB();
+    if(!db) return;
+
+    const profileBtn = document.getElementById('header-profile-btn');
+    const userNameSpan = document.getElementById('header-user-name');
+    const profileIcon = document.getElementById('header-profile-icon');
+
+    if (!profileBtn || !userNameSpan) return;
+
+    try {
+        const { data: { session } } = await db.auth.getSession();
+        
+        if (session && session.user) {
+            // Fetch name safely from our public.users table
+            const { data: userData } = await db.from('users').select('first_name').eq('id', session.user.id).maybeSingle();
+            
+            if (userData && userData.first_name) {
+                userNameSpan.innerText = `Hi, ${userData.first_name}`;
+            } else {
+                userNameSpan.innerText = "My Account";
+            }
+            
+            // Route to buyer profile
+            profileBtn.href = "profile.html"; 
+            profileIcon.className = "fa-solid fa-user-check"; 
+        } else {
+            // Unauthenticated state (Browsing Mode)
+            userNameSpan.innerText = "Login / Sign Up";
+            profileBtn.href = "user_login.html";
+            profileIcon.className = "fa-regular fa-circle-user";
+        }
+    } catch(err) {
+        console.error("Auth check failed in header:", err);
+    }
+}
+
+// 🌟 DYNAMIC SIDEBAR PROFILE CLICK ROUTING
+window.handleProfileClick = async function() {
+    const db = getDB();
+    if(!db) { 
+        window.location.href = 'user_login.html'; 
+        return; 
+    }
+    const { data: { session } } = await db.auth.getSession();
+    
+    if (session) {
+        window.location.href = 'profile.html';
+    } else {
+        window.location.href = 'user_login.html';
+    }
 };
 
 // ==========================================
@@ -416,7 +468,7 @@ function renderSidebar() {
     const backBtn = document.getElementById('usb-back-btn');
     const content = document.getElementById('usb-content');
     
-    if(!titleEl || !content) return; // Prevent errors if DOM isn't ready
+    if(!titleEl || !content) return; 
 
     titleEl.innerText = currentMenu.title;
     if (menuStack.length > 1) backBtn.classList.remove('hidden');
@@ -454,9 +506,8 @@ function renderSidebar() {
 
             <div style="height: 8px; background: #f8fafc; margin: 16px 0;"></div>
 
-
-            <div class="usb-item" onclick="window.location.href='profile.html'">
-                <div class="usb-item-left"><i data-lucide="user-circle" class="usb-icon" style="color: #64748b;"></i> Profile</div>
+            <div class="usb-item" onclick="handleProfileClick()">
+                <div class="usb-item-left"><i data-lucide="user-circle" class="usb-icon" style="color: #64748b;"></i> Profile / Login</div>
             </div>
             <div class="usb-item" onclick="window.location.href='orders.html'">
                 <div class="usb-item-left"><i data-lucide="package" class="usb-icon" style="color: #64748b;"></i> Orders</div>
@@ -572,10 +623,6 @@ window.loadServiceSubCategories = async function(parentId, parentName) {
 
 
 // ==========================================
-// 8. LOCATION PICKER LOGIC
-// ==========================================
-
-// ==========================================
 // 8. LOCATION PICKER LOGIC (CASCADING)
 // ==========================================
 
@@ -628,7 +675,6 @@ window.openLocationModal = async function() {
 
     const subZoneSelect = document.getElementById('loc-subzone');
     
-    // Only fetch from DB if empty
     if (subZoneSelect.options.length <= 1) {
         await loadSubZonesForTamluk();
     }
@@ -640,12 +686,10 @@ window.handleMainZoneChange = async function() {
     const saveBtn = document.getElementById('loc-save-btn');
 
     if (mainZoneVal === 'dist_1') {
-        // User wants the whole district. Lock the sub-zone dropdown!
         subZoneSelect.innerHTML = '<option value="dist_1" selected>All Areas Included</option>';
         subZoneSelect.disabled = true;
         saveBtn.disabled = false;
     } else {
-        // User selected Tamluk. Unlock and load the specific zones.
         subZoneSelect.disabled = false;
         subZoneSelect.innerHTML = '<option value="" disabled selected>Loading...</option>';
         saveBtn.disabled = true;
@@ -694,7 +738,6 @@ window.saveLocation = function() {
     let locId = '';
     let selectedName = '';
 
-    // Logic to determine what they actually picked
     if (mainZoneSelect.value === 'dist_1') {
         locType = 'district';
         locId = '1';
@@ -725,27 +768,20 @@ function updateHeaderLocationText(name) {
         locTextEl.innerText = truncated;
     }
 }
+
 // Start everything on load
 document.addEventListener('DOMContentLoaded', initializeComponent);
 
-
-// ==============================================================
-// VILARCI NATIVE DIRECT-CONNECT LOGIC
-// ==============================================================
 // ==============================================================
 // VILARCI IFRAME COMMUNICATION LOGIC
 // ==============================================================
 function initializeNativeApp() {
-    // 🔴 BULLETPROOF NATIVE DETECTION
-    // If the website is inside an iframe, it is the App. No storage needed!
     const inIframe = window !== window.parent;
     if (!inIframe) return;
     
     if (document.body.classList.contains('is-native-app')) return;
     document.body.classList.add('is-native-app');
 
-    // NATIVE LOCKDOWN 
-    // 🔴 ONLY THIS CHANGED: Removed touch-blocking rules to restore scrolling
     const nativeCSS = `
         body.is-native-app ::-webkit-scrollbar {
             display: none;
@@ -755,7 +791,6 @@ function initializeNativeApp() {
     styleSheet.innerText = nativeCSS;
     document.head.appendChild(styleSheet);
 
-    // 🔴 LISTEN FOR HARDWARE BACK BUTTON FROM APP.JS
     window.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'HARDWARE_BACK') {
             const sidebar = document.getElementById('usb-overlay');
@@ -776,9 +811,9 @@ function initializeNativeApp() {
             const isHome = path === '/' || path === '/vilarci/' || path.endsWith('index.html') || path === '';
             
             if (!isHome && window.history.length > 1) {
-                window.history.back(); // Natively go back one page!
+                window.history.back(); 
             } else {
-                window.parent.postMessage({ type: 'EXIT_APP' }, '*'); // Close app!
+                window.parent.postMessage({ type: 'EXIT_APP' }, '*'); 
             }
         }
     });
@@ -786,3 +821,195 @@ function initializeNativeApp() {
 
 document.addEventListener('DOMContentLoaded', initializeNativeApp);
 setTimeout(initializeNativeApp, 500);
+// ==============================================================
+// 🌟 VILARCI GLOBAL CART CONTROLLER, AUTH MODAL & LIVE COUNTER
+// ==============================================================
+
+window.vilarciUser = null; 
+
+// 1. LIVE SUPABASE CART COUNTER
+window.updateGlobalCartCount = async function() {
+    const badge = document.getElementById('cart-count-badge');
+    if (!badge) return;
+
+    if (!window.vilarciUser) {
+        badge.innerText = "0";
+        return;
+    }
+
+    const db = window.supabaseClient;
+    if(!db) return;
+    
+    try {
+        const { data, error } = await db.from('cart_items').select('quantity').eq('user_id', window.vilarciUser.id);
+        if (!error && data) {
+            let count = data.reduce((acc, item) => acc + item.quantity, 0);
+            badge.innerText = count;
+        }
+    } catch(err) {
+        console.error("Cart count error:", err);
+    }
+};
+
+const globalModalsHTML = `
+    <div id="auth-modal-overlay" onclick="if(event.target === this) closeAuthModal()" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 10000; opacity: 0; visibility: hidden; transition: all 0.3s; backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 340px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+            <div style="width: 64px; height: 64px; background: #fee2e2; color: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 16px;"><i class="fa-solid fa-lock"></i></div>
+            <h3 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">Login Required</h3>
+            <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">Please log in or create an account to access carts and checkout.</p>
+            <button onclick="window.location.href='user_login.html'" style="width: 100%; padding: 14px; background: #e43e3e; color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; margin-bottom: 10px; font-size: 15px;">Log In / Sign Up</button>
+            <button onclick="closeAuthModal()" style="width: 100%; padding: 14px; background: #f1f5f9; color: #475569; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 15px;">Cancel</button>
+        </div>
+    </div>
+
+    <div id="cart-choice-overlay" onclick="if(event.target === this) closeCartChoice()" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 10005; opacity: 0; visibility: hidden; transition: all 0.3s; backdrop-filter: blur(4px); display: flex; align-items: flex-end; justify-content: center;">
+        <div style="background: white; padding: 24px; border-radius: 20px 20px 0 0; width: 100%; max-width: 400px; transform: translateY(100%); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.1);">
+            <div style="width: 40px; height: 4px; background: #e2e8f0; border-radius: 2px; margin: 0 auto 20px;"></div>
+            <h3 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 4px; text-align:center;">Choose Delivery Speed</h3>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 20px; text-align:center;">How fast do you need this item?</p>
+            
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <button onclick="executeGlobalAdd('normal')" style="width: 100%; padding: 16px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <i class="fa-solid fa-truck" style="color:#64748b; font-size:20px;"></i>
+                        <div style="text-align:left;">
+                            <div style="font-weight:800; color:#334155; font-size:15px;">Normal Delivery</div>
+                            <div style="font-size:11px; color:#94a3b8; font-weight:600;">Standard Vilarci Rates</div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="color:#cbd5e1;"></i>
+                </button>
+
+                <button id="btn-rapid-choice" onclick="executeGlobalAdd('rapid')" style="width: 100%; padding: 16px; background: #fffbeb; border: 2px solid #fde68a; border-radius: 12px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <i class="fa-solid fa-bolt-lightning" style="color:#f59e0b; font-size:20px;"></i>
+                        <div style="text-align:left;">
+                            <div style="font-weight:800; color:#92400e; font-size:15px;">Rapid (30 Min)</div>
+                            <div style="font-size:11px; color:#b45309; font-weight:600;">Extra fees apply</div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="color:#fcd34d;"></i>
+                </button>
+            </div>
+            <button onclick="closeCartChoice()" style="width: 100%; padding: 12px; background: transparent; color: #94a3b8; border: none; font-weight: 700; margin-top: 12px; cursor:pointer;">Cancel</button>
+        </div>
+    </div>
+`;
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.body.insertAdjacentHTML('beforeend', globalModalsHTML);
+    const db = window.supabaseClient;
+    if(db) db.auth.getSession().then(({ data: { session } }) => { 
+        if (session) {
+            window.vilarciUser = session.user;
+            updateGlobalCartCount(); // Fetch live count once logged in
+        }
+    });
+});
+
+// Auth Guard
+window.requireAuth = function(callbackFunction) {
+    if (window.vilarciUser) {
+        if(typeof callbackFunction === 'function') callbackFunction();
+        return true;
+    } else {
+        document.getElementById('auth-modal-overlay').style.opacity = '1';
+        document.getElementById('auth-modal-overlay').style.visibility = 'visible';
+        return false;
+    }
+};
+window.closeAuthModal = function() {
+    document.getElementById('auth-modal-overlay').style.opacity = '0';
+    document.getElementById('auth-modal-overlay').style.visibility = 'hidden';
+};
+
+// Global Cart Actions
+window.pendingCartData = null;
+
+window.vilarciAddToCart = function(productId, price, amount, isRapidEligible = false) {
+    const idStr = String(productId);
+    if(idStr.length >= 8 && idStr.substring(6, 8) === '12' && (!amount || amount === '1 Unit')) {
+        Toastify({ text: "Please open the product to select a size.", duration: 3000, style: { background: "#3b82f6", borderRadius: "8px" } }).showToast();
+        return;
+    }
+
+    requireAuth(() => {
+        window.pendingCartData = { productId, price, amount };
+        const overlay = document.getElementById('cart-choice-overlay');
+        const modal = overlay.querySelector('div');
+        document.getElementById('btn-rapid-choice').style.display = isRapidEligible ? 'flex' : 'none';
+        overlay.style.opacity = '1';
+        overlay.style.visibility = 'visible';
+        modal.style.transform = 'translateY(0)';
+    });
+};
+
+window.vilarciStorePickup = function(productId, price, amount) {
+    const idStr = String(productId);
+    if(idStr.length >= 8 && idStr.substring(6, 8) === '12' && (!amount || amount === '1 Unit')) {
+        Toastify({ text: "Please open the product to select a size.", duration: 3000, style: { background: "#3b82f6", borderRadius: "8px" } }).showToast();
+        return;
+    }
+    requireAuth(() => {
+        window.pendingCartData = { productId, price, amount };
+        executeGlobalAdd('pickup');
+    });
+};
+
+window.closeCartChoice = function() {
+    const overlay = document.getElementById('cart-choice-overlay');
+    const modal = overlay.querySelector('div');
+    overlay.style.opacity = '0';
+    overlay.style.visibility = 'hidden';
+    modal.style.transform = 'translateY(100%)';
+    window.pendingCartData = null;
+};
+
+window.executeGlobalAdd = async function(cartType) {
+    if (!window.pendingCartData || !window.vilarciUser) return;
+    
+    // 🌟 THE FIX: Extract the data FIRST!
+    const { productId, price, amount } = window.pendingCartData;
+    
+    // Now it is safe to close the modal and erase the state
+    closeCartChoice(); 
+    
+    let toast = Toastify({ text: "Updating cart...", duration: -1, style: { background: "#64748b", borderRadius: "8px" } });
+    toast.showToast();
+
+    const db = window.supabaseClient;
+
+    try {
+        const { data: existing } = await db.from('cart_items')
+            .select('id, quantity')
+            .eq('user_id', window.vilarciUser.id)
+            .eq('product_id', productId)
+            .eq('cart_type', cartType)
+            .eq('selected_amount', amount)
+            .maybeSingle();
+
+        if (existing) {
+            await db.from('cart_items').update({ quantity: existing.quantity + 1 }).eq('id', existing.id);
+        } else {
+            await db.from('cart_items').insert([{
+                user_id: window.vilarciUser.id,
+                product_id: productId,
+                cart_type: cartType,
+                selected_price: price,
+                selected_amount: amount,
+                quantity: 1
+            }]);
+        }
+
+        // Update the live DB counter!
+        if(typeof window.updateGlobalCartCount === 'function') window.updateGlobalCartCount();
+        
+        toast.hideToast();
+        Toastify({ text: "Added to cart! ✅", duration: 3000, style: { background: "#22c55e", borderRadius: "8px", fontWeight: "bold" } }).showToast();
+
+    } catch (error) {
+        console.error("Cart Error:", error);
+        toast.hideToast();
+        Toastify({ text: "Failed to add item.", duration: 3000, style: { background: "#ef4444", borderRadius: "8px" } }).showToast();
+    }
+};

@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vilarci Seller Nexus</title>
-    <!--For React App-->
-    <script src="vilarci-bridge.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
     
     <style>
@@ -35,6 +34,12 @@
             justify-content: center;
         }
 
+        #page-loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-dark); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+
         .container {
             width: 100%;
             max-width: 650px;
@@ -45,7 +50,19 @@
             padding: 40px;
             border-radius: 20px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            display: none;
         }
+
+        .greeting-box {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--success);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .greeting-box h3 { color: var(--success); margin: 0 0 5px 0; }
+        .greeting-box p { margin: 0; font-size: 0.9rem; color: var(--text-main); }
 
         h2 {
             text-align: center;
@@ -59,64 +76,42 @@
 
         .steps {
             display: flex;
-            justify-content: space-between;
+            justify-content: space-around;
             margin-bottom: 30px;
             position: relative;
         }
         
         .steps::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: rgba(255,255,255,0.1);
-            z-index: 1;
+            content: ''; position: absolute; bottom: 0; left: 0;
+            width: 100%; height: 2px; background: rgba(255,255,255,0.1); z-index: 1;
         }
 
         .step {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            padding-bottom: 10px;
-            position: relative;
-            z-index: 2;
-            transition: 0.3s;
-            border-bottom: 2px solid transparent;
-            cursor: pointer;
+            font-size: 0.9rem; color: var(--text-muted); padding-bottom: 10px;
+            position: relative; z-index: 2; transition: 0.3s;
+            border-bottom: 2px solid transparent; cursor: pointer;
         }
 
         .step.active {
-            color: var(--accent);
-            border-bottom: 2px solid var(--accent);
+            color: var(--accent); border-bottom: 2px solid var(--accent);
             text-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
         }
 
         label {
-            display: block;
-            margin-top: 20px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-            letter-spacing: 0.5px;
+            display: block; margin-top: 20px; font-size: 0.85rem;
+            color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px;
         }
 
         input, select {
-            width: 100%;
-            padding: 12px 15px;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            color: white;
-            font-family: inherit;
-            transition: all 0.3s ease;
+            width: 100%; padding: 12px 15px; background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border); border-radius: 8px;
+            color: white; font-family: inherit; transition: all 0.3s ease;
+            box-sizing: border-box;
         }
 
         input:focus, select:focus {
-            outline: none;
-            border-color: var(--accent);
-            background: rgba(6, 182, 212, 0.05);
-            box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
+            outline: none; border-color: var(--accent);
+            background: rgba(6, 182, 212, 0.05); box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
         }
         
         select { background-color: rgba(0,0,0,0.2); color: white; }
@@ -134,8 +129,6 @@
         .btn-primary:hover { box-shadow: 0 6px 20px rgba(79, 70, 229, 0.6); transform: translateY(-1px); }
         .btn-secondary { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-muted); }
         .btn-secondary:hover { background: rgba(255,255,255,0.1); color: white; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        .btn-otp { margin-top: 15px; background: linear-gradient(135deg, var(--success), #059669); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); }
 
         .radio-group { display: flex; gap: 10px; }
         .radio-box {
@@ -150,78 +143,28 @@
         .form-section { display: none; }
         .form-section.active { display: block; animation: slideUp 0.5s ease forwards; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-        #otpInput { letter-spacing: 8px; font-size: 1.5rem; text-align: center; background: rgba(0,0,0,0.4); border-color: var(--accent); }
-        
-        .resend-link {
-            text-align: center; margin-top: 10px; font-size: 0.85rem; color: var(--text-muted);
-        }
-        .resend-link a { color: var(--accent); text-decoration: none; font-weight: bold; cursor: pointer; }
-        .resend-link a:hover { text-decoration: underline; }
-        .resend-link a.disabled { color: var(--text-muted); cursor: not-allowed; text-decoration: none; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>VILARCI SELLER REGISTRATION</h2>
+<div id="page-loader">
+    <h3 style="color: var(--accent);">Verifying Identity...</h3>
+</div>
+
+<div class="container" id="main-container">
+    <h2>VILARCI SELLER NEXUS</h2>
+
+    <div class="greeting-box">
+        <h3 id="greet-name">Hello, Seller</h3>
+        <p id="greet-phone">Mobile: verifying...</p>
+    </div>
     
     <div class="steps">
-        <span id="indicator-1" class="step active" onclick="safeGoToStep(1)">01 IDENTITY</span>
-        <span id="indicator-2" class="step" onclick="safeGoToStep(2)">02 STORE</span>
-        <span id="indicator-3" class="step" onclick="safeGoToStep(3)">03 FINANCE</span>
+        <span id="indicator-1" class="step active" onclick="safeGoToStep(1)">01 STORE DETAILS</span>
+        <span id="indicator-2" class="step" onclick="safeGoToStep(2)">02 FINANCE</span>
     </div>
 
     <div id="step-1" class="form-section active">
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-            <div>
-                <label>First Name *</label>
-                <input type="text" id="firstName" placeholder="Rahul">
-                <small class="error-msg">Required.</small>
-            </div>
-            <div>
-                <label>Last Name *</label>
-                <input type="text" id="lastName" placeholder="Kar">
-                <small class="error-msg">Required.</small>
-            </div>
-        </div>
-
-        <label>Gender *</label>
-        <select id="gender">
-            <option value="">Select Gender</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-            <option value="Other">Other</option>
-        </select>
-        <small class="error-msg">Required.</small>
-
-        <label>Date of Birth (18+) *</label>
-        <input type="date" id="dob" style="color-scheme: dark;">
-        <small class="error-msg" id="dobError">Must be 18+.</small>
-
-        <label>Mobile Number *</label>
-        <input type="tel" id="mobile" maxlength="10" placeholder="9876543210">
-        <small class="error-msg">10 digits required.</small>
-
-        <label>Email (Login ID) *</label>
-        <input type="email" id="email" placeholder="name@domain.com">
-        <small class="error-msg">Invalid Email.</small>
-
-        <label>Password *</label>
-        <input type="password" id="password" placeholder="••••••••">
-        <small class="error-msg">Min 8 chars, 1 number, 1 symbol.</small>
-        
-        <button class="btn btn-primary" style="width:100%; margin-top:20px;" onclick="sendOtp()" id="btn-send-otp">Send Verification Code</button>
-
-        <div id="otp-container" style="display:none; margin-top: 25px; border-top: 1px dashed var(--glass-border); padding-top:20px;">
-            <p style="color:var(--success); text-align:center; font-size:0.9rem; margin-bottom:15px;">✓ Verification code sent to email</p>
-            <input type="text" id="otpInput" placeholder="123456" maxlength="6">
-            <button class="btn btn-otp" style="width:100%" onclick="verifyOtp()" id="btn-verify">Verify Identity</button>
-            <p class="resend-link">Did not receive code? <a id="resendBtn" onclick="resendOtp()">Resend now</a> <span id="timer"></span></p>
-        </div>
-    </div>
-
-    <div id="step-2" class="form-section">
         <label>Store Name *</label>
         <input type="text" id="storeName" onkeyup="generateSlug()" placeholder="My Tech Store">
         <small class="error-msg">Required.</small>
@@ -231,11 +174,11 @@
         
         <label>Selling Type *</label>
         <div class="radio-group" id="sellingTypeContainer">
-            <div class="radio-box selected" onclick="selectType('1', this)">Product</div>
-            <div class="radio-box" onclick="selectType('2', this)">Service</div>
-            <div class="radio-box" onclick="selectType('3', this)">Both</div>
+            <div class="radio-box selected" onclick="selectType('Product', this)">Product</div>
+            <div class="radio-box" onclick="selectType('Service', this)">Service</div>
+            <div class="radio-box" onclick="selectType('Both', this)">Both</div>
         </div>
-        <input type="text" readonly id="sellingType" value="1">
+        <input type="hidden" id="sellingType" value="Product">
 
         <label>PAN Number *</label>
         <input type="text" id="panNumber" placeholder="ABCDE1234F" maxlength="10" style="text-transform: uppercase;">
@@ -266,12 +209,11 @@
         <small class="error-msg">Required.</small>
 
         <div class="btn-group">
-            <button class="btn btn-secondary" onclick="goToStep(1)">Previous</button>
-            <button class="btn btn-primary" onclick="attemptToStep3()">Next Step</button>
+            <button class="btn btn-primary" onclick="attemptToStep2()">Next: Finance</button>
         </div>
     </div>
 
-    <div id="step-3" class="form-section">
+    <div id="step-2" class="form-section">
         <label>Bank Account Holder Name *</label>
         <input type="text" id="bankHolder" placeholder="Name as per Passbook">
         <small class="error-msg">Required.</small>
@@ -294,62 +236,59 @@
         </div>
 
         <div class="btn-group">
-            <button class="btn btn-secondary" onclick="goToStep(2)">Previous</button>
+            <button class="btn btn-secondary" onclick="goToStep(1)">Previous</button>
             <button class="btn btn-primary" onclick="finalSubmit()" id="btn-submit">Initialize Shop</button>
         </div>
-        <p id="final-message" style="text-align:center; margin-top:15px; font-weight:bold; color: var(--accent);"></p>
     </div>
 </div>
 
 <script>
-    const SUPABASE_URL = 'https://gxvcgubbqtccoycvdupq.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dmNndWJicXRjY295Y3ZkdXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODA2MzQsImV4cCI6MjA4MDA1NjYzNH0.7Hobx-emspJQ7HLyjaWR-XQhzk948LWufq3OCimKk4w';
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    let userEmail = "";
+    // Changed variable name to 'sb' to prevent conflict with global 'supabase'
+    const sb = window.supabaseClient; 
+    let currentUser = null;
     let isGstRequired = false;
 
-    // --- SECURITY UTILS ---
-    function escapeHtml(text) {
-        if (!text) return text;
-        return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
-
-    // --- STEP 1 LOGIC ---
-    function validateStep1() {
-        let isValid = true;
-        const showError = (id, show) => {
-            const el = document.getElementById(id);
-            const msg = el.nextElementSibling;
-            if(show) { el.classList.add('invalid'); if(msg) msg.style.display = 'block'; isValid = false; }
-            else { el.classList.remove('invalid'); if(msg) msg.style.display = 'none'; }
-        };
-
-        ['firstName', 'lastName', 'gender'].forEach(id => showError(id, !document.getElementById(id).value));
-        const emailVal = document.getElementById('email').value;
-        showError('email', !emailVal.includes('@') || !emailVal.includes('.'));
-        showError('mobile', !/^[0-9]{10}$/.test(document.getElementById('mobile').value));
-
-        const dobVal = document.getElementById('dob').value;
-        if (!dobVal) { showError('dob', true); } 
-        else {
-            const dob = new Date(dobVal);
-            const today = new Date();
-            let age = today.getFullYear() - dob.getFullYear();
-            if (today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())) { age--; }
-            if (age < 18) {
-                document.getElementById('dob').classList.add('invalid');
-                document.getElementById('dobError').style.display = 'block';
-                isValid = false;
-            } else {
-                document.getElementById('dob').classList.remove('invalid');
-                document.getElementById('dobError').style.display = 'none';
-            }
+    // --- SECURITY & AUTH CHECK ---
+    async function checkAuthAndLoad() {
+        const { data: { session }, error } = await sb.auth.getSession();
+        
+        if (!session) {
+            window.location.href = "user_login.html";
+            return;
         }
-        return isValid;
+
+        currentUser = session.user;
+
+        // 1. Check if they are already a Seller
+        const { data: sellerData } = await sb.from('sellers_private_089').select('id').eq('id', currentUser.id).single();
+        
+        if (sellerData) {
+            alert("You already have a registered Seller Account!");
+            window.location.href = "seller_profile.html";
+            return;
+        }
+
+        // 2. Fetch their public.users data for the greeting
+        const { data: userData } = await sb.from('users').select('first_name, whatsapp_number').eq('id', currentUser.id).single();
+
+        if (userData) {
+            document.getElementById('greet-name').innerText = `Hello ${userData.first_name}, Welcome to Seller Registration`;
+            
+            const mobile = userData.whatsapp_number;
+            const maskedMobile = "******" + mobile.slice(-4);
+            document.getElementById('greet-phone').innerText = `Your registered mobile: ${maskedMobile}`;
+        }
+
+        document.getElementById('page-loader').style.display = 'none';
+        document.getElementById('main-container').style.display = 'block';
+
+        loadStates();
     }
 
-    // --- STEP 2 & GST ---
+    window.onload = checkAuthAndLoad;
+
+
+    // --- STEP LOGIC ---
     function toggleGst(required) {
         isGstRequired = required;
         const container = document.getElementById('gst-container');
@@ -359,7 +298,7 @@
         if(!required) document.getElementById('gstin').value = "";
     }
 
-    function validateStep2() {
+    function validateStep1() {
         let isValid = true;
         const showError = (id, show) => {
             const el = document.getElementById(id);
@@ -376,13 +315,12 @@
         return isValid;
     }
 
-    function attemptToStep3() {
-        if(validateStep2()) goToStep(3);
+    function attemptToStep2() {
+        if(validateStep1()) goToStep(2);
         else alert("Please fill in all required Store Details.");
     }
 
-    // --- STEP 3 LOGIC ---
-    function validateStep3() {
+    function validateStep2() {
         let isValid = true;
         const showError = (id, show) => {
             const el = document.getElementById(id);
@@ -394,242 +332,86 @@
         return isValid;
     }
 
-    // --- API CALLS ---
-    async function sendOtp() {
-        if (!validateStep1()) return;
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value;
-        const firstName = document.getElementById('firstName').value;
-        const btn = document.getElementById('btn-send-otp');
-        
-        btn.innerText = "Transmitting...";
-        btn.disabled = true;
-
-        // 1. Attempt Sign Up
-        const { data, error } = await sb.auth.signUp({
-            email: email, password: password,
-            options: { data: { full_name: firstName } }
-        });
-
-        // 2. INTELLIGENT HANDLER: Check if user actually exists (The "Shadow Login" trick)
-        let userIsDuplicate = false;
-        
-        if (error) {
-            // Explicit error (User Enumeration OFF)
-            if (error.message.includes("already registered") || error.code === "user_already_exists") {
-                userIsDuplicate = true;
-            } else {
-                alert("Error: " + error.message);
-                btn.innerText = "Send Verification Code";
-                btn.disabled = false;
-                return;
-            }
-        } else {
-            // "Fake Success" (User Enumeration ON) or Real Success
-            // We differentiate by trying to LOGIN immediately with the password provided.
-            const { data: loginData, error: loginError } = await sb.auth.signInWithPassword({
-                email: email, password: password
-            });
-
-            if (loginData?.session) {
-                // If login worked, it means the user was ALREADY verified and existed.
-                // We auto-recover them.
-                alert("Account found! You are already verified. Proceeding...");
-                userEmail = email;
-                goToStep(2);
-                loadStates();
-                return;
-            } else if (loginError && loginError.message.includes("Email not confirmed")) {
-                // User exists but isn't verified. Real OTP was sent.
-                // Proceed normally.
-            } else if (loginError && loginError.message.includes("Invalid login credentials")) {
-                // This implies the user Exists (otherwise signup would have created new) 
-                // BUT the password was wrong? 
-                // OR it's a new user and login failed because unverified?
-                // In any case, we show the OTP box.
-            }
-        }
-
-        if (userIsDuplicate) {
-            // Try to login to see if we can rescue them
-            const { data: loginData } = await sb.auth.signInWithPassword({ email: email, password: password });
-            if (loginData?.session) {
-                alert("Welcome back! Resuming application...");
-                userEmail = email;
-                goToStep(2);
-                loadStates();
-                return;
-            } else {
-                alert("This email is registered. Please check your password or login normally.");
-                window.location.href = "login.html";
-                return;
-            }
-        }
-
-        // 3. OTP SENT SUCCESS
-        userEmail = email;
-        document.getElementById('otp-container').style.display = "block";
-        btn.style.display = "none";
-        document.getElementById('email').readOnly = true;
-        document.getElementById('password').readOnly = true;
-        document.getElementById('email').style.opacity = "0.7";
-        startResendTimer();
-    }
-
-    // --- RESEND OTP LOGIC ---
-    async function resendOtp() {
-        const link = document.getElementById('resendBtn');
-        if(link.classList.contains('disabled')) return;
-
-        link.innerText = "Sending...";
-        link.classList.add('disabled');
-
-        const { error } = await sb.auth.resend({ type: 'signup', email: userEmail });
-        
-        if (error) {
-            alert("Resend Failed: " + error.message);
-            link.innerText = "Resend now";
-            link.classList.remove('disabled');
-        } else {
-            alert("New code sent to " + userEmail);
-            startResendTimer();
-        }
-    }
-
-    function startResendTimer() {
-        const link = document.getElementById('resendBtn');
-        const timerSpan = document.getElementById('timer');
-        let timeLeft = 30;
-        
-        link.classList.add('disabled');
-        link.innerText = "Resend now";
-        
-        const interval = setInterval(() => {
-            timeLeft--;
-            timerSpan.innerText = `(${timeLeft}s)`;
-            if(timeLeft <= 0) {
-                clearInterval(interval);
-                timerSpan.innerText = "";
-                link.classList.remove('disabled');
-            }
-        }, 1000);
-    }
-
-    async function verifyOtp() {
-        const otp = document.getElementById('otpInput').value.trim();
-        const btn = document.getElementById('btn-verify');
-        btn.innerText = "Verifying...";
-        
-        const { data, error } = await sb.auth.verifyOtp({ email: userEmail, token: otp, type: 'signup' });
-        
-        if (error) {
-            alert("Invalid Code: " + error.message);
-            btn.innerText = "Verify Identity";
-        } else {
-            alert("Identity Verified Successfully.");
-            goToStep(2);
-            loadStates(); 
-        }
-    }
-
-    async function finalSubmit() {
-        if (!validateStep3()) { alert("Please fill in Bank Details."); return; }
-        if(!document.getElementById('checkTerms').checked) return alert("Please accept Terms & Conditions");
-        if(!document.getElementById('checkValid').checked) return alert("Please confirm information is true");
-
-        const btn = document.getElementById('btn-submit');
-        btn.innerText = "Processing...";
-        btn.disabled = true;
-
-        const payload = {
-            _first_name: escapeHtml(document.getElementById('firstName').value),
-            _last_name: escapeHtml(document.getElementById('lastName').value),
-            _gender: document.getElementById('gender').value,
-            _dob: document.getElementById('dob').value,
-            _mobile: document.getElementById('mobile').value,
-            _pan_number: escapeHtml(document.getElementById('panNumber').value),
-            _shop_slug: escapeHtml(document.getElementById('storeName').value),
-            _slug: document.getElementById('slug').value,
-            _selling_type: document.getElementById('sellingType').value,
-            _state_id: parseInt(document.getElementById('stateSelect').value) || 0,
-            _district_id: parseInt(document.getElementById('districtSelect').value) || 0,
-            _sub_area_id: parseInt(document.getElementById('subAreaSelect').value) || 0,
-            _gstin: isGstRequired ? escapeHtml(document.getElementById('gstin').value) : '',
-            _bank_holder: escapeHtml(document.getElementById('bankHolder').value),
-            _bank_name: escapeHtml(document.getElementById('bankName').value),
-            _account_num: escapeHtml(document.getElementById('accountNum').value),
-            _ifsc: escapeHtml(document.getElementById('ifsc').value),
-            _location_link: '',
-            _shop_direction: ''
-        };
-
-        const { data, error } = await sb.rpc('register_new_seller', payload);
-
-        if (error) {
-            console.error(error);
-            alert("Registration Failed: " + error.message);
-            btn.innerText = "Initialize Shop";
-            btn.disabled = false;
-        } else {
-            alert("SUCCESS! Account Created. Redirecting to Login...");
-            document.getElementById('final-message').innerText = "Seller Nexus ID: " + data;
-            document.querySelectorAll('input, button, select').forEach(el => el.disabled = true);
-            setTimeout(() => window.location.href = 'login.html', 2000);
-        }
-    }
-
-    // --- NAVIGATION & UTILS ---
     function safeGoToStep(targetStep) {
-        const currentStep = getCurrentStep();
-        if (targetStep < currentStep) { goToStep(targetStep); return; }
-        if (targetStep > 1) {
-            if(!userEmail) { alert("Please complete Identity Verification first."); return; }
-            if(!validateStep1()) return;
-        }
-        if (targetStep > 2) {
-            if(!validateStep2()) { alert("Please complete Store Details first."); return; }
+        if (targetStep === 2 && !validateStep1()) {
+            alert("Please complete Store Details first.");
+            return;
         }
         goToStep(targetStep);
     }
-    function getCurrentStep() {
-        if(document.getElementById('step-3').classList.contains('active')) return 3;
-        if(document.getElementById('step-2').classList.contains('active')) return 2;
-        return 1;
-    }
+
     function goToStep(step) {
         document.querySelectorAll('.form-section').forEach(el => el.classList.remove('active'));
         document.getElementById('step-' + step).classList.add('active');
         document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
         for(let i=1; i<=step; i++) document.getElementById('indicator-' + i).classList.add('active');
     }
+
     function generateSlug() {
         const name = document.getElementById('storeName').value;
         document.getElementById('slug').value = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
     }
+
     function selectType(val, el) {
         document.getElementById('sellingType').value = val;
         document.querySelectorAll('#sellingTypeContainer .radio-box').forEach(b => b.classList.remove('selected'));
         el.classList.add('selected');
     }
+
     async function loadStates() {
-        const { data } = await sb.from('shop_pickup_address').select('*').eq('location_type', 'STATE');
-        const sel = document.getElementById('stateSelect');
-        sel.innerHTML = '<option value="">Select State</option>';
-        if(data) data.forEach(item => sel.innerHTML += `<option value="${item.id}">${item.location_name}</option>`);
+        document.getElementById('stateSelect').innerHTML = '<option value="1">West Bengal</option>';
     }
     async function loadDistricts() {
-        const parentId = document.getElementById('stateSelect').value;
-        const { data } = await sb.from('shop_pickup_address').select('*').eq('parent_id', parentId);
-        const sel = document.getElementById('districtSelect');
-        sel.innerHTML = '<option value="">Select District</option>';
-        if(data) data.forEach(item => sel.innerHTML += `<option value="${item.id}">${item.location_name}</option>`);
+        document.getElementById('districtSelect').innerHTML = '<option value="1">Purba Medinipur</option>';
     }
     async function loadSubAreas() {
-        const parentId = document.getElementById('districtSelect').value;
-        const { data } = await sb.from('shop_pickup_address').select('*').eq('parent_id', parentId);
-        const sel = document.getElementById('subAreaSelect');
-        sel.innerHTML = '<option value="">Select Area</option>';
-        if(data) data.forEach(item => sel.innerHTML += `<option value="${item.id}">${item.location_name}</option>`);
+        document.getElementById('subAreaSelect').innerHTML = '<option value="1">Tamluk</option>';
+    }
+
+    // --- SUBMISSION ---
+    async function finalSubmit() {
+        if (!validateStep2()) { alert("Please fill in Bank Details."); return; }
+        if(!document.getElementById('checkTerms').checked || !document.getElementById('checkValid').checked) {
+            return alert("Please accept Terms & Conditions and confirm information.");
+        }
+
+        const btn = document.getElementById('btn-submit');
+        btn.innerText = "Processing...";
+        btn.disabled = true;
+
+        const payload = {
+            _store_name: document.getElementById('storeName').value.trim(),
+            _shop_slug: document.getElementById('slug').value.trim(),
+            _selling_type: document.getElementById('sellingType').value,
+            _pan_number: document.getElementById('panNumber').value.trim(),
+            _gstin: isGstRequired ? document.getElementById('gstin').value.trim() : null,
+            _state_id: parseInt(document.getElementById('stateSelect').value) || 0,
+            _district_id: parseInt(document.getElementById('districtSelect').value) || 0,
+            _sub_area_id: parseInt(document.getElementById('subAreaSelect').value) || 0,
+            _bank_holder: document.getElementById('bankHolder').value.trim(),
+            _bank_name: document.getElementById('bankName').value.trim(),
+            _account_num: document.getElementById('accountNum').value.trim(),
+            _ifsc: document.getElementById('ifsc').value.trim()
+        };
+
+        try {
+            // Using 'sb' here too
+            const { data, error } = await sb.rpc('register_new_seller', payload);
+
+            if (error) throw error;
+
+            alert("SUCCESS! Seller Account Created. Redirecting to Login...");
+            
+            document.querySelectorAll('input, button, select').forEach(el => el.disabled = true);
+            
+            setTimeout(() => window.location.href = 'login.html', 2000);
+
+        } catch (err) {
+            console.error(err);
+            alert("Registration Failed: " + err.message);
+            btn.innerText = "Initialize Shop";
+            btn.disabled = false;
+        }
     }
 </script>
 </body>

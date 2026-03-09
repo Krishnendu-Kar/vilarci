@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join Vilarci - Create Account</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root { --vilarci-red: #e43e3e; --bg: #fdf2f2; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        .auth-card { background: #fff; padding: 40px; border-radius: 24px; box-shadow: 0 20px 40px rgba(228, 62, 62, 0.1); width: 100%; max-width: 480px; border: 1px solid rgba(228, 62, 62, 0.2); }
+        h2 { text-align: center; color: #1a1a1a; font-weight: 800; margin-bottom: 8px; }
+        .subtitle { text-align: center; color: #666; font-size: 14px; margin-bottom: 30px; }
+        
+        .input-row { display: flex; gap: 12px; margin-bottom: 16px; }
+        .field { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        label { font-size: 12px; font-weight: 700; color: #444; text-transform: uppercase; letter-spacing: 0.5px; }
+        input, select { padding: 12px 16px; border: 2px solid #eee; border-radius: 12px; font-size: 15px; transition: 0.3s; width: 100%; box-sizing: border-box; }
+        input:focus { border-color: var(--vilarci-red); outline: none; box-shadow: 0 0 0 4px rgba(228, 62, 62, 0.1); }
+        
+        .phone-input { display: flex; align-items: center; border: 2px solid #eee; border-radius: 12px; background: #fff; overflow: hidden; }
+        .phone-input span { padding: 0 12px; font-weight: 700; color: #666; background: #f9f9f9; border-right: 1px solid #eee; height: 100%; display: flex; align-items: center; }
+        .phone-input input { border: none; flex: 1; }
+        
+        .pwd-box { position: relative; }
+        .toggle-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--vilarci-red); font-weight: 700; font-size: 11px; cursor: pointer; }
+        
+        .btn { width: 100%; padding: 14px; background: var(--vilarci-red); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn:hover { background: #c62828; transform: translateY(-1px); box-shadow: 0 8px 15px rgba(228, 62, 62, 0.2); }
+        
+        .switch { text-align: center; margin-top: 20px; font-size: 14px; color: #666; }
+        .switch a { color: var(--vilarci-red); text-decoration: none; font-weight: 700; }
+        #otp-section { display: none; }
+        #msg { text-align: center; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="auth-card">
+    <h2>Vilarci Identity</h2>
+    <p class="subtitle">One account for shopping and selling.</p>
+    
+    <div id="msg"></div>
+
+    <div id="signup-section">
+        <div class="input-row">
+            <div class="field"><label>First Name*</label><input type="text" id="fname" placeholder="Krish"></div>
+            <div class="field"><label>Middle Name</label><input type="text" id="mname" placeholder=""></div>
+        </div>
+        <div class="input-row">
+            <div class="field"><label>Last Name*</label><input type="text" id="lname" placeholder="Das"></div>
+            <div class="field">
+                <label>Gender*</label>
+                <select id="gender"><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select>
+            </div>
+        </div>
+        <div class="field" style="margin-bottom:16px;"><label>Email</label><input type="email" id="email" placeholder="name@example.com"></div>
+        <div class="field" style="margin-bottom:16px;">
+            <label>WhatsApp Number*</label>
+            <div class="phone-input"><span>+91</span><input type="tel" id="mobile" placeholder="9876543210" maxlength="10"></div>
+        </div>
+        <div class="field" style="margin-bottom:16px;">
+            <label>Password*</label>
+            <div class="pwd-box">
+                <input type="password" id="pass" placeholder="••••••••">
+                <button type="button" class="toggle-btn" onclick="toggle('pass', this)">SHOW</button>
+            </div>
+        </div>
+        <div class="field" style="margin-bottom:16px;">
+            <label>Confirm Password*</label>
+            <div class="pwd-box">
+                <input type="password" id="cpass" placeholder="••••••••">
+                <button type="button" class="toggle-btn" onclick="toggle('cpass', this)">SHOW</button>
+            </div>
+        </div>
+        <button class="btn" onclick="handleSignup()">Send WhatsApp OTP</button>
+    </div>
+
+    <div id="otp-section">
+        <p style="text-align:center; font-size:14px; color:#555;">Enter the 6-digit code sent to your WhatsApp.</p>
+        <div class="field"><label>OTP Code</label><input type="text" id="otp" placeholder="123456" maxlength="6" style="text-align:center; font-size:24px; letter-spacing:8px;"></div>
+        <button class="btn" onclick="handleVerify()">Verify & Create Account</button>
+    </div>
+
+    <div class="switch">Already have an account? <a href="user_login.html">Log In</a></div>
+</div>
+
+<script>
+    const sb = window.supabaseClient; 
+    let tempMobile = "";
+
+    function toggle(id, btn) {
+        const x = document.getElementById(id);
+        x.type = x.type === "password" ? "text" : "password";
+        btn.innerText = x.type === "password" ? "SHOW" : "HIDE";
+    }
+
+    function showMsg(m, isErr=false) {
+        const el = document.getElementById('msg');
+        el.style.display = "block";
+        el.style.background = isErr ? "#fee2e2" : "#dcfce7";
+        el.style.color = isErr ? "#b91c1c" : "#15803d";
+        el.innerText = m;
+    }
+
+    async function handleSignup() {
+        const fn = document.getElementById('fname').value.trim();
+        const mn = document.getElementById('mname').value.trim();
+        const ln = document.getElementById('lname').value.trim();
+        const gn = document.getElementById('gender').value;
+        const em = document.getElementById('email').value.trim();
+        const ph = document.getElementById('mobile').value.trim();
+        const pw = document.getElementById('pass').value;
+        const cp = document.getElementById('cpass').value;
+
+        if(!fn || !ln || ph.length < 10 || !pw) return showMsg("Please fill required fields!", true);
+        if(pw !== cp) return showMsg("Passwords do not match!", true);
+
+        tempMobile = "+91" + ph;
+        
+        // 🌟 Passing metadata keys matching our SQL Trigger exactly
+        const { error } = await sb.auth.signUp({
+            phone: tempMobile,
+            password: pw,
+            options: { data: { first_name: fn, middle_name: mn, last_name: ln, gender: gn, email: em } }
+        });
+
+        if(error) return showMsg(error.message, true);
+        
+        showMsg("OTP sent to WhatsApp!");
+        document.getElementById('signup-section').style.display = 'none';
+        document.getElementById('otp-section').style.display = 'block';
+    }
+
+    async function handleVerify() {
+        const code = document.getElementById('otp').value.trim();
+        const { error } = await sb.auth.verifyOtp({ phone: tempMobile, token: code, type: 'sms' });
+        
+        if(error) return showMsg(error.message, true);
+        
+        showMsg("Verified! Welcome to Vilarci.");
+        setTimeout(() => window.location.href = "index.html", 1500);
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Vilarci</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --vilarci-red: #e43e3e; }
+        body { font-family: 'Inter', sans-serif; background-color: #fdf2f2; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .auth-card { background: #fff; padding: 40px; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.05); width: 100%; max-width: 400px; }
+        h2 { text-align: center; margin-bottom: 24px; font-weight: 800; }
+        
+        .tabs { display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px; }
+        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; font-weight: 700; color: #888; transition: 0.3s; }
+        .tab.active { color: var(--vilarci-red); border-bottom: 3px solid var(--vilarci-red); }
+        
+        .field { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
+        label { font-size: 12px; font-weight: 700; color: #444; text-transform: uppercase; }
+        input { padding: 12px; border: 2px solid #eee; border-radius: 12px; font-size: 15px; }
+        .phone-row { display: flex; align-items: center; border: 2px solid #eee; border-radius: 12px; }
+        .phone-row span { padding: 0 12px; font-weight: 700; color: #666; }
+        .phone-row input { border: none; flex: 1; }
+        
+        .btn { width: 100%; padding: 14px; background: var(--vilarci-red); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        .switch { text-align: center; margin-top: 20px; font-size: 14px; }
+        #msg { text-align: center; margin-bottom: 15px; font-size: 14px; font-weight: 700; }
+    </style>
+</head>
+<body>
+
+<div class="auth-card">
+    <h2>Welcome Back</h2>
+    <div id="msg"></div>
+    
+    <div class="tabs">
+        <div class="tab active" id="t-pw" onclick="setTab('pw')">Password</div>
+        <div class="tab" id="t-otp" onclick="setTab('otp')">WhatsApp OTP</div>
+    </div>
+
+    <div id="f-pw">
+        <div class="field"><label>Mobile or Email</label><input type="text" id="login-id" placeholder="9876543210 or email"></div>
+        <div class="field"><label>Password</label><input type="password" id="login-pass" placeholder="••••••••"></div>
+        <button class="btn" onclick="loginPW()">Sign In</button>
+    </div>
+
+    <div id="f-otp" style="display:none;">
+        <div id="otp-step1">
+            <div class="field"><label>WhatsApp Number</label><div class="phone-row"><span>+91</span><input type="tel" id="otp-mobile" placeholder="9876543210"></div></div>
+            <button class="btn" onclick="sendOTP()">Send Code</button>
+        </div>
+        <div id="otp-step2" style="display:none;">
+            <div class="field"><label>Enter Code</label><input type="text" id="otp-code" placeholder="123456" maxlength="6"></div>
+            <button class="btn" onclick="verifyOTP()">Verify Login</button>
+        </div>
+    </div>
+
+    <div class="switch">New to Vilarci? <a href="user_signup.html" style="color:var(--vilarci-red); font-weight:700; text-decoration:none;">Create Account</a></div>
+</div>
+
+<script>
+    const sb = window.supabaseClient;
+    let loginMethod = 'pw';
+    let activePhone = "";
+
+    function setTab(m) {
+        loginMethod = m;
+        document.getElementById('t-pw').classList.toggle('active', m==='pw');
+        document.getElementById('t-otp').classList.toggle('active', m==='otp');
+        document.getElementById('f-pw').style.display = m==='pw' ? 'block' : 'none';
+        document.getElementById('f-otp').style.display = m==='otp' ? 'block' : 'none';
+    }
+
+    function showMsg(m, isErr=true) {
+        const el = document.getElementById('msg');
+        el.style.color = isErr ? "#b91c1c" : "#15803d";
+        el.innerText = m;
+    }
+
+    async function loginPW() {
+        const id = document.getElementById('login-id').value.trim();
+        const pw = document.getElementById('login-pass').value;
+        const loginData = id.includes('@') ? { email: id, password: pw } : { phone: id.startsWith('+') ? id : "+91"+id, password: pw };
+        
+        const { error } = await sb.auth.signInWithPassword(loginData);
+        if(error) return showMsg(error.message);
+        window.location.href = "index.html";
+    }
+
+    async function sendOTP() {
+        activePhone = "+91" + document.getElementById('otp-mobile').value.trim();
+        const { error } = await sb.auth.signInWithOtp({ phone: activePhone });
+        if(error) return showMsg(error.message);
+        document.getElementById('otp-step1').style.display = 'none';
+        document.getElementById('otp-step2').style.display = 'block';
+        showMsg("OTP Sent!", false);
+    }
+
+    async function verifyOTP() {
+        const code = document.getElementById('otp-code').value.trim();
+        const { error } = await sb.auth.verifyOtp({ phone: activePhone, token: code, type: 'sms' });
+        if(error) return showMsg(error.message);
+        window.location.href = "index.html";
+    }
+</script>
+</body>
+</html>

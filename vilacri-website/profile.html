@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - Vilarci</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        main { margin-top: 80px; } 
+    </style>
+</head>
+<body>
+
+    <div id="vilarci-header"></div>
+
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <h1 class="text-3xl font-extrabold text-slate-900 mb-8">My Account</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <div class="md:col-span-1 space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-2xl font-bold mb-4" id="user-initial">V</div>
+                    <h2 class="text-xl font-bold text-slate-900" id="user-fullname">Loading...</h2>
+                    <p class="text-sm text-slate-500 mb-4" id="user-email">...</p>
+                    
+                    <div class="space-y-3 pt-4 border-t border-slate-100">
+                        <div class="flex items-center gap-3 text-slate-600 text-sm">
+                            <i data-lucide="phone" class="w-4 h-4"></i>
+                            <span id="user-phone">...</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-slate-600 text-sm">
+                            <i data-lucide="user" class="w-4 h-4"></i>
+                            <span id="user-gender" class="capitalize">...</span>
+                        </div>
+                    </div>
+
+                    <button onclick="logout()" class="w-full mt-6 py-2 px-4 border border-red-200 text-red-600 rounded-xl hover:bg-red-50 font-bold transition flex justify-center items-center gap-2">
+                        <i data-lucide="log-out" class="w-4 h-4"></i> Sign Out
+                    </button>
+                </div>
+            </div>
+
+            <div class="md:col-span-2">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="map-pin" class="w-5 h-5 text-red-500"></i> Saved Addresses
+                        </h3>
+                        <button onclick="toggleAddressForm()" class="text-sm font-bold text-red-600 hover:text-red-700 bg-red-50 px-3 py-1.5 rounded-lg transition">
+                            + Add New
+                        </button>
+                    </div>
+
+                    <div id="address-list" class="space-y-4">
+                        <p class="text-slate-500 text-sm animate-pulse">Loading addresses...</p>
+                    </div>
+
+                    <div id="add-address-form" class="hidden mt-6 bg-slate-50 p-4 sm:p-6 rounded-xl border border-slate-200">
+                        <h4 class="font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Add a new delivery address</h4>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Full Name</label>
+                                <input type="text" id="addr-name" class="w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:border-red-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mobile Number</label>
+                                <input type="text" id="addr-mobile" class="w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:border-red-500" maxlength="10">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 bg-white p-3 rounded-lg border border-slate-200">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">State & District</label>
+                                <div class="w-full p-2 border border-slate-100 rounded bg-slate-50 text-slate-500 text-sm font-medium cursor-not-allowed">
+                                    West Bengal • Purba Medinipur
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Main Zone</label>
+                                <div class="w-full p-2 border border-slate-100 rounded bg-slate-50 text-slate-500 text-sm font-medium cursor-not-allowed">
+                                    Tamluk
+                                </div>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Select Delivery Sub-Zone *</label>
+                                <select id="addr-subzone" class="w-full p-2.5 border-2 border-slate-300 rounded-lg focus:outline-none focus:border-red-500 bg-white font-medium text-slate-800 cursor-pointer">
+                                    <option value="" disabled selected>Loading local areas...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">House No, Street, Landmark *</label>
+                            <textarea id="addr-full" rows="2" class="w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:border-red-500" placeholder="e.g., Near Hospital More..."></textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Pincode *</label>
+                                <input type="text" id="addr-pin" class="w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:border-red-500" maxlength="6">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Address Type</label>
+                                <select id="addr-type" class="w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:border-red-500 bg-white">
+                                    <option value="Home">Home</option>
+                                    <option value="Office">Office</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex gap-3 mt-6">
+                            <button onclick="toggleAddressForm()" class="flex-1 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-lg font-bold hover:bg-slate-50 transition">Cancel</button>
+                            <button onclick="saveNewAddress()" id="btn-save-addr" class="flex-1 py-2.5 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition shadow-md shadow-red-200">Save Address</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="header.js"></script>
+    <script>
+        const sb = window.supabaseClient;
+        lucide.createIcons();
+        let sessionUser = null;
+        let subZonesLoaded = false;
+
+        async function initProfile() {
+            const { data: { session }, error } = await sb.auth.getSession();
+            
+            if (!session) {
+                window.location.href = "user_login.html";
+                return;
+            }
+            sessionUser = session.user;
+
+            const { data: userData } = await sb.from('users').select('*').eq('id', sessionUser.id).single();
+            
+            if (userData) {
+                const fullName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
+                document.getElementById('user-fullname').innerText = fullName || 'Vilarci User';
+                document.getElementById('user-initial').innerText = (userData.first_name || 'V').charAt(0).toUpperCase();
+                document.getElementById('user-email').innerText = userData.email || 'No email provided';
+                document.getElementById('user-phone').innerText = userData.whatsapp_number || 'N/A';
+                document.getElementById('user-gender').innerText = userData.gender || 'N/A';
+            }
+
+            fetchAddresses();
+        }
+
+        // 🌟 NEW: Fetch Addresses with Relational Joins
+        async function fetchAddresses() {
+            const listEl = document.getElementById('address-list');
+            
+            // This query fetches the foreign key data alongside the address!
+            const { data, error } = await sb.from('user_addresses')
+                .select(`
+                    *,
+                    states (name),
+                    districts (name),
+                    main_zones (name),
+                    sub_zones (name)
+                `)
+                .eq('user_id', sessionUser.id)
+                .order('created_at', { ascending: false });
+
+            if (error || !data || data.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-6 border-2 border-dashed border-slate-200 rounded-xl">
+                        <p class="text-slate-500 text-sm">No addresses saved yet.</p>
+                    </div>`;
+                return;
+            }
+
+            listEl.innerHTML = data.map(addr => {
+                // Safely format the zone hierarchy
+                const subName = addr.sub_zones ? addr.sub_zones.name : 'Unknown Area';
+                const mainName = addr.main_zones ? addr.main_zones.name : '';
+                const distName = addr.districts ? addr.districts.name : '';
+                const zoneText = `${subName}, ${mainName}, ${distName}`;
+
+                return `
+                <div class="p-4 border border-slate-200 rounded-xl hover:border-red-300 transition group relative bg-white">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">${addr.address_type}</span>
+                            <span class="font-bold text-slate-800">${addr.full_name}</span>
+                        </div>
+                        <button onclick="deleteAddress('${addr.id}')" class="text-slate-400 hover:text-red-500 transition sm:opacity-0 group-hover:opacity-100 p-1">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <p class="text-sm text-slate-600 mb-1 leading-relaxed">${addr.full_address}</p>
+                    
+                    <p class="text-xs font-bold text-indigo-600 bg-indigo-50 inline-block px-2 py-1 rounded mb-2">
+                        <i data-lucide="map" class="w-3 h-3 inline pb-0.5"></i> ${zoneText}
+                    </p>
+                    
+                    <p class="text-xs text-slate-500 font-medium">Pincode: ${addr.pincode} • Phone: ${addr.mobile}</p>
+                </div>
+            `}).join('');
+            
+            lucide.createIcons();
+        }
+
+        async function loadSubZones() {
+            if (subZonesLoaded) return;
+            const selectEl = document.getElementById('addr-subzone');
+            
+            // Assuming Main Zone ID 1 is Tamluk
+            const { data, error } = await sb.from('sub_zones').select('id, name').eq('main_zone_id', 1).order('name');
+            
+            if (data) {
+                selectEl.innerHTML = '<option value="" disabled selected>-- Choose Area in Tamluk --</option>';
+                data.forEach(z => {
+                    selectEl.innerHTML += `<option value="${z.id}">${z.name}</option>`;
+                });
+                subZonesLoaded = true;
+            }
+        }
+
+        function toggleAddressForm() {
+            const form = document.getElementById('add-address-form');
+            form.classList.toggle('hidden');
+            if (!form.classList.contains('hidden')) {
+                loadSubZones(); // Fetch subzones when they open the form
+            }
+        }
+
+        async function saveNewAddress() {
+            const btn = document.getElementById('btn-save-addr');
+            const name = document.getElementById('addr-name').value.trim();
+            const mobile = document.getElementById('addr-mobile').value.trim();
+            const fullAddr = document.getElementById('addr-full').value.trim();
+            const pin = document.getElementById('addr-pin').value.trim();
+            const type = document.getElementById('addr-type').value;
+            const subZoneId = document.getElementById('addr-subzone').value;
+
+            if(!name || !mobile || !fullAddr || !pin || !subZoneId) {
+                alert("Please fill all fields and select a Sub-Zone.");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "Saving...";
+
+            // 🌟 Insert includes the fixed IDs for State(1), District(1), and MainZone(1)
+            const { error } = await sb.from('user_addresses').insert([{
+                user_id: sessionUser.id,
+                full_name: name,
+                mobile: mobile,
+                full_address: fullAddr,
+                pincode: pin,
+                address_type: type,
+                state_id: 1, 
+                district_id: 1, 
+                main_zone_id: 1, 
+                sub_zone_id: parseInt(subZoneId)
+            }]);
+
+            btn.disabled = false;
+            btn.innerText = "Save Address";
+
+            if (error) {
+                alert("Failed to save address: " + error.message);
+            } else {
+                document.querySelectorAll('#add-address-form input, #add-address-form textarea').forEach(el => el.value = '');
+                document.getElementById('addr-subzone').selectedIndex = 0;
+                toggleAddressForm();
+                fetchAddresses();
+            }
+        }
+
+        async function deleteAddress(id) {
+            if(!confirm("Are you sure you want to delete this address?")) return;
+            await sb.from('user_addresses').delete().eq('id', id);
+            fetchAddresses();
+        }
+
+        async function logout() {
+            await sb.auth.signOut();
+            window.location.href = "index.html";
+        }
+
+        document.addEventListener('DOMContentLoaded', initProfile);
+    </script>
+</body>
+</html>
