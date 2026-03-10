@@ -3,16 +3,47 @@
     display: grid;
     gap: 15px;
     padding: 15px;
+
 }
-@media (min-width: 365px){
+@media (min-width: 501px){
     .shop-section {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+}
+@media (max-width: 500px){
+    .shop-section {
+        padding:0;
+        padding-top: 15px;
+        padding-bottom: 15px;
+        gap: 5px;
         grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     }
 }
+@media (min-width: 304px) and (max-width: 324px)  {
+    .shop-section {
+        padding:0;
+        padding-top: 15px;
+        padding-bottom: 15px;
+        gap: 2px;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+}
+@media (max-width: 303px){
+    .shop-section {
+        padding:0;
+        padding-top: 15px;
+        padding-bottom: 15px;
+        gap: 2px;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+}
+
+
 
 /* --- CARD DESIGN --- */
 .product-card {
     background: white;
+    height: 400px;
     border: 1px solid #eee;
     border-radius: 8px;
     overflow: hidden;
@@ -22,9 +53,7 @@
     display: flex;
     flex-direction: column;
 }
-@media (max-width: 364px){
-    .product-card { width: 45vw; }
-}
+
 .product-card:hover { box-shadow: 0 5px 15px rgba(0,0,0,0.15); transform: translateY(-2px); }
 
 .discount-percent {
@@ -41,13 +70,17 @@
     clip-path: polygon(0 0, 100% 0, 100% 80%, 95% 100%, 85% 80%, 75% 100%, 65% 80%, 55% 100%, 45% 80%, 35% 100%, 25% 80%, 15% 100%, 5% 80%, 0 100%);    
 } 
 
-.img-box { height: 160px; padding: 10px; display: flex; justify-content: center; align-items: center; background: #fafafa; }
+.img-box { height: 370px; padding: 10px; display: flex; justify-content: center; align-items: center; background: #fafafa; }
 .img-box img { max-height: 100%; max-width: 100%; object-fit: contain; mix-blend-mode: multiply; }
-
+@media (min-width: 611px) and (max-width: 718px)  {
+    .img-box {
+    height: 280px;
+    }
+}
 .details { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; }
-.product-name { font-size: 13px; margin: 0 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; color: #333; }
+.product-name { font-size: 17px; margin: 0 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; color: #7e5f6d; }
 
-.price-area { display: flex; align-items: baseline; gap: 5px; margin-top: 2px; margin-bottom: 8px; }
+.price-area { display: flex; align-items: baseline; gap: 5px; margin-top: 2px; margin-bottom: 0px; }
 .price { font-weight: bold; font-size: 15px; color: #111; }
 .mrp { text-decoration: line-through; font-size: 11px; color: #999; }
 

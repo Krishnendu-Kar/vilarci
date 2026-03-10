@@ -6,6 +6,8 @@
     <title>Service Details - Vilarci</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
@@ -174,9 +176,16 @@
                         <p class="text-[10px] text-slate-400 font-bold mt-2">*Taxes and fees calculated at checkout</p>
                     </div>
 
-                    <button id="book-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-bold py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all transform active:scale-95 flex justify-center items-center gap-2 mb-4">
-                        Book Service <i data-lucide="arrow-right" class="w-5 h-5"></i>
-                    </button>
+                    <div class="flex flex-col gap-3 mb-4">
+                        <button class="add-btn w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-bold rounded-lg transition-colors btn-relative shadow-sm" 
+                                        data-product-id="${s.id}"
+                                        onclick="event.stopPropagation(); requireAuth(() => { window.pendingCartData = { itemId: '${s.id}', amount: '${jsSafeDuration}', itemType: 'service' }; window.executeGlobalAdd('service'); });">
+                                    <i class="fa-solid fa-cart-plus"></i> Add to Cart
+                                </button>
+                        <button id="book-btn-desktop" onclick="bookService()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-bold py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all transform active:scale-95 flex justify-center items-center gap-2">
+                            Book Now <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                        </button>
+                    </div>
                     
                     <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
                         <p class="text-center text-xs text-slate-500 font-semibold flex justify-center items-center gap-1.5">
@@ -187,128 +196,119 @@
             </div>
 
         </div>
+        <div id="suggestions-wrapper" class="hidden mt-16 w-full px-2">
+            <div id="suggestions-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+            
+            <div id="suggestions-loader" class="hidden flex justify-center py-6">
+                <div class="animate-spin rounded-full h-8 w-8 border-4 border-indigo-100 border-t-indigo-600"></div>
+            </div>
+        </div>
     </main>
 
     <script src="config.js"></script>
 
     <script>
-        const db = window.supabaseClient;
+
+        
+       const db = window.supabaseClient;
         let currentService = null;
         let currentProvider = null;
         let isServiceAvailable = true;
 
-        // XSS Sanitizer for Output
+        // 🌟 10-STAGE SUGGESTION ENGINE GLOBALS
+        let currentStage = 1;
+        const MAX_STAGES = 10;
+        let isLoadingSuggestions = false;
+        let shownServiceIds = new Set();
+        let suggestionOffsets = { subCat: 0, cat: 0, recent: 0, seller: 0 };
+        let suggestionValidSellers = null;
+
         function escapeHtml(text) {
             if (typeof text !== 'string') return text;
-            return text.replace(/&/g, "&amp;")
-                       .replace(/</g, "&lt;")
-                       .replace(/>/g, "&gt;")
-                       .replace(/"/g, "&quot;")
-                       .replace(/'/g, "&#039;");
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
-
-        // ==========================================
-        // 1. SMART TIME / SCHEDULE ENGINE
-        // ==========================================
+        // Schedule Logic
         function parseTimeString(timeStr) {
             try {
                 const parts = timeStr.trim().split(' ');
                 const timePart = parts[0];
                 const modifier = parts[1] || '';
-                
                 let [hours, minutes] = timePart.split(':').map(Number);
                 minutes = minutes || 0;
-
                 if (modifier.toUpperCase() === 'PM' && hours < 12) hours += 12;
                 if (modifier.toUpperCase() === 'AM' && hours === 12) hours = 0;
-                
-                const d = new Date();
-                d.setHours(hours, minutes, 0, 0);
-                return d;
-            } catch (e) {
-                return null;
-            }
+                const d = new Date(); d.setHours(hours, minutes, 0, 0); return d;
+            } catch (e) { return null; }
         }
 
         function getRealtimeStatus(scheduleText) {
-            if (!scheduleText || scheduleText.toLowerCase() === 'closed') {
-                return { isOpen: false, text: "Closed Today", color: "text-red-500", icon: "door-closed" };
-            }
-
+            if (!scheduleText || scheduleText.toLowerCase() === 'closed') return { isOpen: false, text: "Closed Today", color: "text-red-500", icon: "door-closed" };
             try {
                 const [startStr, endStr] = scheduleText.split(' - ');
                 if (!startStr || !endStr) throw new Error("Invalid Format");
-
                 const now = new Date();
                 const startTime = parseTimeString(startStr);
                 const endTime = parseTimeString(endStr);
-
                 if (!startTime || !endTime) throw new Error("Parse Fail");
 
-                if (now >= startTime && now <= endTime) {
-                    return { isOpen: true, text: `Open until ${endStr}`, color: "text-green-600", icon: "clock" };
-                } else if (now < startTime) {
-                    return { isOpen: false, text: `Closed • Opens at ${startStr}`, color: "text-orange-500", icon: "clock-8" };
-                } else {
-                    return { isOpen: false, text: `Closed • Opens tomorrow`, color: "text-red-500", icon: "moon" };
-                }
-            } catch (e) {
-                return { isOpen: true, text: `Open • ${scheduleText}`, color: "text-green-600", icon: "clock" };
-            }
+                if (now >= startTime && now <= endTime) return { isOpen: true, text: `Open until ${endStr}`, color: "text-green-600", icon: "clock" };
+                else if (now < startTime) return { isOpen: false, text: `Closed • Opens at ${startStr}`, color: "text-orange-500", icon: "clock-8" };
+                else return { isOpen: false, text: `Closed • Opens tomorrow`, color: "text-red-500", icon: "moon" };
+            } catch (e) { return { isOpen: true, text: `Open • ${scheduleText}`, color: "text-green-600", icon: "clock" }; }
         }
 
-        // ==========================================
-        // 2. IMAGE GALLERY & FULLSCREEN
-        // ==========================================
+        // Image Gallery Logic
         function setMainImage(url) {
             document.getElementById('main-svc-image').src = url;
             document.querySelectorAll('.thumb-img').forEach(el => {
-                el.classList.remove('border-indigo-600', 'shadow-md');
-                el.classList.add('border-slate-200');
-                if(el.src === url) {
-                    el.classList.add('border-indigo-600', 'shadow-md');
-                    el.classList.remove('border-slate-200');
-                }
+                el.classList.remove('border-indigo-600', 'shadow-md'); el.classList.add('border-slate-200');
+                if(el.src === url) { el.classList.add('border-indigo-600', 'shadow-md'); el.classList.remove('border-slate-200'); }
             });
         }
-
         function openFullscreen() {
             const modal = document.getElementById('image-modal');
-            const img = document.getElementById('fullscreen-img');
-            const mainImgSrc = document.getElementById('main-svc-image').src;
-            
-            img.src = mainImgSrc;
+            document.getElementById('fullscreen-img').src = document.getElementById('main-svc-image').src;
             modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                modal.classList.add('opacity-100');
-            }, 10);
+            setTimeout(() => { modal.classList.remove('opacity-0'); modal.classList.add('opacity-100'); }, 10);
             document.body.style.overflow = 'hidden';
         }
-
         function closeFullscreen() {
             const modal = document.getElementById('image-modal');
-            modal.classList.remove('opacity-100');
-            modal.classList.add('opacity-0');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                document.body.style.overflow = 'auto';
-            }, 300);
+            modal.classList.remove('opacity-100'); modal.classList.add('opacity-0');
+            setTimeout(() => { modal.classList.add('hidden'); document.body.style.overflow = 'auto'; }, 300);
         }
 
-        // ==========================================
-        // 3. SMART AVAILABILITY CHECKER
-        // ==========================================
+        // Location & Availability
+        async function getValidSellersForLocation() {
+            const savedLoc = localStorage.getItem('vilarci_user_location');
+            if (!savedLoc) return [];
+            const locObj = JSON.parse(savedLoc);
+            let subZoneIds = [];
+            if (locObj.type === 'sub_zone') subZoneIds = [parseInt(locObj.id)];
+            else if (locObj.type === 'main_zone') {
+                const { data } = await db.from('sub_zones').select('id').eq('main_zone_id', locObj.id);
+                if(data) subZoneIds = data.map(z => z.id);
+            } else if (locObj.type === 'district') {
+                const { data } = await db.from('sub_zones').select('id').eq('district_id', locObj.id);
+                if(data) subZoneIds = data.map(z => z.id);
+            }
+            if (subZoneIds.length === 0) return [];
+            const { data: sellers } = await db.from('seller_delivery_zones').select('seller_id').in('sub_zone_id', subZoneIds);
+            return sellers ? [...new Set(sellers.map(s => s.seller_id))] : [];
+        }
+
         async function checkServiceAvailability(sellerId) {
             const warningBanner = document.getElementById('service-warning');
             warningBanner.classList.add('hidden');
             isServiceAvailable = true;
 
             const savedLoc = localStorage.getItem('vilarci_user_location');
-            if (!savedLoc) {
-                updateBookButton(true);
-                return;
-            }
+            if (!savedLoc) { updateActionButtons(true); return; }
 
             const locObj = JSON.parse(savedLoc);
             let subZoneIds = [];
@@ -320,51 +320,40 @@
                 } else if (locObj.type === 'main_zone') {
                     const { data } = await db.from('sub_zones').select('id').eq('main_zone_id', locObj.id);
                     subZoneIds = data ? data.map(z => z.id) : [];
-                } else {
-                    subZoneIds = [parseInt(locObj.id)];
-                }
+                } else { subZoneIds = [parseInt(locObj.id)]; }
 
                 if (subZoneIds.length === 0) return;
 
-                const { data: mapping, error } = await db.from('seller_delivery_zones')
-                    .select('seller_id')
-                    .eq('seller_id', sellerId)
-                    .in('sub_zone_id', subZoneIds);
+                const { data: mapping, error } = await db.from('seller_delivery_zones').select('seller_id').eq('seller_id', sellerId).in('sub_zone_id', subZoneIds);
 
                 if (error) throw error;
-
                 if (!mapping || mapping.length === 0) {
                     isServiceAvailable = false;
                     document.getElementById('warning-area-name').innerText = locObj.name;
                     warningBanner.classList.remove('hidden');
                 }
-
-                updateBookButton(isServiceAvailable);
-
-            } catch (err) {
-                console.error("Availability Check Error:", err);
-            }
+                updateActionButtons(isServiceAvailable);
+            } catch (err) { console.error("Availability Check Error:", err); }
         }
 
-        function updateBookButton(isAvailable) {
-            const bookBtn = document.getElementById('book-btn');
-            if (!isAvailable) {
-                bookBtn.disabled = true;
-                bookBtn.style.opacity = '0.4';
-                bookBtn.style.pointerEvents = 'none';
-                bookBtn.innerHTML = `Not Available <i data-lucide="ban" class="w-5 h-5"></i>`;
-            } else {
-                bookBtn.disabled = false;
-                bookBtn.style.opacity = '1';
-                bookBtn.style.pointerEvents = 'auto';
-                bookBtn.innerHTML = `Book Service <i data-lucide="arrow-right" class="w-5 h-5"></i>`;
-            }
+        function updateActionButtons(isAvailable) {
+            const btns = ['book-btn-desktop', 'add-to-cart-desktop', 'book-btn-mobile', 'add-to-cart-mobile'];
+            btns.forEach(id => {
+                const btn = document.getElementById(id);
+                if(btn) {
+                    if (!isAvailable) {
+                        btn.disabled = true; btn.style.opacity = '0.4'; btn.style.pointerEvents = 'none';
+                        if(id.includes('book-btn')) btn.innerHTML = `Not Available <i data-lucide="ban" class="w-5 h-5"></i>`;
+                    } else {
+                        btn.disabled = false; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+                        if(id.includes('book-btn')) btn.innerHTML = `Book Service <i data-lucide="arrow-right" class="w-5 h-5"></i>`;
+                    }
+                }
+            });
             if(window.lucide) window.lucide.createIcons();
         }
 
-        // ==========================================
-        // 4. MAIN FETCH & RENDER PAGE
-        // ==========================================
+        // 🌟 INIT PAGE
         async function initPage() {
             if (!db) return showError();
             const urlParams = new URLSearchParams(window.location.search);
@@ -372,49 +361,57 @@
             if (!slug) return showError();
 
             try {
-                // 🌟 REMOVED `icon` AND `results` FROM QUERY
-                const { data: service, error } = await db
-                    .from('services')
+                const { data: service, error } = await db.from('services')
                     .select(`
                         id, name, slug, description, price, normal_price, 
                         service_duration, images, badge_label, 
-                        highlights, seller_id,
-                        shops_public_587 (
-                            store_name, full_address, shop_direction, weekly_schedule, shop_slug
-                        )
-                    `)
-                    .eq('slug', slug)
-                    .eq('is_active', true) 
-                    .single();
+                        highlights, seller_id, service_category_id, service_sub_category_id,
+                        shops_public_587 (store_name, full_address, shop_direction, weekly_schedule, shop_slug)
+                    `).eq('slug', slug).eq('is_active', true).single();
 
                 if (error || !service) throw error;
 
                 currentService = service;
                 currentProvider = service.shops_public_587 || {};
-                renderService(service);
                 
+                shownServiceIds.add(service.id);
+                let recent = JSON.parse(localStorage.getItem('vilarci_recent_services') || "[]");
+                recent = recent.filter(id => id !== service.id); 
+                recent.unshift(service.id); 
+                if(recent.length > 20) recent.pop(); 
+                localStorage.setItem('vilarci_recent_services', JSON.stringify(recent));
+
+                renderService(service);
                 await checkServiceAvailability(service.seller_id);
                 
-            } catch (err) {
-                console.error("Initialization Error:", err);
-                showError();
+                document.getElementById('loader').classList.add('hidden');
+                document.getElementById('content').classList.remove('hidden');
+                document.getElementById('suggestions-wrapper').classList.remove('hidden');
+                setTimeout(() => { 
+                    const mobileBar = document.getElementById('mobile-action-bar');
+                    if (mobileBar) {
+                        mobileBar.classList.remove('translate-y-full'); 
+                    }
+                }, 300);
+
+                // Start suggestions
+                loadNextSuggestionStage();
+                
+            } catch (err) { 
+                console.error("Initialization Error:", err); // ADD THIS to see the real reason it fails
+                showError(); 
             }
         }
 
         function renderService(service) {
-            // InnerText handles basic sanitization, but we use innerHTML for structured rendering below
             document.getElementById('svc-title').innerText = service.name;
             document.getElementById('svc-desc').innerText = service.description || "No description provided.";
             
-            // Duration
             if(service.service_duration) {
                 document.getElementById('svc-duration').innerText = service.service_duration;
                 document.getElementById('duration-container').classList.remove('hidden');
-            } else {
-                document.getElementById('duration-container').classList.add('hidden');
-            }
+            } else document.getElementById('duration-container').classList.add('hidden');
 
-            // Pricing
             const price = parseFloat(service.price);
             const normalPrice = service.normal_price ? parseFloat(service.normal_price) : null;
             document.getElementById('svc-price').innerText = '₹' + price;
@@ -425,11 +422,9 @@
                 document.getElementById('svc-discount').classList.remove('hidden');
             }
 
-            // Image Parsing & Secure Gallery Setup
             let imgArray = [];
-            if (Array.isArray(service.images) && service.images.length > 0) {
-                imgArray = service.images;
-            } else if (typeof service.images === 'string') {
+            if (Array.isArray(service.images)) imgArray = service.images;
+            else if (typeof service.images === 'string') {
                 try { 
                     let parsed = JSON.parse(service.images); 
                     imgArray = Array.isArray(parsed) ? parsed : [service.images];
@@ -439,13 +434,11 @@
                 }
             } 
             
-            // Show gallery if images exist, otherwise show default fallback
             document.getElementById('svc-gallery').classList.remove('hidden');
             document.getElementById('svc-gallery').classList.add('flex');
             
             if (imgArray.length > 0) {
                 document.getElementById('main-svc-image').src = escapeHtml(imgArray[0]);
-                
                 if (imgArray.length > 1) {
                     const thumbGrid = document.getElementById('thumbnail-grid');
                     thumbGrid.classList.remove('hidden');
@@ -455,12 +448,8 @@
                         thumbGrid.innerHTML += `<img src="${safeImg}" class="thumb-img w-16 h-16 md:w-20 md:h-20 object-cover rounded-xl border-2 ${borderClass} hover:border-indigo-300 transition cursor-pointer flex-shrink-0" onmouseover="setMainImage('${safeImg}')" onclick="setMainImage('${safeImg}')">`;
                     });
                 }
-            } else {
-                // Fallback since icon is removed
-                document.getElementById('main-svc-image').src = 'logo.png';
-            }
+            } else document.getElementById('main-svc-image').src = 'logo.png';
 
-            // Provider Linking Setup
             document.getElementById('provider-name').innerText = currentProvider.store_name || "Vilarci Verified Provider";
             const address = currentProvider.full_address || currentProvider.shop_direction;
             document.getElementById('provider-address').innerText = address ? address : "Address available upon booking";
@@ -474,10 +463,7 @@
             if (address) {
                 const dirBtn = document.getElementById('direction-btn');
                 dirBtn.classList.remove('hidden');
-                dirBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    window.open('https://maps.google.com/?q=' + encodeURIComponent(address), '_blank');
-                };
+                dirBtn.onclick = (e) => { e.stopPropagation(); window.open('https://maps.google.com/?q=' + encodeURIComponent(address), '_blank'); };
             }
 
             if (currentProvider.weekly_schedule) {
@@ -485,16 +471,11 @@
                 renderWeeklySchedule(currentProvider.weekly_schedule);
             }
 
-            // 🌟 SECURE HIGHLIGHTS RENDERING
             if (service.highlights && service.highlights.length > 0) {
                 document.getElementById('highlights-section').classList.remove('hidden');
                 const hList = document.getElementById('svc-highlights');
                 service.highlights.forEach(h => {
-                    hList.innerHTML += `
-                        <li class="flex items-start gap-3">
-                            <i data-lucide="check-circle-2" class="w-5 h-5 text-green-500 shrink-0 mt-0.5"></i> 
-                            <span class="leading-snug">${escapeHtml(h)}</span>
-                        </li>`;
+                    hList.innerHTML += `<li class="flex items-start gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-green-500 shrink-0 mt-0.5"></i> <span class="leading-snug">${escapeHtml(h)}</span></li>`;
                 });
             }
 
@@ -502,36 +483,19 @@
                 document.getElementById('svc-badge').innerText = service.badge_label;
                 document.getElementById('svc-badge').classList.remove('hidden');
             }
-
             if(window.lucide) window.lucide.createIcons();
-            
-            document.getElementById('loader').classList.add('hidden');
-            document.getElementById('content').classList.remove('hidden');
-            
-            document.getElementById('book-btn').onclick = () => {
-                if (isServiceAvailable) {
-                    window.location.href = `booking_form.html?service=${escapeHtml(service.slug)}`;
-                }
-            };
         }
 
         function renderWeeklySchedule(schedule) {
             const listEl = document.getElementById('schedule-list');
             const daysMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
             const daysNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-            
             const todayIndex = new Date().getDay();
-            const todayKey = daysMap[todayIndex];
-            const todaySchedule = schedule[todayKey];
-
-            const status = getRealtimeStatus(todaySchedule);
-            const statusEl = document.getElementById('schedule-status');
-            const iconEl = document.getElementById('schedule-icon');
             
-            statusEl.innerText = status.text;
-            statusEl.className = `${status.color} font-extrabold text-[15px]`;
-            iconEl.setAttribute('data-lucide', status.icon);
-            iconEl.className = `w-5 h-5 ${status.color}`;
+            const status = getRealtimeStatus(schedule[daysMap[todayIndex]]);
+            document.getElementById('schedule-status').innerText = status.text;
+            document.getElementById('schedule-status').className = `${status.color} font-extrabold text-[15px]`;
+            document.getElementById('schedule-icon').setAttribute('data-lucide', status.icon);
 
             daysMap.forEach((dayKey, index) => {
                 const isToday = index === todayIndex;
@@ -559,9 +523,186 @@
             document.getElementById('error-container').classList.remove('hidden');
         }
 
+        // ==========================================
+        // 🌟 ACTION BUTTONS (Cart Integration)
+        // ==========================================
+        window.addServiceToCart = function() {
+            if (!isServiceAvailable) {
+                Toastify({ text: "Service not available in your location.", duration: 3500, style: { background: "#ef4444", borderRadius: "8px" } }).showToast();
+                return;
+            }
+            // Add as 'service' type, pass duration as amount label
+            window.vilarciAddToCart(currentService.id, 0, currentService.service_duration || '1 Session', false, 'service');
+        };
+
+        window.bookService = function() {
+            if (!isServiceAvailable) {
+                Toastify({ text: "Service not available in your location.", duration: 3500, style: { background: "#ef4444", borderRadius: "8px" } }).showToast();
+                return;
+            }
+            // Instantly push to cart and redirect to checkout
+            window.vilarciAddToCart(currentService.id, 0, currentService.service_duration || '1 Session', false, 'service');
+            setTimeout(() => { window.location.href = 'cart.html'; }, 800);
+        };
+
+        // ==========================================
+        // 🌟 10-STAGE SERVICE SUGGESTION ENGINE
+        // ==========================================
+        async function loadNextSuggestionStage() {
+            if(currentStage > MAX_STAGES || isLoadingSuggestions) return;
+            isLoadingSuggestions = true;
+
+            const loader = document.getElementById('suggestions-loader');
+            if(loader) loader.classList.remove('hidden');
+
+            if(suggestionValidSellers === null) {
+                suggestionValidSellers = await getValidSellersForLocation();
+            }
+
+            let data = [];
+            let limit = 7; // SubCat and Cat stages use 7
+            let excludeIds = Array.from(shownServiceIds).join(',');
+
+            try {
+                // Stages 1-3: Same Sub-Category (3 stages * 7 = 21)
+                if(currentStage <= 3 && currentService.service_sub_category_id) {
+                    if(currentStage === 1) injectStageTitle("Similar Services");
+                    let q = db.from('services').select('id, slug, name, price, normal_price, images, service_duration').eq('is_active', true).eq('service_sub_category_id', currentService.service_sub_category_id).not('id', 'in', `(${excludeIds})`).range(suggestionOffsets.subCat, suggestionOffsets.subCat + limit - 1);
+                    if(suggestionValidSellers.length > 0) q = q.in('seller_id', suggestionValidSellers);
+                    let res = await q;
+                    data = res.data || [];
+                    suggestionOffsets.subCat += limit;
+                    if(data.length === 0) currentStage = 3; 
+                } 
+                // Stages 4-6: Same Category (3 stages * 7 = 21)
+                else if (currentStage <= 6 && currentService.service_category_id) {
+                    if(currentStage === 4) injectStageTitle("More in this Category");
+                    let q = db.from('services').select('id, slug, name, price, normal_price, images, service_duration').eq('is_active', true).eq('service_category_id', currentService.service_category_id).not('id', 'in', `(${excludeIds})`).range(suggestionOffsets.cat, suggestionOffsets.cat + limit - 1);
+                    if(suggestionValidSellers.length > 0) q = q.in('seller_id', suggestionValidSellers);
+                    let res = await q;
+                    data = res.data || [];
+                    suggestionOffsets.cat += limit;
+                    if(data.length === 0) currentStage = 6; 
+                }
+                // Stages 7-8: Recently Visited (2 stages * 10 = 20)
+                else if (currentStage <= 8) {
+                    limit = 10;
+                    let recent = JSON.parse(localStorage.getItem('vilarci_recent_services') || "[]");
+                    let toFetch = recent.filter(id => !shownServiceIds.has(id)).slice(suggestionOffsets.recent, suggestionOffsets.recent + limit);
+                    if(toFetch.length > 0) {
+                        if(suggestionOffsets.recent === 0) injectStageTitle("Still looking for these?");
+                        let q = db.from('services').select('id, slug, name, price, normal_price, images, service_duration').eq('is_active', true).in('id', toFetch);
+                        if(suggestionValidSellers.length > 0) q = q.in('seller_id', suggestionValidSellers);
+                        let res = await q;
+                        data = res.data || [];
+                    }
+                    suggestionOffsets.recent += limit;
+                    if(data.length === 0) currentStage = 8; 
+                }
+                // Stages 9-10: More from Seller (2 stages * 10 = 20)
+                else if (currentStage <= 10) {
+                    limit = 10;
+                    if(currentStage === 9) injectStageTitle(`More from ${currentProvider.store_name || 'this provider'}`);
+                    let q = db.from('services').select('id, slug, name, price, normal_price, images, service_duration').eq('is_active', true).eq('seller_id', currentService.seller_id).not('id', 'in', `(${excludeIds})`).range(suggestionOffsets.seller, suggestionOffsets.seller + limit - 1);
+                    if(suggestionValidSellers.length > 0) q = q.in('seller_id', suggestionValidSellers);
+                    let res = await q;
+                    data = res.data || [];
+                    suggestionOffsets.seller += limit;
+                }
+
+                if(data && data.length > 0) {
+                    data.forEach(s => shownServiceIds.add(s.id));
+                    renderSuggestions(data);
+                }
+
+            } catch(e) { console.error("Suggestion Error", e); }
+
+            currentStage++;
+            isLoadingSuggestions = false;
+            if(loader) loader.classList.add('hidden');
+        }
+
+        function injectStageTitle(titleText) {
+            const grid = document.getElementById('suggestions-grid');
+            grid.insertAdjacentHTML('beforeend', `<div class="col-span-full mt-6 mb-2"><h3 class="text-lg font-bold text-slate-800 border-b pb-2">${titleText}</h3></div>`);
+        }
+
+
+      function renderSuggestions(services) {
+            const grid = document.getElementById('suggestions-grid');
+            let html = '';
+            
+            services.forEach(s => {
+                let imgArray = [];
+                if (Array.isArray(s.images)) imgArray = s.images;
+                else if (typeof s.images === 'string') { try { imgArray = JSON.parse(s.images); } catch(e) {} }
+                let img = (imgArray && imgArray.length > 0) ? imgArray[0] : 'logo.png';
+                
+                const targetSlug = s.slug || s.id;
+                
+                // Safe UI Strings
+                const safeDurationUI = s.service_duration ? escapeHtml(s.service_duration) : '1 Session';
+                const uiDuration = s.service_duration ? `<div class="text-xs text-slate-500 mb-2 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> ${safeDurationUI}</div>` : '';
+                const safeName = escapeHtml(s.name || '');
+
+                // Safe JS String for execution
+                const jsSafeDuration = (s.service_duration || '1 Session').replace(/'/g, "\\'").replace(/"/g, '&' + 'quot;');
+
+                // Generate Service Card (Sleek UI + Direct Service Cart Push)
+                html += `
+                    <div class="product-card group border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm hover:shadow-md hover:border-indigo-400 transition-all cursor-pointer flex flex-col h-full relative" onclick="window.location.href='service_details.html?slug=${targetSlug}'">
+                        
+                        <div class="absolute inset-x-0 top-0 h-36 bg-indigo-900/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10 pointer-events-none">
+                            <div class="bg-white text-indigo-600 rounded-full w-10 h-10 flex items-center justify-center shadow-lg transform translate-x-4 group-hover:translate-x-0 transition-all duration-300">
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </div>
+                        </div>
+
+                        <div class="img-box h-36 bg-slate-50 flex items-center justify-center p-4 border-b border-slate-100 relative">
+                            <img src="${img}" alt="${safeName}" loading="lazy" class="max-h-full max-w-full object-contain mix-blend-multiply">
+                        </div>
+                        <div class="details p-4 flex flex-col flex-grow relative z-20 bg-white">
+                            <h4 class="product-name font-bold text-slate-800 text-sm mb-1 leading-tight line-clamp-2">${safeName}</h4>
+                            ${uiDuration}
+                            <div class="price-area mt-auto pt-2 mb-3">
+                                <span class="price font-extrabold text-indigo-700 text-base">₹${s.price || 0}</span>
+                            </div>
+                            <div class="bottom-btn flex">
+                                <button class="add-btn w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-bold rounded-lg transition-colors btn-relative shadow-sm" 
+                                        data-product-id="${s.id}"
+                                        onclick="event.stopPropagation(); requireAuth(() => { window.pendingCartData = { itemId: '${s.id}', amount: '${jsSafeDuration}', itemType: 'service' }; window.executeGlobalAdd('service'); });">
+                                    <i class="fa-solid fa-cart-plus"></i> Add to Cart
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            grid.innerHTML += html;
+            if(window.lucide) window.lucide.createIcons();
+            if(typeof window.renderCartBadges === 'function') window.renderCartBadges();
+        }
+        
+        window.addEventListener('scroll', () => {
+            // Only trigger if a service was successfully loaded AND the grid exists
+            if (!currentService || !document.getElementById('suggestions-grid')) return;
+
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 800) {
+                loadNextSuggestionStage();
+            }
+        });
+
         window.addEventListener('vilarciLocationChanged', async () => {
             if (currentService && currentService.seller_id) {
                 await checkServiceAvailability(currentService.seller_id);
+                // Reset suggestions
+                document.getElementById('suggestions-grid').innerHTML = '';
+                currentStage = 1;
+                shownServiceIds = new Set([currentService.id]);
+                suggestionOffsets = { subCat: 0, cat: 0, recent: 0, seller: 0 };
+                suggestionValidSellers = null;
+                loadNextSuggestionStage();
             }
         });
 

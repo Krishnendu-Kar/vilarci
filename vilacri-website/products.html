@@ -311,41 +311,6 @@
         window.addEventListener('vilarciLocationChanged', () => fetchAndDisplayProducts(false));
         
     </script>
-    <style>
-        .shop-section {
-            display: grid;
-            gap: 15px;
-            padding: 15px;
-        }
-        .product-card {
-            background: white;
-            border: 1px solid #eee;
-            border-radius: 8px;
-            overflow: hidden;
-            position: relative;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        @media (max-width: 364px){
-            .product-card {
-                width: 45vw;
-            }
-        }
-        @media (min-width: 365px){
-            .shop-section {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-        }}
-        .product-card:hover {  box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-
-        .img-box { height: 160px; padding: 10px; display: flex; justify-content: center; align-items: center; }
-        .img-box img { max-height: 100%; max-width: 100%; }
-        .details { padding: 10px;}
-        .product-name { font-size: 13px; margin: 0 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .price-area { display: flex; align-items: baseline; gap: 5px;margin-top:2px; margin-bottom: 8px; }
-        .price { font-weight: bold; font-size: 15px; }
-        .mrp { text-decoration: line-through; font-size: 11px; color: #999; }
-
-    </style>
+    
     </body>
 </html>

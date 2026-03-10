@@ -459,7 +459,7 @@
                 const { data: services, error } = await db
                     .from('services')
                     // 🌟 FIX: Updated columns to match new optimized schema
-                    .select('id, name, slug, price, images, service_duration')
+                    .select('id, name, slug, price,normal_price, images, service_duration')
                     .eq('seller_id', resolvedSellerNumericId)
                     .eq('is_active', true)
                     .order('created_at', { ascending: false })
@@ -484,22 +484,24 @@
                     const imgArray = s.images || [];
                     const img = imgArray.length > 0 ? imgArray[0] : 'logo.png';
                     const targetSlug = s.slug || s.id;
-                    const duration = s.service_duration ? `<div class="text-xs text-slate-500 mb-2"><i class="fa-regular fa-clock"></i> ${s.service_duration}</div>` : '';
+                    const duration = s.service_duration ? `<div class="inline-flex items-center text-xs bg-slate-50 text-slate-500 mb-1 border border-dotted border-slate-300 rounded-lg px-2 py-1">
+                                                                <i class="fa-regular fa-clock mr-1"></i> ${s.service_duration}
+                                                            </div>` : '';
 
                     return `
-                    <div class="product-card border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer" onclick="window.location.href='service_details.html?slug=${targetSlug}'">
-                        <div class="img-box h-36 bg-slate-100 flex items-center justify-center p-2">
+                    <div class="product-card" onclick="window.location.href='service_details.html?slug=${targetSlug}'">
+                        <div class="img-box">
                             <img src="${img}" alt="${s.name}" loading="lazy" class="max-h-full max-w-full object-contain rounded">
                         </div>
-                        <div class="details p-3">
+                        <div class="details inline-block p-3">
                             <h4 class="product-name font-bold text-slate-800 text-sm mb-1 truncate">${s.name}</h4>
                             ${duration}
                             <div class="price-area mt-2 mb-3">
-                                <span class="price font-bold text-indigo-600 text-sm">Starts at ₹${s.price || 0}</span>
+                                <span class="price font-bold text-indigo-600 text-sm">₹${s.price || 0}</span>
+                                ${s.normal_price ? `<del class="text-slate-400 text-xs mr-1">₹${s.normal_price}</del>` : ''}
+                                
                             </div>
-                            <button class="w-full bg-slate-900 text-white font-medium py-1.5 rounded-lg text-sm hover:bg-slate-800 transition">
-                                View Details <i class="fa-solid fa-angles-right"></i>
-                            </button>
+                           
                         </div>
                     </div>
                     `;

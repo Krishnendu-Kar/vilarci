@@ -867,18 +867,27 @@ window.updateGlobalCartCount = async function() {
     if(!db) return;
     
     try {
-        const { data, error } = await db.from('cart_items').select('product_id, cart_type, quantity').eq('user_id', window.vilarciUser.id);
+        // ADDED: service_id to the select statement
+        const { data, error } = await db.from('cart_items').select('product_id, service_id, cart_type, quantity').eq('user_id', window.vilarciUser.id);
         window.vilarciCartMap = {};
         
         if (!error && data) {
             data.forEach(item => {
-                if(!window.vilarciCartMap[item.product_id]) {
-                    window.vilarciCartMap[item.product_id] = { delivery: 0, pickup: 0 };
+                // Determine the correct ID (whichever is not null)
+                const id = item.product_id || item.service_id; 
+                if(!id) return;
+
+                if(!window.vilarciCartMap[id]) {
+                    window.vilarciCartMap[id] = { delivery: 0, pickup: 0, service: 0 };
                 }
+                
+                // Route to the correct counter
                 if(item.cart_type === 'pickup') {
-                    window.vilarciCartMap[item.product_id].pickup += item.quantity;
+                    window.vilarciCartMap[id].pickup += item.quantity;
+                } else if (item.cart_type === 'service') {
+                    window.vilarciCartMap[id].service += item.quantity;
                 } else {
-                    window.vilarciCartMap[item.product_id].delivery += item.quantity;
+                    window.vilarciCartMap[id].delivery += item.quantity;
                 }
             });
         }
@@ -896,7 +905,7 @@ window.renderCartBadges = function() {
     document.querySelectorAll('.add-btn').forEach(btn => {
         const pid = btn.getAttribute('data-product-id');
         if(!pid) return;
-        const count = window.vilarciCartMap[pid]?.delivery || 0;
+        const count = (window.vilarciCartMap[pid]?.delivery || 0) + (window.vilarciCartMap[pid]?.service || 0);
         let badge = btn.querySelector('.item-badge');
         
         if (count > 0) {
@@ -1022,20 +1031,24 @@ async function checkHasVariants(productId) {
 
 window.pendingCartData = null;
 
-window.vilarciAddToCart = async function(productId, price, amount, isRapidEligible = false) {
+// 🌟 UPGRADED: Now accepts itemType ('product' or 'service') and ignores price
+window.vilarciAddToCart = async function(itemId, ignoredPrice, amount, isRapidEligible = false, itemType = 'product') {
     let toast = Toastify({ text: "Checking options...", duration: -1, style: { background: "#64748b" } });
     toast.showToast();
 
-    const hasVars = await checkHasVariants(productId);
+    // Only check variants if it is a physical product
+    if (itemType === 'product') {
+        const hasVars = await checkHasVariants(itemId);
+        if (hasVars && (!amount || amount === '1 Unit')) {
+            toast.hideToast();
+            Toastify({ text: "Please open the product to select a size.", duration: 3000, style: { background: "#3b82f6", borderRadius: "8px" } }).showToast();
+            return; 
+        }
+    }
     toast.hideToast();
 
-    if (hasVars && (!amount || amount === '1 Unit')) {
-        Toastify({ text: "Please open the product to select a size.", duration: 3000, style: { background: "#3b82f6", borderRadius: "8px" } }).showToast();
-        return; 
-    }
-
     requireAuth(() => {
-        window.pendingCartData = { productId, price, amount };
+        window.pendingCartData = { itemId, amount, itemType };
         const overlay = document.getElementById('cart-choice-overlay');
         const modal = overlay.querySelector('div');
         
@@ -1048,7 +1061,7 @@ window.vilarciAddToCart = async function(productId, price, amount, isRapidEligib
     });
 };
 
-window.vilarciStorePickup = async function(productId, price, amount, isPickupEligible = true) {
+window.vilarciStorePickup = async function(itemId, ignoredPrice, amount, isPickupEligible = true, itemType = 'product') {
     const isPickup = (isPickupEligible === true || isPickupEligible === 'true');
     if (!isPickup) {
         Toastify({ text: "This seller does not offer Store Pickup for this item.", duration: 3500, style: { background: "#ef4444", borderRadius: "8px", fontWeight:"bold" } }).showToast();
@@ -1058,16 +1071,18 @@ window.vilarciStorePickup = async function(productId, price, amount, isPickupEli
     let toast = Toastify({ text: "Checking options...", duration: -1, style: { background: "#64748b" } });
     toast.showToast();
 
-    const hasVars = await checkHasVariants(productId);
+    if (itemType === 'product') {
+        const hasVars = await checkHasVariants(itemId);
+        if (hasVars && (!amount || amount === '1 Unit')) {
+            toast.hideToast();
+            Toastify({ text: "Please open the product to select a size.", duration: 3000, style: { background: "#3b82f6", borderRadius: "8px" } }).showToast();
+            return; 
+        }
+    }
     toast.hideToast();
 
-    if (hasVars && (!amount || amount === '1 Unit')) {
-        Toastify({ text: "Please open the product to select a size.", duration: 3000, style: { background: "#3b82f6", borderRadius: "8px" } }).showToast();
-        return; 
-    }
-
     requireAuth(() => {
-        window.pendingCartData = { productId, price, amount };
+        window.pendingCartData = { itemId, amount, itemType };
         executeGlobalAdd('pickup');
     });
 };
@@ -1084,7 +1099,8 @@ window.closeCartChoice = function() {
 window.executeGlobalAdd = async function(cartType) {
     if (!window.pendingCartData || !window.vilarciUser) return;
     
-    const { productId, price, amount } = window.pendingCartData;
+    // 🌟 UPGRADED: Extracts itemType dynamically and skips price
+    const { itemId, amount, itemType } = window.pendingCartData;
     closeCartChoice(); 
     
     let toast = Toastify({ text: "Updating cart...", duration: -1, style: { background: "#64748b", borderRadius: "8px" } });
@@ -1093,25 +1109,31 @@ window.executeGlobalAdd = async function(cartType) {
     const db = window.supabaseClient;
 
     try {
-        const { data: existing } = await db.from('cart_items')
-            .select('id, quantity')
+        let query = db.from('cart_items').select('id, quantity')
             .eq('user_id', window.vilarciUser.id)
-            .eq('product_id', productId)
             .eq('cart_type', cartType)
-            .eq('selected_amount', amount)
-            .maybeSingle();
+            .eq('selected_amount', amount);
+            
+        // 🌟 Route to correct ID column
+        if (itemType === 'service') query = query.eq('service_id', itemId);
+        else query = query.eq('product_id', itemId);
+
+        const { data: existing } = await query.maybeSingle();
 
         if (existing) {
             await db.from('cart_items').update({ quantity: existing.quantity + 1 }).eq('id', existing.id);
         } else {
-            await db.from('cart_items').insert([{
+            const insertData = {
                 user_id: window.vilarciUser.id,
-                product_id: productId,
                 cart_type: cartType,
-                selected_price: price,
                 selected_amount: amount,
                 quantity: 1
-            }]);
+            };
+            // 🌟 Route to correct ID column
+            if (itemType === 'service') insertData.service_id = itemId;
+            else insertData.product_id = itemId;
+
+            await db.from('cart_items').insert([insertData]);
         }
 
         if(typeof window.updateGlobalCartCount === 'function') window.updateGlobalCartCount();
