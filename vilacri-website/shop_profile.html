@@ -409,14 +409,23 @@
                             
                             <div class="bottom-btn flex gap-2">
                                 <button class="add-btn" 
+                                        data-product-id="${p.id}"
                                         ${!isDeliveryAvailable ? "disabled style='opacity: 0.4;cursor: not-allowed;'" : ""} 
                                         onclick="event.stopPropagation(); window.vilarciAddToCart('${p.id}', ${p.base_price}, '1 Unit', ${p.is_rapid_eligible});">
                                     <i class="fa-solid fa-cart-plus"></i>
                                 </button>
                                 
+                                <style>
+                                    @media (max-width: 416px) {
+                                        .pickup-btn{
+                                        font-size: 11px !important;
+                                        }
+                                }
+                                </style>
                                 <button class="pickup-btn"  
-                                        onclick="event.stopPropagation(); window.vilarciStorePickup('${p.id}', ${p.base_price}, '1 Unit');">
-                                    Pickup <i class="fa-solid fa-motorcycle"></i> 
+                                        data-product-id="${p.id}"
+                                        onclick="event.stopPropagation(); window.vilarciStorePickup('${p.id}', ${p.base_price}, '1 Unit', ${p.is_pickup_eligible});">
+                                    Store Pickup <i class="fa-solid fa-motorcycle"></i> 
                                 </button>
                             </div>
                         </div>
@@ -424,7 +433,10 @@
                     `;
                 }).join('');
                 
-                grid.innerHTML += html; // Append data
+                grid.innerHTML += html; 
+
+                // 🌟 FIX: Force badges to render on newly appended products!
+                if(typeof window.renderCartBadges === 'function') window.renderCartBadges();
                 
             } catch (err) {
                 console.error("Products Fetch Error:", err);
@@ -433,9 +445,6 @@
             }
         }
 
-        // ==========================================
-        // FETCH SERVICES (Infinite Scroll Support)
-        // ==========================================
         // ==========================================
         // FETCH SERVICES (Infinite Scroll Support)
         // ==========================================

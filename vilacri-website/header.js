@@ -313,10 +313,10 @@ const headerHTML = `
             </div>
         </div>
 
-        <div class="cart" onclick="window.location.href='cart.html'">
-            <div class="cart-amount" id="cart-count-badge">0</div>
-            <div class="cart-icon"><i class="fa-solid fa-cart-shopping"></i></div>
+        <div class="cart" onclick="requireAuth(() => window.location.href='cart.html')" style="padding:0 12px;">
+            <div class="cart-icon"><i class="fa-solid fa-cart-shopping" style="font-size: 18px;"></i></div>
         </div>
+        
         
         <div class="message-box1">
             <div class="message-box2">
@@ -821,19 +821,45 @@ function initializeNativeApp() {
 
 document.addEventListener('DOMContentLoaded', initializeNativeApp);
 setTimeout(initializeNativeApp, 500);
+
+
 // ==============================================================
 // 🌟 VILARCI GLOBAL CART CONTROLLER, AUTH MODAL & LIVE COUNTER
 // ==============================================================
 
 window.vilarciUser = null; 
+window.vilarciCartMap = {}; 
 
-// 1. LIVE SUPABASE CART COUNTER
+// Inject CSS for the new Product Button Badges
+const badgeCSS = `
+    .btn-relative { position: relative !important; }
+    .item-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background-color: #e43e3e;
+        color: white;
+        font-size: 9px;
+        font-weight: 900;
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+        z-index: 10;
+        line-height: 1;
+        border: 2px solid white;
+    }
+`;
+document.head.insertAdjacentHTML('beforeend', `<style>${badgeCSS}</style>`);
+
+// 1. LIVE SUPABASE CART SYNC (Generates the map for product buttons)
 window.updateGlobalCartCount = async function() {
-    const badge = document.getElementById('cart-count-badge');
-    if (!badge) return;
-
     if (!window.vilarciUser) {
-        badge.innerText = "0";
+        window.vilarciCartMap = {};
+        window.dispatchEvent(new CustomEvent('cartUpdated'));
         return;
     }
 
@@ -841,15 +867,68 @@ window.updateGlobalCartCount = async function() {
     if(!db) return;
     
     try {
-        const { data, error } = await db.from('cart_items').select('quantity').eq('user_id', window.vilarciUser.id);
+        const { data, error } = await db.from('cart_items').select('product_id, cart_type, quantity').eq('user_id', window.vilarciUser.id);
+        window.vilarciCartMap = {};
+        
         if (!error && data) {
-            let count = data.reduce((acc, item) => acc + item.quantity, 0);
-            badge.innerText = count;
+            data.forEach(item => {
+                if(!window.vilarciCartMap[item.product_id]) {
+                    window.vilarciCartMap[item.product_id] = { delivery: 0, pickup: 0 };
+                }
+                if(item.cart_type === 'pickup') {
+                    window.vilarciCartMap[item.product_id].pickup += item.quantity;
+                } else {
+                    window.vilarciCartMap[item.product_id].delivery += item.quantity;
+                }
+            });
         }
+        window.dispatchEvent(new CustomEvent('cartUpdated'));
     } catch(err) {
-        console.error("Cart count error:", err);
+        console.error("Cart map error:", err);
     }
 };
+
+// 2. CENTRALIZED BADGE RENDERER
+window.renderCartBadges = function() {
+    if(!window.vilarciCartMap) return;
+    
+    // Render Delivery Badges
+    document.querySelectorAll('.add-btn').forEach(btn => {
+        const pid = btn.getAttribute('data-product-id');
+        if(!pid) return;
+        const count = window.vilarciCartMap[pid]?.delivery || 0;
+        let badge = btn.querySelector('.item-badge');
+        
+        if (count > 0) {
+            if(!badge) {
+                badge = document.createElement('div');
+                badge.className = 'item-badge';
+                btn.appendChild(badge);
+                btn.classList.add('btn-relative');
+            }
+            badge.innerText = count > 99 ? '99+' : count;
+        } else if (badge) badge.remove();
+    });
+
+    // Render Pickup Badges
+    document.querySelectorAll('.pickup-btn').forEach(btn => {
+        const pid = btn.getAttribute('data-product-id');
+        if(!pid) return;
+        const count = window.vilarciCartMap[pid]?.pickup || 0;
+        let badge = btn.querySelector('.item-badge');
+        
+        if (count > 0) {
+            if(!badge) {
+                badge = document.createElement('div');
+                badge.className = 'item-badge';
+                btn.appendChild(badge);
+                btn.classList.add('btn-relative');
+            }
+            badge.innerText = count > 99 ? '99+' : count;
+        } else if (badge) badge.remove();
+    });
+};
+window.addEventListener('cartUpdated', window.renderCartBadges);
 
 const globalModalsHTML = `
     <div id="auth-modal-overlay" onclick="if(event.target === this) closeAuthModal()" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 10000; opacity: 0; visibility: hidden; transition: all 0.3s; backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center;">
@@ -902,12 +981,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if(db) db.auth.getSession().then(({ data: { session } }) => { 
         if (session) {
             window.vilarciUser = session.user;
-            updateGlobalCartCount(); // Fetch live count once logged in
+            updateGlobalCartCount(); 
         }
     });
 });
 
-// Auth Guard
 window.requireAuth = function(callbackFunction) {
     if (window.vilarciUser) {
         if(typeof callbackFunction === 'function') callbackFunction();
@@ -923,33 +1001,71 @@ window.closeAuthModal = function() {
     document.getElementById('auth-modal-overlay').style.visibility = 'hidden';
 };
 
-// Global Cart Actions
+// 🌟 NEW: DATABASE-DRIVEN VARIANT CHECKER (No more ID hacking)
+async function checkHasVariants(productId) {
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('products')
+            .select('variants')
+            .eq('id', productId)
+            .single();
+            
+        if (data && data.variants) {
+            let vars = data.variants;
+            if (typeof vars === 'string') { try { vars = JSON.parse(vars); } catch(e){} }
+            if (typeof vars === 'string') { try { vars = JSON.parse(vars); } catch(e){} } 
+            if (Array.isArray(vars) && vars.length > 0) return true;
+        }
+    } catch(e) { console.error("Variant check error", e); }
+    return false;
+}
+
 window.pendingCartData = null;
 
-window.vilarciAddToCart = function(productId, price, amount, isRapidEligible = false) {
-    const idStr = String(productId);
-    if(idStr.length >= 8 && idStr.substring(6, 8) === '12' && (!amount || amount === '1 Unit')) {
+window.vilarciAddToCart = async function(productId, price, amount, isRapidEligible = false) {
+    let toast = Toastify({ text: "Checking options...", duration: -1, style: { background: "#64748b" } });
+    toast.showToast();
+
+    const hasVars = await checkHasVariants(productId);
+    toast.hideToast();
+
+    if (hasVars && (!amount || amount === '1 Unit')) {
         Toastify({ text: "Please open the product to select a size.", duration: 3000, style: { background: "#3b82f6", borderRadius: "8px" } }).showToast();
-        return;
+        return; 
     }
 
     requireAuth(() => {
         window.pendingCartData = { productId, price, amount };
         const overlay = document.getElementById('cart-choice-overlay');
         const modal = overlay.querySelector('div');
-        document.getElementById('btn-rapid-choice').style.display = isRapidEligible ? 'flex' : 'none';
+        
+        const isRapid = (isRapidEligible === true || isRapidEligible === 'true');
+        document.getElementById('btn-rapid-choice').style.display = isRapid ? 'flex' : 'none';
+        
         overlay.style.opacity = '1';
         overlay.style.visibility = 'visible';
         modal.style.transform = 'translateY(0)';
     });
 };
 
-window.vilarciStorePickup = function(productId, price, amount) {
-    const idStr = String(productId);
-    if(idStr.length >= 8 && idStr.substring(6, 8) === '12' && (!amount || amount === '1 Unit')) {
-        Toastify({ text: "Please open the product to select a size.", duration: 3000, style: { background: "#3b82f6", borderRadius: "8px" } }).showToast();
+window.vilarciStorePickup = async function(productId, price, amount, isPickupEligible = true) {
+    const isPickup = (isPickupEligible === true || isPickupEligible === 'true');
+    if (!isPickup) {
+        Toastify({ text: "This seller does not offer Store Pickup for this item.", duration: 3500, style: { background: "#ef4444", borderRadius: "8px", fontWeight:"bold" } }).showToast();
         return;
     }
+
+    let toast = Toastify({ text: "Checking options...", duration: -1, style: { background: "#64748b" } });
+    toast.showToast();
+
+    const hasVars = await checkHasVariants(productId);
+    toast.hideToast();
+
+    if (hasVars && (!amount || amount === '1 Unit')) {
+        Toastify({ text: "Please open the product to select a size.", duration: 3000, style: { background: "#3b82f6", borderRadius: "8px" } }).showToast();
+        return; 
+    }
+
     requireAuth(() => {
         window.pendingCartData = { productId, price, amount };
         executeGlobalAdd('pickup');
@@ -968,10 +1084,7 @@ window.closeCartChoice = function() {
 window.executeGlobalAdd = async function(cartType) {
     if (!window.pendingCartData || !window.vilarciUser) return;
     
-    // 🌟 THE FIX: Extract the data FIRST!
     const { productId, price, amount } = window.pendingCartData;
-    
-    // Now it is safe to close the modal and erase the state
     closeCartChoice(); 
     
     let toast = Toastify({ text: "Updating cart...", duration: -1, style: { background: "#64748b", borderRadius: "8px" } });
@@ -1001,7 +1114,6 @@ window.executeGlobalAdd = async function(cartType) {
             }]);
         }
 
-        // Update the live DB counter!
         if(typeof window.updateGlobalCartCount === 'function') window.updateGlobalCartCount();
         
         toast.hideToast();

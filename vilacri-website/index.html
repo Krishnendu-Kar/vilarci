@@ -216,16 +216,14 @@
             const loader = document.getElementById('page-loader');
             const container = document.getElementById('productList');
             
-            // 🌟 THE FIX: Reset the state BEFORE checking if products are loaded
             if (!isLoadMore) {
                 currentOffset = 0;
-                allProductsLoaded = false; // This unlocks the fetch for the new location!
+                allProductsLoaded = false;
                 packetProducts = [];
                 if (container) container.innerHTML = ''; 
                 if (loader) loader.style.display = 'flex';
             }
 
-            // Now perform the safety check
             if (isFetching || allProductsLoaded) return;
             isFetching = true;
 
@@ -237,7 +235,6 @@
                     const locObj = JSON.parse(savedLoc);
                     let subZoneIds = [];
 
-                    // 🌟 SMART LOCATION ROUTING
                     if (locObj.type === 'district') {
                         const { data } = await window.supabaseClient.from('sub_zones').select('id').eq('district_id', locObj.id);
                         subZoneIds = data ? data.map(z => z.id) : [];
@@ -245,10 +242,9 @@
                         const { data } = await window.supabaseClient.from('sub_zones').select('id').eq('main_zone_id', locObj.id);
                         subZoneIds = data ? data.map(z => z.id) : [];
                     } else {
-                        subZoneIds = [parseInt(locObj.id)]; // Exact Sub-Zone
+                        subZoneIds = [parseInt(locObj.id)]; 
                     }
 
-                    // Get sellers for those zones
                     if (subZoneIds.length > 0) {
                         const { data: sellers } = await window.supabaseClient.from('seller_delivery_zones').select('seller_id').in('sub_zone_id', subZoneIds);
                         validSellerIds = sellers ? [...new Set(sellers.map(s => s.seller_id))] : [];
@@ -270,10 +266,10 @@
                     return;
                 }
 
-                // 🌟 PAGINATED QUERY (LIMIT 24)
+                // 🌟 FIX 1: Explicitly select ONLY needed columns to save bandwidth bills!
                 let query = window.supabaseClient
                     .from('products')
-                    .select('*')
+                    .select('id, slug, name, base_price, original_price, rating_avg, rating_count, images, category_id, amount, is_rapid_eligible, is_pickup_eligible')
                     .eq('is_active', true)
                     .order('created_at', { ascending: false })
                     .range(currentOffset, currentOffset + LIMIT - 1);
@@ -287,18 +283,21 @@
                 if (error) throw error;
 
                 if (data) {
-                    if (data.length < LIMIT) allProductsLoaded = true; // No more pages left!
+                    if (data.length < LIMIT) allProductsLoaded = true; 
                     currentOffset += data.length;
 
+                    // 🌟 FIX 2: Correctly extract the boolean flags from the database
                     const newProducts = data.map(p => ({
                         id: p.id, slug: p.slug, name: p.name, price: p.base_price, originalPrice: p.original_price,
                         rating_avg : p.rating_avg, rating_count: p.rating_count,
                         image: (p.images && p.images.length > 0) ? p.images[0] : 'logo.png',
-                        category: p.category_id, amount: p.amount
+                        category: p.category_id, amount: p.amount,
+                        is_rapid_eligible: Boolean(p.is_rapid_eligible),
+                        is_pickup_eligible: Boolean(p.is_pickup_eligible)
                     }));
 
                     packetProducts.push(...newProducts);
-                    displayProducts(newProducts, 'productList'); // Append to UI
+                    displayProducts(newProducts, 'productList'); 
                 }
 
             } catch (err) {
@@ -313,7 +312,6 @@
             }
         }
 
-        // 🌟 UPDATED: Appends to the grid instead of wiping it
         function displayProducts(products, containerId) {
             const container = document.getElementById(containerId);
             
@@ -341,14 +339,16 @@
                             </div>
                             
                             <div class="bottom-btn flex gap-2">
-                                <button class="add-btn flex items-center justify-center shrink-0 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition" 
+                                <button class="add-btn flex items-center justify-center shrink-0 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition btn-relative" 
+                                        data-product-id="${product.id}"
                                         onclick="event.stopPropagation(); window.vilarciAddToCart('${product.id}', ${product.price}, '1 Unit', ${product.is_rapid_eligible});">
                                     <i class="fa-solid fa-cart-plus text-slate-700"></i>
                                 </button>
                                 
-                                <button class="pickup-btn" 
-                                        onclick="event.stopPropagation(); window.vilarciStorePickup('${product.id}', ${product.price}, '1 Unit');">
-                                    Pickup <i class="fa-solid fa-motorcycle text-red-500"></i>
+                                <button class="pickup-btn " 
+                                        data-product-id="${product.id}"
+                                        onclick="event.stopPropagation(); window.vilarciStorePickup('${product.id}', ${product.price}, '1 Unit', ${product.is_pickup_eligible});">
+                                    Store Pickup <i class="fa-solid fa-motorcycle"></i>
                                 </button>
                             </div>
                         </div>
@@ -356,9 +356,10 @@
                 `;
             });
             container.innerHTML += html; 
-        }
 
-       
+            // 🌟 FIX: Force badges to render on newly appended products!
+            if(typeof window.renderCartBadges === 'function') window.renderCartBadges();
+        }
 
         
 

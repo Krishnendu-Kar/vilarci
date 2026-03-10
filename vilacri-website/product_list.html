@@ -7,7 +7,7 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    
+    <link rel="stylesheet" type="text/css" href="product-card.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -287,27 +287,11 @@
     <script src="config.js"></script>
     <script src="sidebar.js"></script>
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
+       const urlParams = new URLSearchParams(window.location.search);
         const categoryId = urlParams.get('category_id');
         const subCategoryId = urlParams.get('sub_category_id');
         const superSubId = urlParams.get('super_sub_id');
         const searchQuery = urlParams.get('search');
-
-        function viewProduct(productId) {
-             window.location.href = `product_details.html?slug=${productId}`;
-        }
-
-        function toggleWishlist(event) {
-            event.stopPropagation();
-            const icon = event.currentTarget.querySelector('i');
-            if (icon.classList.contains('fa-regular')) {
-                icon.classList.replace('fa-regular', 'fa-solid');
-                icon.style.color = '#ff4343';
-            } else {
-                icon.classList.replace('fa-solid', 'fa-regular');
-                icon.style.color = '#c2c2c2';
-            }
-        }
 
         let currentOffset = 0;
         const LIMIT = 24;
@@ -319,6 +303,9 @@
             const countDisplay = document.getElementById('result-count');
             const pageLoader = document.getElementById('page-loader'); 
             
+            // Switch container to standard shop grid
+            container.className = "shop-section";
+
             if(!isLoadMore) {
                 currentOffset = 0;
                 allProductsLoaded = false; 
@@ -383,9 +370,10 @@
                     countDisplay.innerText = count ? `(Showing ${count} products)` : '(0 Items)';
                 }
 
+                // 🌟 FETCH FLAGS INCLUDED HERE
                 let query = window.supabaseClient
                     .from('products')
-                    .select('*')
+                    .select('id, slug, name, base_price, original_price, rating_avg, rating_count, images, category_id, amount, is_rapid_eligible, is_pickup_eligible')
                     .eq('is_active', true)
                     .order('created_at', { ascending: false })
                     .range(currentOffset, currentOffset + LIMIT - 1);
@@ -420,36 +408,55 @@
                 products.forEach(p => {
                     const displayImage = (p.images && p.images.length > 0) ? p.images[0] : 'logo.png';
                     const displayPrice = p.base_price ? parseFloat(p.base_price) : 0;
+                    const originalPrice = p.original_price ? parseFloat(p.original_price) : displayPrice;
                     
-                    const mockMRP = p.mrp ? parseFloat(p.mrp) : Math.round(displayPrice * 1.4); 
-                    const mockDiscount = mockMRP > displayPrice ? Math.round(((mockMRP - displayPrice) / mockMRP) * 100) : 0;
-                    const mockRating = (Math.random() * (5.0 - 3.5) + 3.5).toFixed(1); 
-                    const mockReviews = Math.floor(Math.random() * 500) + 10;
+                    let discountBadge = '';
+                    if (originalPrice > displayPrice) {
+                        const off = Math.round(((originalPrice - displayPrice) / originalPrice) * 100);
+                        discountBadge = `<div class="discount-percent">${off}% OFF</div>`;
+                    }
 
+                    const rating = p.rating_avg || 4.5;
+                    const reviews = p.rating_count || 0;
+
+                    // 🌟 USING THE NEW STANDARDIZED TEMPLATE
                     html += `
-                        <div class="v-card" onclick="viewProduct('${p.slug || p.id}')">
-                            <div class="wishlist-btn" onclick="toggleWishlist(event)"><i class="fa-regular fa-heart"></i></div>
-                            <div class="v-img-box"><img src="${displayImage}" alt="${p.name}" loading="lazy"></div>
-                            
-                            <h3 class="v-title">${p.name}</h3>
-                            
-                            <div class="v-rating-row">
-                                <span class="v-badge">${mockRating} <i class="fa-solid fa-star" style="font-size: 10px;"></i></span>
-                                <span class="v-rating-count">(${mockReviews})</span>
+                        <div class="product-card" onclick="window.location.href='product_details.html?slug=${p.slug || p.id}'">
+                            ${discountBadge}
+                            <div class="img-box"><img src="${displayImage}" alt="${p.name}" loading="lazy"></div>
+                            <div class="details">
+                                <div>
+                                    <h4 class="product-name">${p.name}</h4>
+                                    <p><span class="rating_avg">${rating} <i class="fa-solid fa-star" style="font-size:0.6em;"></i></span> <span class="rating_count"> ${reviews} Ratings</span></p>
+                                </div>
+                                
+                                <div class="price-area">
+                                    <span class="price">₹${displayPrice}</span>
+                                    ${originalPrice > displayPrice ? `<span class="mrp">₹${originalPrice}</span>` : ''}
+                                </div>
+                                
+                                <div class="bottom-btn">
+                                    <button class="add-btn btn-relative" 
+                                            data-product-id="${p.id}"
+                                            onclick="event.stopPropagation(); window.vilarciAddToCart('${p.id}', ${displayPrice}, '1 Unit', ${p.is_rapid_eligible});">
+                                        <i class="fa-solid fa-cart-plus"></i>
+                                    </button>
+                                    
+                                    <button class="pickup-btn btn-relative" 
+                                            data-product-id="${p.id}"
+                                            onclick="event.stopPropagation(); window.vilarciStorePickup('${p.id}', ${displayPrice}, '1 Unit', ${p.is_pickup_eligible});">
+                                        Store Pickup <i class="fa-solid fa-motorcycle"></i>
+                                    </button>
+                                </div>
                             </div>
-
-                            <div class="v-price-row">
-                                <span class="v-price">₹${displayPrice}</span>
-                                ${mockDiscount > 0 ? `<span class="v-mrp">₹${mockMRP}</span><span class="v-discount">${mockDiscount}% off</span>` : ''}
-                            </div>
-                            
-                            <div class="v-tags">Free Delivery</div>
                         </div>
                     `;
                 });
                 
                 container.innerHTML += html;
-                if(window.lucide) window.lucide.createIcons();
+
+                // 🌟 TRIGGER BADGE RENDERER
+                if(typeof window.renderCartBadges === 'function') window.renderCartBadges();
 
             } catch (err) {
                 console.error("Error:", err);
@@ -469,6 +476,7 @@
 
         document.addEventListener('DOMContentLoaded', () => fetchProducts(false));
         window.addEventListener('vilarciLocationChanged', () => fetchProducts(false));
-    </script>
+        
+        </script>
 </body>
 </html>

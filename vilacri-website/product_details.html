@@ -6,7 +6,7 @@
     <title>Product Details - Vilarci</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
-    
+    <link rel="stylesheet" type="text/css" href="product-card.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
@@ -179,6 +179,13 @@
             </div>
         </div>
     </main>
+        <div id="suggestions-wrapper" class="max-w-6xl mx-auto px-4 py-8 border-t border-slate-200 mt-8 hidden">
+        <h2 id="suggestions-title" class="text-xl font-extrabold text-slate-900 mb-6">Similar Products</h2>
+        <div id="suggestions-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6"></div>
+        <div id="suggestions-loader" class="hidden py-8 flex justify-center w-full col-span-full">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        </div>
+    </div>
 
     <div id="action-bar" class="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-slate-200 p-3 flex gap-2 z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] transition-transform duration-300 transform translate-y-full">
         
@@ -209,31 +216,27 @@
     let customDeliveryFee = null; 
     let userFullLocation = null;  
 
+    // 🌟 SUGGESTION ENGINE VARIABLES
+    let currentStage = 1;
+    const MAX_STAGES = 14;
+    let isLoadingSuggestions = false;
+    let shownProductIds = new Set();
+    let suggestionOffsets = { superSub: 0, subCat: 0, recent: 0, seller: 0 };
+    let suggestionValidSellers = null;
+
     // ==========================================
-    // 🌟 THE BULLETPROOF PRICE FINDER
-    // ==========================================
-   // ==========================================
-    // 🌟 THE BULLETPROOF PRICE FINDER (FIXED)
+    // CORE LOGIC & HELPERS
     // ==========================================
     function getRobustPrice(product, currentSelectedPrice) {
-        // 1. Trust user selection first
         let price = parseFloat(currentSelectedPrice);
         if (!isNaN(price) && price > 0) return price;
 
-        // 2. Scan Variants safely
         let vars = product.variants;
-        
-        // Fix: Catch potential double-stringification from JSONB
-        if (typeof vars === 'string') {
-            try { vars = JSON.parse(vars); } catch(e) {}
-        }
-        if (typeof vars === 'string') { 
-            try { vars = JSON.parse(vars); } catch(e) {}
-        }
+        if (typeof vars === 'string') { try { vars = JSON.parse(vars); } catch(e) {} }
+        if (typeof vars === 'string') { try { vars = JSON.parse(vars); } catch(e) {} }
 
         if (Array.isArray(vars) && vars.length > 0) {
             const validPrices = vars.map(v => {
-                // Fix: Catch string prices with commas and different capitalizations
                 let p = v.price || v.Price || v.PRICE || 0;
                 if (typeof p === 'string') p = p.replace(/,/g, '');
                 return parseFloat(p);
@@ -242,20 +245,44 @@
             if (validPrices.length > 0) return Math.min(...validPrices);
         }
 
-        // 3. Fallback to base_price
         let base = parseFloat(product.base_price);
         if (!isNaN(base) && base > 0) return base;
-        
-        // 4. Final Fallback to original_price
-        let orig = parseFloat(product.original_price);
-        if (!isNaN(orig) && orig > 0) return orig;
-
-        return 0; // Absolute fallback
+        return parseFloat(product.original_price) || 0;
     }
 
-    // ==========================================
-    // 1. SMART DELIVERY AVAILABILITY
-    // ==========================================
+    // 🌟 NEW: Data-Driven Interface Routing
+    function hasVariants(product) {
+        let vars = product?.variants;
+        if(typeof vars === 'string') { try { vars = JSON.parse(vars); } catch(e){} }
+        if(typeof vars === 'string') { try { vars = JSON.parse(vars); } catch(e){} }
+        return Array.isArray(vars) && vars.length > 0;
+    }
+
+    function hasBulkRules(product) {
+        let rules = product?.bulk_rules;
+        if(typeof rules === 'string') { try { rules = JSON.parse(rules); } catch(e){} }
+        if(typeof rules === 'string') { try { rules = JSON.parse(rules); } catch(e){} }
+        return Array.isArray(rules) && rules.length > 0;
+    }
+
+    async function getValidSellersForLocation() {
+        const savedLoc = localStorage.getItem('vilarci_user_location');
+        if (!savedLoc) return [];
+        const locObj = JSON.parse(savedLoc);
+        let subZoneIds = [];
+        if (locObj.type === 'sub_zone') subZoneIds = [parseInt(locObj.id)];
+        else if (locObj.type === 'main_zone') {
+            const { data } = await db.from('sub_zones').select('id').eq('main_zone_id', locObj.id);
+            if(data) subZoneIds = data.map(z => z.id);
+        } else if (locObj.type === 'district') {
+            const { data } = await db.from('sub_zones').select('id').eq('district_id', locObj.id);
+            if(data) subZoneIds = data.map(z => z.id);
+        }
+        if (subZoneIds.length === 0) return [];
+        const { data: sellers } = await db.from('seller_delivery_zones').select('seller_id').in('sub_zone_id', subZoneIds);
+        return sellers ? [...new Set(sellers.map(s => s.seller_id))] : [];
+    }
+
     async function checkDeliveryAvailability(sellerId) {
         const warningBanner = document.getElementById('delivery-warning');
         warningBanner.classList.add('hidden'); 
@@ -272,52 +299,41 @@
         const locObj = JSON.parse(savedLoc);
         let subZoneIds = [];
 
-        try {
-            if (locObj.type === 'sub_zone') {
-                const { data } = await db.from('sub_zones').select('id, main_zone_id, district_id').eq('id', locObj.id).single();
-                if(data) { userFullLocation = data; subZoneIds = [data.id]; }
-            } else if (locObj.type === 'main_zone') {
-                userFullLocation = { main_zone_id: parseInt(locObj.id) };
-                const { data } = await db.from('sub_zones').select('id').eq('main_zone_id', locObj.id);
-                subZoneIds = data ? data.map(z => z.id) : [];
-            } else if (locObj.type === 'district') {
-                userFullLocation = { district_id: parseInt(locObj.id) };
-                const { data } = await db.from('sub_zones').select('id').eq('district_id', locObj.id);
-                subZoneIds = data ? data.map(z => z.id) : [];
-            }
-
-            if (subZoneIds.length === 0) return;
-
-            const { data: mapping, error } = await db.from('seller_delivery_zones')
-                .select('seller_id, delivery_fee')
-                .eq('seller_id', sellerId)
-                .in('sub_zone_id', subZoneIds);
-
-            if (error) throw error;
-
-            if (!mapping || mapping.length === 0) {
-                isDeliveryAvailable = false; 
-                document.getElementById('warning-area-name').innerText = locObj.name;
-                warningBanner.classList.remove('hidden');
-            } else {
-                customDeliveryFee = Math.min(...mapping.map(m => parseFloat(m.delivery_fee) || 0));
-            }
-
-            updateActionButtons(isDeliveryAvailable); 
-            recalculateDeliveryFee();
-
-        } catch (err) {
-            console.error("Delivery Check Error:", err);
+        if (locObj.type === 'sub_zone') {
+            const { data } = await db.from('sub_zones').select('id, main_zone_id, district_id').eq('id', locObj.id).single();
+            if(data) { userFullLocation = data; subZoneIds = [data.id]; }
+        } else if (locObj.type === 'main_zone') {
+            userFullLocation = { main_zone_id: parseInt(locObj.id) };
+            const { data } = await db.from('sub_zones').select('id').eq('main_zone_id', locObj.id);
+            subZoneIds = data ? data.map(z => z.id) : [];
+        } else if (locObj.type === 'district') {
+            userFullLocation = { district_id: parseInt(locObj.id) };
+            const { data } = await db.from('sub_zones').select('id').eq('district_id', locObj.id);
+            subZoneIds = data ? data.map(z => z.id) : [];
         }
+
+        if (subZoneIds.length === 0) return;
+
+        const { data: mapping } = await db.from('seller_delivery_zones')
+            .select('seller_id, delivery_fee')
+            .eq('seller_id', sellerId)
+            .in('sub_zone_id', subZoneIds);
+
+        if (!mapping || mapping.length === 0) {
+            isDeliveryAvailable = false; 
+            document.getElementById('warning-area-name').innerText = locObj.name;
+            warningBanner.classList.remove('hidden');
+        } else {
+            customDeliveryFee = Math.min(...mapping.map(m => parseFloat(m.delivery_fee) || 0));
+        }
+
+        updateActionButtons(isDeliveryAvailable); 
+        recalculateDeliveryFee();
     }
 
-    // ==========================================
-    // 2. EDGE-COMPUTED DELIVERY CALCULATOR
-    // ==========================================
     function recalculateDeliveryFee() {
         const feeDisplay = document.getElementById('delivery-fee-display');
         const tierBadge = document.getElementById('delivery-tier-badge');
-        
         if(!feeDisplay) return;
 
         if (!isDeliveryAvailable) {
@@ -333,51 +349,25 @@
             return;
         }
 
-        let fee = 0;
-        let tierText = "";
-        let originalFee = 0; 
+        let fee = 0; let tierText = ""; let originalFee = 0; 
 
-        if (currentProduct.is_free_delivery) {
-            fee = 0;
-            tierText = "Promo";
-        } 
-        else if (currentSeller.fulfillment_type === 'seller') {
-            fee = customDeliveryFee || 0;
-            tierText = "Direct Fulfillment";
-        } 
+        if (currentProduct.is_free_delivery) { fee = 0; tierText = "Promo"; } 
+        else if (currentSeller.fulfillment_type === 'seller') { fee = customDeliveryFee || 0; tierText = "Direct Fulfillment"; } 
         else {
             let tier = 4;
-            
-            const uSub = parseInt(userFullLocation.id) || 0;
-            const sSub = parseInt(currentSeller.origin_sub_zone_id) || 0;
-            const uMain = parseInt(userFullLocation.main_zone_id) || 0;
-            const sMain = parseInt(currentSeller.origin_main_zone_id) || 0;
-            const uDist = parseInt(userFullLocation.district_id) || 0;
-            const sDist = parseInt(currentSeller.origin_district_id) || 0;
+            const uSub = parseInt(userFullLocation.id) || 0; const sSub = parseInt(currentSeller.origin_sub_zone_id) || 0;
+            const uMain = parseInt(userFullLocation.main_zone_id) || 0; const sMain = parseInt(currentSeller.origin_main_zone_id) || 0;
+            const uDist = parseInt(userFullLocation.district_id) || 0; const sDist = parseInt(currentSeller.origin_district_id) || 0;
 
             if (uSub > 0 && sSub > 0 && uSub === sSub) tier = 1;
             else if (uMain > 0 && sMain > 0 && uMain === sMain) tier = 2;
             else if (uDist > 0 && sDist > 0 && uDist === sDist) tier = 3;
 
-            // 🌟 Guarantees accurate price detection for variants
             const comparePrice = getRobustPrice(currentProduct, selectedPrice);
-
-            if (tier === 1) {
-                originalFee = 15;
-                fee = comparePrice >= 199 ? 0 : 15;
-                tierText = "Hyper-Local";
-            } else if (tier === 2) {
-                originalFee = 30;
-                fee = comparePrice >= 500 ? 0 : 30;
-                tierText = "Zone Local";
-            } else if (tier === 3) {
-                originalFee = 80;
-                fee = comparePrice >= 1000 ? 0 : 80;
-                tierText = "District Wide";
-            } else {
-                fee = 100; 
-                tierText = "Standard";
-            }
+            if (tier === 1) { originalFee = 15; fee = comparePrice >= 199 ? 0 : 15; tierText = "Hyper-Local"; } 
+            else if (tier === 2) { originalFee = 30; fee = comparePrice >= 500 ? 0 : 30; tierText = "Zone Local"; } 
+            else if (tier === 3) { originalFee = 80; fee = comparePrice >= 1000 ? 0 : 80; tierText = "District Wide"; } 
+            else { fee = 100; tierText = "Standard"; }
 
             if (currentProduct.delivery_class === 'heavy') { fee += 20; tierText += " (+Heavy)"; }
             if (currentProduct.delivery_class === 'fragile') { fee += 15; tierText += " (+Fragile)"; }
@@ -390,14 +380,9 @@
             feeDisplay.innerHTML = `₹${fee}`;
             feeDisplay.className = "text-sm font-extrabold text-slate-800";
         }
-
-        tierBadge.innerText = tierText;
-        tierBadge.classList.remove('hidden');
+        tierBadge.innerText = tierText; tierBadge.classList.remove('hidden');
     }
 
-    // ==========================================
-    // INITIALIZATION & UI UPDATES
-    // ==========================================
     function updateActionButtons(isAvailable) {
         const cartBtn = document.getElementById('add-to-cart-btn');
         const buyNowBtn = document.getElementById('buy-now-btn');
@@ -412,31 +397,34 @@
 
     async function initPage() {
         lucide.createIcons();
-        
         const urlParams = new URLSearchParams(window.location.search);
         const slug = urlParams.get('slug'); 
         const idFallback = urlParams.get('id');
 
         let query = db.from('products').select('*');
-
         if (slug) query = query.eq('slug', slug);
         else if (idFallback) query = query.eq('id', idFallback);
-        else { showError(); return; }
+        else { document.getElementById('loader').classList.add('hidden'); document.getElementById('error-screen').classList.remove('hidden'); return; }
 
         const { data, error } = await query.single();
-
-        if (error || !data) { showError(); return; }
+        if (error || !data) { document.getElementById('loader').classList.add('hidden'); document.getElementById('error-screen').classList.remove('hidden'); return; }
 
         currentProduct = data;
+        shownProductIds.add(data.id); // Track to prevent suggesting itself
+
+        // Track Recently Visited
+        let recent = JSON.parse(localStorage.getItem('vilarci_recent') || "[]");
+        recent = recent.filter(id => id !== data.id); 
+        recent.unshift(data.id); 
+        if(recent.length > 30) recent.pop(); 
+        localStorage.setItem('vilarci_recent', JSON.stringify(recent));
+
         renderUniversalData(data);
         renderTrustBanner(data); 
         
-        const idString = data.id.toString();
-        const fashionCode = idString.length >= 8 ? idString.substring(6, 8) : "00"; 
-        const subAreaCode = idString.length >= 11 ? idString.substring(8, 11) : "000"; 
-
-        if (fashionCode === '12') renderFashionInterface(data);
-        else if (subAreaCode === '185') renderWeightableInterface(data);
+        // 🌟 DYNAMIC ROUTING (No ID hacks)
+        if (hasVariants(data)) renderFashionInterface(data);
+        else if (hasBulkRules(data)) renderWeightableInterface(data);
         else renderPacketInterface(data);
 
         await fetchSellerInfo(data.seller_id);
@@ -444,28 +432,25 @@
 
         document.getElementById('loader').classList.add('hidden');
         document.getElementById('product-container').classList.remove('hidden');
-        
+        document.getElementById('suggestions-wrapper').classList.remove('hidden');
         setTimeout(() => { document.getElementById('action-bar').classList.remove('translate-y-full'); }, 300);
-        updateGlobalCartCount();
+        
+        // Start suggestions
+        loadNextSuggestionStage();
     }
 
     async function fetchSellerInfo(numericId) {
         if (!numericId) return;
-        
-        const { data, error } = await db
-            .from('shops_public_587')
+        const { data } = await db.from('shops_public_587')
             .select('store_name, shop_slug, fulfillment_type, origin_sub_zone_id, origin_main_zone_id, origin_district_id, origin_state_id')
-            .eq('seller_numeric_id', numericId.toString())
-            .single();
+            .eq('seller_numeric_id', numericId.toString()).single();
         
         currentSeller = data || {};
-
         const sellerCard = document.getElementById('seller-card');
         const shopNameDisplay = document.getElementById('shop-name-display');
 
         sellerCard.classList.remove('hidden');
-
-        if (!error && data) {
+        if (data) {
             shopNameDisplay.innerText = data.store_name || "Vilarci Verified Seller";
             sellerCard.onclick = () => window.location.href = `shop_profile.html?slug=${data.shop_slug || numericId}`;
         } else {
@@ -489,14 +474,12 @@
             document.getElementById('mrp-display').innerText = '';
             document.getElementById('discount-display').innerText = '';
         }
-
         recalculateDeliveryFee(); 
     }
 
     // ==========================================
-    // RENDER FUNCTIONS
+    // RENDERING LOGIC (Universal, Trust, Layouts)
     // ==========================================
-
     function renderUniversalData(product) {
         document.getElementById('rating_avg').innerText = product.rating_avg || 4.5;
         document.getElementById('rating_count').innerText = product.rating_count > 0 ? `${product.rating_count} Ratings` : 'No Ratings';
@@ -505,9 +488,7 @@
         
         let imgArray = [];
         if (Array.isArray(product.images)) imgArray = product.images;
-        else if (typeof product.images === 'string') {
-            try { imgArray = JSON.parse(product.images); } catch(e) {}
-        }
+        else if (typeof product.images === 'string') { try { imgArray = JSON.parse(product.images); } catch(e) {} }
 
         const mainImg = document.getElementById('main-image');
         const thumbContainer = document.getElementById('thumbnails');
@@ -521,7 +502,6 @@
                     const thumb = document.createElement('img');
                     thumb.src = imgUrl;
                     thumb.className = `w-16 h-16 object-cover rounded-xl border-2 cursor-pointer transition flex-shrink-0 ${index === 0 ? 'border-indigo-600 shadow-md' : 'border-slate-200 hover:border-indigo-300'}`;
-                    
                     thumb.onmouseover = () => {
                         mainImg.src = imgUrl;
                         Array.from(thumbContainer.children).forEach(t => { t.classList.remove('border-indigo-600', 'shadow-md'); t.classList.add('border-slate-200'); });
@@ -531,9 +511,7 @@
                     thumbContainer.appendChild(thumb);
                 });
             }
-        } else {
-            mainImg.src = "logo.png";
-        }
+        } else { mainImg.src = "logo.png"; }
 
         if (product.badge_label) {
             const badge = document.getElementById('badge-label');
@@ -543,10 +521,7 @@
 
         let hlArray = [];
         if (Array.isArray(product.highlights)) hlArray = product.highlights;
-        else if (typeof product.highlights === 'string') {
-            try { hlArray = JSON.parse(product.highlights); } catch(e) {}
-        }
-
+        else if (typeof product.highlights === 'string') { try { hlArray = JSON.parse(product.highlights); } catch(e) {} }
         if (hlArray.length > 0) {
             document.getElementById('highlights-section').classList.remove('hidden');
             const div = document.getElementById('product-highlights');
@@ -555,10 +530,7 @@
         }
 
         let specsObj = product.specifications;
-        if (typeof specsObj === 'string') {
-            try { specsObj = JSON.parse(specsObj); } catch(e) { specsObj = null; }
-        }
-
+        if (typeof specsObj === 'string') { try { specsObj = JSON.parse(specsObj); } catch(e) { specsObj = null; } }
         if (specsObj) {
             document.getElementById('specs-section').classList.remove('hidden');
             const grid = document.getElementById('specs-grid');
@@ -573,62 +545,29 @@
 
     function renderTrustBanner(product) {
         let maxTime = parseInt(product.max_delivery_time) || 1;
-        let deliveryText = "";
-
-        if (maxTime === 1) {
-            const now = new Date();
-            const hours = now.getHours();
-            const minutes = now.getMinutes();
-            if (hours > 22 || (hours === 22 && minutes >= 30)) {
-                deliveryText = "Same Day or Tomorrow";
-            } else {
-                deliveryText = "Same Day";
-            }
-            document.getElementById('trust-delivery-text').innerText = deliveryText;
-        } else {
-            const deliveryDate = new Date();
-            deliveryDate.setDate(deliveryDate.getDate() + maxTime);
-            const options = { weekday: 'short', month: 'short', day: 'numeric' };
-            deliveryText = deliveryDate.toLocaleDateString('en-IN', options); 
-            document.getElementById('trust-delivery-text').innerText = `By ${deliveryText}`;
-        }
+        let deliveryText = maxTime === 1 ? "Same Day or Tomorrow" : `Delivery by ${new Date(Date.now() + maxTime*86400000).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })}`;
+        document.getElementById('trust-delivery-text').innerText = deliveryText;
 
         let repDays = product.replacement_days !== undefined ? parseInt(product.replacement_days) : 7;
-        if (repDays > 0) {
-            document.getElementById('trust-replace-text').innerText = `${repDays} Days Replacement`;
-            document.getElementById('trust-replace-icon').className = "bg-blue-50 text-blue-600 p-2 rounded-full";
-            document.getElementById('trust-replace-icon').innerHTML = `<i data-lucide="refresh-ccw" class="w-5 h-5"></i>`;
-        } else {
-            document.getElementById('trust-replace-text').innerText = `No Replacement`;
-            document.getElementById('trust-replace-icon').className = "bg-slate-50 text-slate-400 p-2 rounded-full";
-            document.getElementById('trust-replace-icon').innerHTML = `<i data-lucide="ban" class="w-5 h-5"></i>`;
-        }
+        document.getElementById('trust-replace-text').innerText = repDays > 0 ? `${repDays} Days Replacement` : `No Replacement`;
+        document.getElementById('trust-replace-icon').className = repDays > 0 ? "bg-blue-50 text-blue-600 p-2 rounded-full" : "bg-slate-50 text-slate-400 p-2 rounded-full";
+        document.getElementById('trust-replace-icon').innerHTML = repDays > 0 ? `<i data-lucide="refresh-ccw" class="w-5 h-5"></i>` : `<i data-lucide="ban" class="w-5 h-5"></i>`;
 
         let refDays = product.refund_days !== undefined ? parseInt(product.refund_days) : 7;
-        if (refDays > 0) {
-            document.getElementById('trust-refund-text').innerText = `${refDays} Days Refund`;
-            document.getElementById('trust-refund-icon').className = "bg-green-50 text-green-600 p-2 rounded-full";
-            document.getElementById('trust-refund-icon').innerHTML = `<i data-lucide="shield-check" class="w-5 h-5"></i>`;
-        } else {
-            document.getElementById('trust-refund-text').innerText = `Non-Refundable`;
-            document.getElementById('trust-refund-icon').className = "bg-slate-50 text-slate-400 p-2 rounded-full";
-            document.getElementById('trust-refund-icon').innerHTML = `<i data-lucide="shield-off" class="w-5 h-5"></i>`;
-        }
-
+        document.getElementById('trust-refund-text').innerText = refDays > 0 ? `${refDays} Days Refund` : `Non-Refundable`;
+        document.getElementById('trust-refund-icon').className = refDays > 0 ? "bg-green-50 text-green-600 p-2 rounded-full" : "bg-slate-50 text-slate-400 p-2 rounded-full";
+        document.getElementById('trust-refund-icon').innerHTML = refDays > 0 ? `<i data-lucide="shield-check" class="w-5 h-5"></i>` : `<i data-lucide="shield-off" class="w-5 h-5"></i>`;
+        
         if(window.lucide) window.lucide.createIcons();
     }
 
     function renderWeightableInterface(product) {
         const container = document.getElementById('dynamic-logic-container');
-        
         let bulkRules = [];
         if (Array.isArray(product.bulk_rules)) bulkRules = product.bulk_rules;
-        else if (typeof product.bulk_rules === 'string') {
-            try { bulkRules = JSON.parse(product.bulk_rules); } catch(e) {}
-        }
+        else if (typeof product.bulk_rules === 'string') { try { bulkRules = JSON.parse(product.bulk_rules); } catch(e) {} }
 
         const safeBasePrice = getRobustPrice(product, 0);
-
         let html = `<div class="space-y-4"><div class="flex items-center justify-between"><h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Select Quantity</h3></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="bulk-options-container">`;
 
         bulkRules.forEach((rule, index) => {
@@ -640,84 +579,46 @@
             const finalPrice = Math.round(calcPrice - (parseFloat(rule.discount_amount) || 0));
             const saved = Math.round(parseFloat(rule.discount_amount) || 0);
 
-            if(index === 0) {
-                updatePriceUI(finalPrice, Math.round(calcPrice));
-                selectedWeightLabel = quantityLabel;
-            }
+            if(index === 0) { updatePriceUI(finalPrice, Math.round(calcPrice)); selectedWeightLabel = quantityLabel; }
 
             html += `
                 <div onclick="selectWeight(this, ${finalPrice}, ${Math.round(calcPrice)}, '${quantityLabel}')" 
                      class="weight-option cursor-pointer border rounded-2xl p-4 flex justify-between items-center transition-all ${index === 0 ? 'border-indigo-600 bg-indigo-50/50 ring-1 ring-indigo-600' : 'border-slate-200 bg-white hover:border-slate-300'}">
-                    <div class="flex flex-col">
-                        <p class="font-bold text-slate-800 text-lg">${quantityLabel}</p>
-                        ${saved > 0 ? `<p class="text-[10px] text-green-600 font-bold uppercase tracking-wide">Save ₹${saved}</p>` : ''}
-                    </div>
+                    <div class="flex flex-col"><p class="font-bold text-slate-800 text-lg">${quantityLabel}</p>${saved > 0 ? `<p class="text-[10px] text-green-600 font-bold uppercase tracking-wide">Save ₹${saved}</p>` : ''}</div>
                     <p class="font-extrabold text-indigo-700 text-xl">₹${finalPrice}</p>
                 </div>`;
         });
 
-        html += `</div>
-                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 mt-2">
-                    <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Custom Amount</h4>
-                    <div class="flex items-center gap-3">
-                        <div class="relative flex-1">
-                            <input type="number" id="custom-weight" placeholder="0" class="w-full pl-3 pr-8 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none transition" oninput="calculateCustom('weight', this.value)">
-                            <span class="absolute right-3 top-3.5 text-xs font-bold text-slate-400">gm</span>
-                        </div>
-                        <i data-lucide="arrow-left-right" class="w-4 h-4 text-slate-300"></i>
-                        <div class="relative flex-1">
-                            <span class="absolute left-3 top-3.5 text-xs font-bold text-slate-400">₹</span>
-                            <input type="number" id="custom-cost" placeholder="0" class="w-full pl-7 pr-3 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none transition" oninput="calculateCustom('cost', this.value)">
-                        </div>
-                    </div>
-                </div></div>`;
-
-        container.innerHTML = html;
-        lucide.createIcons();
+        html += `</div><div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 mt-2"><h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Custom Amount</h4><div class="flex items-center gap-3"><div class="relative flex-1"><input type="number" id="custom-weight" placeholder="0" class="w-full pl-3 pr-8 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none transition" oninput="calculateCustom('weight', this.value)"><span class="absolute right-3 top-3.5 text-xs font-bold text-slate-400">gm</span></div><i data-lucide="arrow-left-right" class="w-4 h-4 text-slate-300"></i><div class="relative flex-1"><span class="absolute left-3 top-3.5 text-xs font-bold text-slate-400">₹</span><input type="number" id="custom-cost" placeholder="0" class="w-full pl-7 pr-3 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none transition" oninput="calculateCustom('cost', this.value)"></div></div></div></div>`;
+        container.innerHTML = html; lucide.createIcons();
     }
 
     function renderFashionInterface(product) {
         const container = document.getElementById('dynamic-logic-container');
-        
         let variants = [];
         if (Array.isArray(product.variants)) variants = product.variants;
-        else if (typeof product.variants === 'string') {
-            try { variants = JSON.parse(product.variants); } catch(e) {}
-        }
+        else if (typeof product.variants === 'string') { try { variants = JSON.parse(product.variants); } catch(e) {} }
 
         let startingPrice = getRobustPrice(product, 0);
-
         let html = `<div class="space-y-4"><div class="flex justify-between items-center"><h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Select Option</h3></div><div class="flex flex-wrap gap-3">`;
 
-        if(variants.length === 0) {
-            html += `<p class="text-sm text-slate-500 w-full">No options available.</p>`;
-        } else {
+        if(variants.length === 0) { html += `<p class="text-sm text-slate-500 w-full">No options available.</p>`; } 
+        else {
             variants.forEach(v => {
-            const isOutOfStock = parseInt(v.stock) <= 0;
-            const baseClass = "cursor-pointer border-2 rounded-xl h-12 min-w-[3rem] px-4 flex flex-col items-center justify-center transition-all relative overflow-hidden group font-bold";
-            const stockClass = isOutOfStock ? "bg-slate-50 border-slate-200 text-slate-400 opacity-60 cursor-not-allowed" : "bg-white border-slate-200 text-slate-700 hover:border-indigo-600 hover:text-indigo-600";
-            
-            const safeSize = String(v.size || '').replace(/'/g, "\\'");
-            const safeSku = String(v.sku || '').replace(/'/g, "\\'");
-            
-            // Fix: Safely parse the price, accounting for strings or commas inside the variant object
-            let rawPrice = v.price || v.Price || v.PRICE || 0;
-            if (typeof rawPrice === 'string') rawPrice = rawPrice.replace(/,/g, '');
-            const safePrice = parseFloat(rawPrice) || 0;
+                const isOutOfStock = parseInt(v.stock) <= 0;
+                const baseClass = "cursor-pointer border-2 rounded-xl h-12 min-w-[3rem] px-4 flex flex-col items-center justify-center transition-all relative overflow-hidden group font-bold";
+                const stockClass = isOutOfStock ? "bg-slate-50 border-slate-200 text-slate-400 opacity-60 cursor-not-allowed" : "bg-white border-slate-200 text-slate-700 hover:border-indigo-600 hover:text-indigo-600";
+                const safeSize = String(v.size || '').replace(/'/g, "\\'");
+                let rawPrice = v.price || v.Price || v.PRICE || 0;
+                if (typeof rawPrice === 'string') rawPrice = rawPrice.replace(/,/g, '');
+                const clickAction = isOutOfStock ? "" : `selectFashionVariant(this, '${safeSize}', ${parseFloat(rawPrice) || 0})`;
 
-            const clickAction = isOutOfStock ? "" : `selectFashionVariant(this, '${safeSize}', ${safePrice}, '${safeSku}')`;
-
-            html += `<div onclick="${clickAction}" class="variant-option ${baseClass} ${stockClass}">${v.size}${!isOutOfStock && parseInt(v.stock) < 5 ? `<span class="absolute bottom-0.5 text-[8px] text-red-500 font-extrabold uppercase">Few Left</span>` : ''}${isOutOfStock ? `<div class="absolute inset-0 flex items-center justify-center"><div class="w-full h-[2px] bg-slate-300 -rotate-45"></div></div>` : ''}</div>`;
-        });
+                html += `<div onclick="${clickAction}" class="variant-option ${baseClass} ${stockClass}">${v.size}${!isOutOfStock && parseInt(v.stock) < 5 ? `<span class="absolute bottom-0.5 text-[8px] text-red-500 font-extrabold uppercase">Few Left</span>` : ''}${isOutOfStock ? `<div class="absolute inset-0 flex items-center justify-center"><div class="w-full h-[2px] bg-slate-300 -rotate-45"></div></div>` : ''}</div>`;
+            });
         }
-
         html += `</div><div id="fashion-warning" class="hidden text-xs text-red-500 font-bold flex items-center gap-1 bg-red-50 p-2 rounded-lg"><i data-lucide="alert-triangle" class="w-4 h-4"></i> Please select an option to continue</div></div>`;
-
-        container.innerHTML = html;
-        selectedWeightLabel = ""; 
-        selectedPrice = startingPrice; 
-        updatePriceUI(selectedPrice, product.original_price);
-        lucide.createIcons();
+        container.innerHTML = html; selectedWeightLabel = ""; selectedPrice = startingPrice; 
+        updatePriceUI(selectedPrice, product.original_price); lucide.createIcons();
     }
 
     function renderPacketInterface(product) {
@@ -725,32 +626,22 @@
         const stck = parseInt(product.stock_quantity) || 0;
         const safeBasePrice = getRobustPrice(product, 0);
 
-        let stockStatus = stck > 10 
-            ? `<span class="text-green-600 font-bold flex items-center gap-1 text-xs uppercase tracking-wider"><i data-lucide="check-circle2" class="w-4 h-4"></i> In Stock</span>`
-            : `<span class="text-orange-500 font-bold text-xs uppercase tracking-wider flex items-center gap-1"><i data-lucide="alert-circle" class="w-4 h-4"></i> Only ${stck} left</span>`;
-        
+        let stockStatus = stck > 10 ? `<span class="text-green-600 font-bold flex items-center gap-1 text-xs uppercase tracking-wider"><i data-lucide="check-circle2" class="w-4 h-4"></i> In Stock</span>` : `<span class="text-orange-500 font-bold text-xs uppercase tracking-wider flex items-center gap-1"><i data-lucide="alert-circle" class="w-4 h-4"></i> Only ${stck} left</span>`;
         if(stck <= 0) stockStatus = `<span class="text-red-500 font-bold text-xs uppercase tracking-wider flex items-center gap-1"><i data-lucide="x-circle" class="w-4 h-4"></i> Out of Stock</span>`;
 
         container.innerHTML = `<div class="flex flex-col gap-5"><div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100"><span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Availability</span>${stockStatus}</div><div class="flex justify-between items-center"><h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Quantity</h3><div class="flex items-center bg-white border-2 border-slate-200 rounded-xl overflow-hidden shadow-sm h-11"><button onclick="updatePacketQty(-1)" class="w-11 h-full text-slate-500 hover:bg-slate-100 hover:text-indigo-600 transition font-bold text-lg flex items-center justify-center">-</button><input type="text" id="packet-qty" value="1" class="w-12 h-full text-center text-sm font-bold text-slate-900 outline-none border-x border-slate-200" readonly><button onclick="updatePacketQty(1)" class="w-11 h-full text-slate-500 hover:bg-slate-100 hover:text-indigo-600 transition font-bold text-lg flex items-center justify-center">+</button></div></div></div>`;
-        
-        selectedWeightLabel = product.amount || "1 Unit"; 
-        updatePriceUI(safeBasePrice, product.original_price);
-        lucide.createIcons();
+        selectedWeightLabel = product.amount || "1 Unit"; updatePriceUI(safeBasePrice, product.original_price); lucide.createIcons();
     }
 
     // ==========================================
-    // SELECTION LOGIC
+    // UI INPUT HANDLERS
     // ==========================================
-
     window.selectWeight = function(element, price, mrp, label) {
-        document.getElementById('custom-weight').value = '';
-        document.getElementById('custom-cost').value = '';
+        document.getElementById('custom-weight').value = ''; document.getElementById('custom-cost').value = '';
         document.querySelectorAll('.weight-option').forEach(el => el.className = 'weight-option cursor-pointer border-2 border-slate-100 bg-white rounded-2xl p-4 flex justify-between items-center hover:border-slate-300 transition-all');
         element.className = 'weight-option cursor-pointer border-2 border-indigo-600 bg-indigo-50/50 rounded-2xl p-4 flex justify-between items-center transition-all shadow-sm';
-        selectedWeightLabel = label;
-        updatePriceUI(price, mrp);
+        selectedWeightLabel = label; updatePriceUI(price, mrp);
     }
-
     window.calculateCustom = function(mode, value) {
         document.querySelectorAll('.weight-option').forEach(el => el.className = 'weight-option cursor-pointer border-2 border-slate-100 bg-white rounded-2xl p-4 flex justify-between items-center transition-all opacity-50');
         const val = parseFloat(value);
@@ -759,14 +650,10 @@
             if(mode === 'cost') document.getElementById('custom-weight').value = '';
             return;
         }
-
-        const safeBasePrice = getRobustPrice(currentProduct, 0);
-        const pricePerGram = safeBasePrice / 1000;
-        
+        const pricePerGram = getRobustPrice(currentProduct, 0) / 1000;
         if (mode === 'weight') {
-            const cost = Math.round(val * pricePerGram);
-            document.getElementById('custom-cost').value = cost;
-            selectedPrice = cost;
+            selectedPrice = Math.round(val * pricePerGram);
+            document.getElementById('custom-cost').value = selectedPrice;
             selectedWeightLabel = `${val} gm (Custom)`;
         } else {
             const weight = Math.round(val / pricePerGram);
@@ -776,46 +663,33 @@
         }
         updatePriceUI(selectedPrice, 0); 
     }
-
-    window.selectFashionVariant = function(element, size, price, sku) {
+    window.selectFashionVariant = function(element, size, price) {
         document.querySelectorAll('.variant-option').forEach(el => {
             if(!el.classList.contains('opacity-60')) el.className = "variant-option cursor-pointer border-2 border-slate-200 bg-white text-slate-700 rounded-xl h-12 min-w-[3rem] px-4 flex flex-col items-center justify-center transition-all hover:border-indigo-600 hover:text-indigo-600 relative overflow-hidden group font-bold";
         });
         element.className = "variant-option cursor-pointer border-2 border-indigo-600 bg-indigo-600 text-white rounded-xl h-12 min-w-[3rem] px-4 flex flex-col items-center justify-center transition-all relative overflow-hidden font-bold shadow-md transform scale-105";
-        
-        selectedPrice = parseFloat(price) || 0; 
-        selectedWeightLabel = `Size: ${size}`; 
+        selectedPrice = parseFloat(price) || 0; selectedWeightLabel = `Size: ${size}`; 
         updatePriceUI(selectedPrice, currentProduct.original_price);
         document.getElementById('fashion-warning').classList.add('hidden');
     }
-
     window.updatePacketQty = function(change) {
         const input = document.getElementById('packet-qty');
         let val = parseInt(input.value) + change;
         let stck = parseInt(currentProduct.stock_quantity) || 999;
-        
         if(val < 1) val = 1;
-        if(currentProduct.stock_quantity && val > stck) {
-            Toastify({ text: `Max stock is ${stck}`, duration: 2000, style: { background: "#ef4444" } }).showToast();
-            val = stck;
-        }
-        input.value = val;
-        selectedWeightLabel = `${val} Units`;
-        
-        const safeBasePrice = getRobustPrice(currentProduct, 0);
-        updatePriceUI(safeBasePrice * val, parseFloat(currentProduct.original_price) * val);
+        if(currentProduct.stock_quantity && val > stck) { Toastify({ text: `Max stock is ${stck}`, duration: 2000, style: { background: "#ef4444" } }).showToast(); val = stck; }
+        input.value = val; selectedWeightLabel = `${val} Units`;
+        updatePriceUI(getRobustPrice(currentProduct, 0) * val, parseFloat(currentProduct.original_price) * val);
     }
 
     // ==========================================
-    // ACTION BUTTONS
+    // SECURE CART INTEGRATION (Replaced localStorage)
     // ==========================================
-
-    function checkFashionSelection() {
-        const idString = currentProduct.id.toString();
-        const fashionCode = idString.length >= 8 ? idString.substring(6, 8) : "";
-        if (fashionCode === '12' && (!selectedWeightLabel || selectedWeightLabel === "")) {
-            document.getElementById('fashion-warning').classList.remove('hidden');
-            Toastify({ text: "Please select an option", duration: 3000, style: { background: "#ef4444" } }).showToast();
+    function checkVariantSelection() {
+        if (hasVariants(currentProduct) && (!selectedWeightLabel || selectedWeightLabel === "1 Unit" || selectedWeightLabel === "")) {
+            const warn = document.getElementById('fashion-warning');
+            if(warn) warn.classList.remove('hidden');
+            Toastify({ text: "Please select an option to continue", duration: 3000, style: { background: "#ef4444" } }).showToast();
             return false;
         }
         return true;
@@ -823,75 +697,191 @@
 
     function addToCart() {
         if (!isDeliveryAvailable) {
-            Toastify({ text: "Delivery not available here. Please use Store Pickup.", duration: 3500, gravity: "top", position: "center", style: { background: "#ef4444", borderRadius: "8px", fontWeight: "bold" } }).showToast();
+            Toastify({ text: "Delivery not available here. Please use Store Pickup.", duration: 3500, style: { background: "#ef4444", borderRadius: "8px", fontWeight: "bold" } }).showToast();
             return false;
         }
-        if(!checkFashionSelection()) return false;
-
-        let imgArray = [];
-        if (Array.isArray(currentProduct.images)) imgArray = currentProduct.images;
-        else if (typeof currentProduct.images === 'string') {
-            try { imgArray = JSON.parse(currentProduct.images); } catch(e) {}
-        }
-
-        const uniqueKey = `${currentProduct.slug}-${selectedWeightLabel.replace(/\s+/g, '-')}`;
-        const cartItem = {
-            cartItemId: uniqueKey,
-            id: currentProduct.id,
-            slug: currentProduct.slug,
-            name: currentProduct.name,
-            price: selectedPrice,
-            originalPrice: currentProduct.original_price || selectedPrice,
-            amount: selectedWeightLabel,
-            image: (imgArray && imgArray.length > 0) ? imgArray[0] : "",
-            quantity: 1
-        };
-
-        let cart = JSON.parse(localStorage.getItem('cart') || "[]");
-        const existingIndex = cart.findIndex(i => i.cartItemId === uniqueKey);
-        if (existingIndex > -1) cart[existingIndex].quantity += 1; 
-        else cart.push(cartItem); 
-
-        localStorage.setItem('cart', JSON.stringify(cart));
-        updateGlobalCartCount();
-
-        Toastify({ text: "Added to Cart!", duration: 3000, gravity: "bottom", position: "center", style: { background: "#22c55e", borderRadius: "8px", fontWeight: "bold" } }).showToast();
+        if(!checkVariantSelection()) return false;
+        window.vilarciAddToCart(currentProduct.id, selectedPrice, selectedWeightLabel, currentProduct.is_rapid_eligible);
         return true;
     }
 
     function buyNow() {
         if (!isDeliveryAvailable) {
-            Toastify({ text: "Delivery not available here. Please use Store Pickup.", duration: 3500, gravity: "top", position: "center", style: { background: "#ef4444", borderRadius: "8px", fontWeight: "bold" } }).showToast();
+            Toastify({ text: "Delivery not available here. Please use Store Pickup.", duration: 3500, style: { background: "#ef4444", borderRadius: "8px", fontWeight: "bold" } }).showToast();
             return;
         }
-        if(!checkFashionSelection()) return;
-        if(addToCart() !== false) window.location.href = 'cart.html';
+        if(!checkVariantSelection()) return;
+        window.vilarciAddToCart(currentProduct.id, selectedPrice, selectedWeightLabel, currentProduct.is_rapid_eligible);
+        setTimeout(() => { window.location.href = 'cart.html'; }, 800);
     }
 
     function reservePickup() {
-        if(!checkFashionSelection()) return;
-        Toastify({ text: "Store Pickup reserved! The seller will keep this ready.", duration: 4000, gravity: "bottom", position: "center", style: { background: "#0f172a", borderRadius: "8px", fontWeight: "bold" } }).showToast();
+        if(!checkVariantSelection()) return;
+        window.vilarciStorePickup(currentProduct.id, selectedPrice, selectedWeightLabel, currentProduct.is_pickup_eligible);
     }
 
-    function updateGlobalCartCount() {
-        let cart = JSON.parse(localStorage.getItem('cart') || "[]");
-        let count = cart.reduce((acc, item) => acc + item.quantity, 0);
-        const badge = document.getElementById('cart-count-badge');
-        if(badge) badge.innerText = count;
+    // ==========================================
+    // 🌟 14-STAGE SUGGESTION ENGINE
+    // ==========================================
+    async function loadNextSuggestionStage() {
+        if(currentStage > MAX_STAGES || isLoadingSuggestions) return;
+        isLoadingSuggestions = true;
+
+        const loader = document.getElementById('suggestions-loader');
+        if(loader) loader.classList.remove('hidden');
+
+        if(suggestionValidSellers === null) {
+            suggestionValidSellers = await getValidSellersForLocation();
+        }
+
+        let data = [];
+        const limit = 10;
+        let excludeIds = Array.from(shownProductIds).join(',');
+
+        try {
+            if(currentStage <= 5 && currentProduct.super_sub_id) {
+                if(currentStage === 1) injectStageTitle("Similar Products");
+                let q = db.from('products').select('id, slug, name, base_price, original_price, rating_avg, rating_count, images, is_rapid_eligible, is_pickup_eligible').eq('is_active', true).eq('super_sub_id', currentProduct.super_sub_id).not('id', 'in', `(${excludeIds})`).range(suggestionOffsets.superSub, suggestionOffsets.superSub + limit - 1);
+                if(suggestionValidSellers.length > 0) q = q.in('seller_id', suggestionValidSellers);
+                let res = await q;
+                data = res.data || [];
+                suggestionOffsets.superSub += limit;
+                if(data.length === 0) currentStage = 5; 
+            } 
+            else if (currentStage <= 10 && currentProduct.sub_category_id) {
+                if(currentStage === 6) injectStageTitle("More in this Category");
+                let q = db.from('products').select('id, slug, name, base_price, original_price, rating_avg, rating_count, images, is_rapid_eligible, is_pickup_eligible').eq('is_active', true).eq('sub_category_id', currentProduct.sub_category_id).not('id', 'in', `(${excludeIds})`).range(suggestionOffsets.subCat, suggestionOffsets.subCat + limit - 1);
+                if(suggestionValidSellers.length > 0) q = q.in('seller_id', suggestionValidSellers);
+                let res = await q;
+                data = res.data || [];
+                suggestionOffsets.subCat += limit;
+                if(data.length === 0) currentStage = 10; 
+            }
+            else if (currentStage <= 12) {
+                let recent = JSON.parse(localStorage.getItem('vilarci_recent') || "[]");
+                let toFetch = recent.filter(id => !shownProductIds.has(id)).slice(suggestionOffsets.recent, suggestionOffsets.recent + limit);
+                if(toFetch.length > 0) {
+                    if(suggestionOffsets.recent === 0) injectStageTitle("Still looking for these?");
+                    let q = db.from('products').select('id, slug, name, base_price, original_price, rating_avg, rating_count, images, is_rapid_eligible, is_pickup_eligible').eq('is_active', true).in('id', toFetch);
+                    if(suggestionValidSellers.length > 0) q = q.in('seller_id', suggestionValidSellers);
+                    let res = await q;
+                    data = res.data || [];
+                }
+                suggestionOffsets.recent += limit;
+                if(data.length === 0) currentStage = 12; 
+            }
+            else if (currentStage <= 14) {
+                if(currentStage === 13) injectStageTitle(`More from ${currentSeller.store_name || 'this seller'}`);
+                let q = db.from('products').select('id, slug, name, base_price, original_price, rating_avg, rating_count, images, is_rapid_eligible, is_pickup_eligible').eq('is_active', true).eq('seller_id', currentProduct.seller_id).not('id', 'in', `(${excludeIds})`).range(suggestionOffsets.seller, suggestionOffsets.seller + limit - 1);
+                if(suggestionValidSellers.length > 0) q = q.in('seller_id', suggestionValidSellers);
+                let res = await q;
+                data = res.data || [];
+                suggestionOffsets.seller += limit;
+            }
+
+            if(data && data.length > 0) {
+                data.forEach(p => shownProductIds.add(p.id));
+                renderSuggestions(data);
+            }
+
+        } catch(e) { console.error("Suggestion Error", e); }
+
+        currentStage++;
+        isLoadingSuggestions = false;
+        if(loader) loader.classList.add('hidden');
     }
 
-    function showError() {
-        document.getElementById('loader').classList.add('hidden');
-        document.getElementById('error-screen').classList.remove('hidden');
+    function injectStageTitle(titleText) {
+        const grid = document.getElementById('suggestions-grid');
+        grid.insertAdjacentHTML('beforeend', `<div class="col-span-full mt-6 mb-2"><h3 class="text-lg font-bold text-slate-800 border-b pb-2">${titleText}</h3></div>`);
     }
+
+    function renderSuggestions(products) {
+        const grid = document.getElementById('suggestions-grid');
+        let html = '';
+        products.forEach(product => {
+            let discountBadge = '';
+            let price = parseFloat(product.base_price) || 0;
+            let mrp = parseFloat(product.original_price) || 0;
+            
+            if (mrp > price) {
+                const off = Math.round(((mrp - price) / mrp) * 100);
+                discountBadge = `<div class="discount-percent">${off}% OFF</div>`;
+            }
+
+            let imgArray = [];
+            if (Array.isArray(product.images)) imgArray = product.images;
+            else if (typeof product.images === 'string') { try { imgArray = JSON.parse(product.images); } catch(e) {} }
+            let img = (imgArray && imgArray.length > 0) ? imgArray[0] : 'logo.png';
+
+            html += `
+                <style>
+                    @media @media (max-width: 767px) and (min-width: 471px) {
+                        .product-card{
+                            width: 10vw !important;
+                            }
+                        }
+                </style>
+                <div class="product-card" onclick="window.location.href='product_details.html?slug=${product.slug}'">
+                    ${discountBadge}
+                    <div class="img-box"><img src="${img}" alt="${product.name}" loading="lazy"></div>
+                    <div class="details">
+                        <div>
+                            <h4 class="product-name">${product.name}</h4>
+                            <p><span class="rating_avg">${product.rating_avg || 4.5} <i class="fa-solid fa-star" style="font-size:0.6em;"></i></span> <span class="rating_count"> ${product.rating_count || 0} Ratings</span></p>
+                        </div>
+                        <div class="price-area">
+                            <span class="price">₹${price}</span>
+                            ${mrp ? `<span class="mrp">₹${mrp}</span>` : ''}
+                        </div>
+                        <div class="bottom-btn">
+                            <button class="add-btn" 
+                                    data-product-id="${product.id}"
+                                    onclick="event.stopPropagation(); window.vilarciAddToCart('${product.id}', ${price}, '1 Unit', ${product.is_rapid_eligible});">
+                                <i class="fa-solid fa-cart-plus"></i>
+                            </button>
+                            <style>
+                                    @media (max-width: 416px) {
+                                        .pickup-btn{
+                                        font-size: 11px !important;
+                                        }
+                                }
+                                </style>
+                            <button class="pickup-btn" 
+                                    data-product-id="${product.id}"
+                                    onclick="event.stopPropagation(); window.vilarciStorePickup('${product.id}', ${price}, '1 Unit', ${product.is_pickup_eligible});">
+                                Store Pickup <i class="fa-solid fa-motorcycle"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        grid.innerHTML += html;
+        if(typeof window.renderCartBadges === 'function') window.renderCartBadges();
+    }
+
+    window.addEventListener('scroll', () => {
+        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 800) {
+            loadNextSuggestionStage();
+        }
+    });
 
     window.addEventListener('vilarciLocationChanged', async () => {
         if (currentProduct && currentProduct.seller_id) {
             await checkDeliveryAvailability(currentProduct.seller_id);
+            // Reset suggestions for new location
+            document.getElementById('suggestions-grid').innerHTML = '';
+            currentStage = 1;
+            shownProductIds = new Set([currentProduct.id]);
+            suggestionOffsets = { superSub: 0, subCat: 0, recent: 0, seller: 0 };
+            suggestionValidSellers = null;
+            loadNextSuggestionStage();
         }
     });
 
-    initPage();
+    document.addEventListener('DOMContentLoaded', initPage);
+</script>
 </script>
 </body>
 </html>
