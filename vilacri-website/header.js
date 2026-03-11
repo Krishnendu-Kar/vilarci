@@ -507,7 +507,7 @@ function renderSidebar() {
             <div style="height: 8px; background: #f8fafc; margin: 16px 0;"></div>
 
             <div class="usb-item" onclick="handleProfileClick()">
-                <div class="usb-item-left"><i data-lucide="user-circle" class="usb-icon" style="color: #64748b;"></i> Profile / Login</div>
+                <div class="usb-item-left"><i data-lucide="user-circle" class="usb-icon" style="color: #76662e;"></i> Profile / Login</div>
             </div>
             <div class="usb-item" onclick="window.location.href='orders.html'">
                 <div class="usb-item-left"><i data-lucide="package" class="usb-icon" style="color: #64748b;"></i> Orders</div>
@@ -526,6 +526,9 @@ function renderSidebar() {
             </div>
             <div class="usb-item" onclick="window.location.href='seller-home.html'">
                 <div class="usb-item-left"><i data-lucide="store" class="usb-icon" style="color: #64748b;"></i> Become a Seller</div>
+            </div>
+            <div class="usb-item" onclick="window.location.href='feedback.html'">
+                <div class="usb-item-left"><i class="fa-solid fa-pen-to-square" style="color: #046bfc;"></i>Feedback</div>
             </div>
 
         `;
@@ -984,16 +987,18 @@ const globalModalsHTML = `
     </div>
 `;
 
-document.addEventListener('DOMContentLoaded', () => {
-    document.body.insertAdjacentHTML('beforeend', globalModalsHTML);
-    const db = window.supabaseClient;
-    if(db) db.auth.getSession().then(({ data: { session } }) => { 
-        if (session) {
-            window.vilarciUser = session.user;
-            updateGlobalCartCount(); 
-        }
+    document.addEventListener('DOMContentLoaded', () => {
+        document.body.insertAdjacentHTML('beforeend', globalModalsHTML);
+        const db = window.supabaseClient;
+        if(db) db.auth.getSession().then(({ data: { session } }) => { 
+            if (session) {
+                window.vilarciUser = session.user;
+                updateGlobalCartCount(); 
+                // 🌟 ADD THIS LINE TO FETCH WISHLIST ON LOAD
+                updateGlobalWishlist(); 
+            }
+        });
     });
-});
 
 window.requireAuth = function(callbackFunction) {
     if (window.vilarciUser) {
@@ -1146,4 +1151,102 @@ window.executeGlobalAdd = async function(cartType) {
         toast.hideToast();
         Toastify({ text: "Failed to add item.", duration: 3000, style: { background: "#ef4444", borderRadius: "8px" } }).showToast();
     }
+};
+
+
+// ==============================================================
+// 🌟 VILARCI GLOBAL WISHLIST CONTROLLER (Optimized for Speed)
+// ==============================================================
+
+window.vilarciWishlistMap = {}; // O(1) memory map for instant UI rendering
+
+// 1. Fetch Wishlist on Load
+window.updateGlobalWishlist = async function() {
+    if (!window.vilarciUser) {
+        window.vilarciWishlistMap = {};
+        window.dispatchEvent(new CustomEvent('wishlistUpdated'));
+        return;
+    }
+
+    const db = window.supabaseClient;
+    if(!db) return;
+
+    try {
+        const { data, error } = await db.from('wishlist_items')
+            .select('product_id, service_id')
+            .eq('user_id', window.vilarciUser.id);
+
+        window.vilarciWishlistMap = {};
+        if (!error && data) {
+            data.forEach(item => {
+                const id = item.product_id || item.service_id;
+                if(id) window.vilarciWishlistMap[id] = true;
+            });
+        }
+        window.dispatchEvent(new CustomEvent('wishlistUpdated'));
+    } catch(err) {
+        console.error("Wishlist map error:", err);
+    }
+};
+
+// 2. Render all Hearts globally
+window.renderWishlistIcons = function() {
+    document.querySelectorAll('.wishlist-btn').forEach(btn => {
+        const id = btn.getAttribute('data-item-id');
+        const icon = btn.querySelector('i');
+        if(!id || !icon) return;
+
+        if (window.vilarciWishlistMap[id]) {
+            // Liked State
+            icon.classList.remove('fa-regular');
+            icon.classList.add('fa-solid');
+            btn.style.color = '#ef4444'; // Red
+        } else {
+            // Unliked State
+            icon.classList.add('fa-regular');
+            icon.classList.remove('fa-solid');
+            btn.style.color = '#94a3b8'; // Slate 400
+        }
+    });
+};
+window.addEventListener('wishlistUpdated', window.renderWishlistIcons);
+
+// 3. Toggle Logic (With Optimistic UI for instant speed)
+window.toggleWishlist = async function(event, itemId, itemType = 'product') {
+    event.stopPropagation(); // Prevent opening product pages
+    
+    requireAuth(async () => {
+        const db = window.supabaseClient;
+        const isWished = window.vilarciWishlistMap[itemId];
+
+        // 🚀 OPTIMISTIC UI: Change screen instantly before DB responds
+        window.vilarciWishlistMap[itemId] = !isWished;
+        window.renderWishlistIcons();
+
+        try {
+            if (isWished) {
+                // Remove from DB
+                let query = db.from('wishlist_items').delete().eq('user_id', window.vilarciUser.id);
+                if (itemType === 'service') query = query.eq('service_id', itemId);
+                else query = query.eq('product_id', itemId);
+
+                await query;
+                Toastify({ text: "Removed from wishlist", duration: 2000, style: { background: "#64748b", borderRadius: "8px" } }).showToast();
+            } else {
+                // Add to DB
+                const insertData = { user_id: window.vilarciUser.id, item_type: itemType };
+                if (itemType === 'service') insertData.service_id = itemId;
+                else insertData.product_id = itemId;
+
+                await db.from('wishlist_items').insert([insertData]);
+                Toastify({ text: "Added to wishlist ❤️", duration: 2000, style: { background: "linear-gradient(135deg, #5ed1ff, #1bcae1)", borderRadius: "8px", fontWeight: "bold" } }).showToast();
+            }
+        } catch(err) {
+            console.error("Wishlist toggle error", err);
+            // ❌ FAILED: Revert optimistic UI
+            window.vilarciWishlistMap[itemId] = isWished;
+            window.renderWishlistIcons();
+            Toastify({ text: "Failed to update wishlist", duration: 2000, style: { background: "linear-gradient(135deg, #5ed1ff, #1bcae1)", borderRadius: "8px" } }).showToast();
+        }
+    });
 };

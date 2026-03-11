@@ -26,6 +26,7 @@
 
         <!-- Preloads -->
         <link rel="preload" href="style.css" as="style">
+        <script src="https://cdn.tailwindcss.com"></script>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" xintegrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
         <script src="https://unpkg.com/lucide@latest"></script>
@@ -266,6 +267,13 @@
                 html += `
                     <div class="product-card" onclick="window.location.href='product_details.html?slug=${product.slug}'">
                         ${discountBadge}
+
+                        <button class="wishlist-btn absolute top-7 bg-gradient-to-r from-[#FFF0F0] to-[#FFF0FC] right-2 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:scale-110 transition z-20 text-slate-400 flex items-center justify-center w-8 h-8 border border-slate-100/50" 
+                                data-item-id="${product.id}" 
+                                onclick="window.toggleWishlist(event, '${product.id}', 'product')">
+                            <i class="fa-regular fa-heart text-[15px] text-red-500 drop-shadow-sm transition-colors"></i>
+                        </button>
+
                         <div class="img-box"><img src="${product.image}" alt="${product.name}" loading="lazy"></div>
                         <div class="details">
                             <div>
@@ -299,6 +307,7 @@
 
             // 🌟 RENDER THE BADGES AFTER HTML INJECTION
             if(typeof window.renderCartBadges === 'function') window.renderCartBadges();
+            if(typeof window.renderWishlistIcons === 'function') window.renderWishlistIcons();
         }
 
         window.addEventListener('scroll', () => {

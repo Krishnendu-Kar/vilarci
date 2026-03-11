@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>All Services - Vilarci</title>
     
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" type="text/css" href="product-card.css">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -126,7 +129,7 @@
             // STEP C: Build Query
                 let query = db
                     .from('services')
-                    .select('name, slug, price, normal_price, images, badge_label, service_duration, shops_public_587(store_name)')
+                    .select('id,name, slug, price, normal_price, images, badge_label, service_duration, shops_public_587(store_name)')
                     .eq('is_active', true)
                     .range(from, to)
                     .order('id', { ascending: false });
@@ -185,6 +188,11 @@
                     priceHtml += `<span class="ml-2 text-sm text-slate-400 line-through">₹${svc.normal_price}</span>`;
                 }
 
+                let discountServiceBadge = '';
+                    if (svc.normal_price && svc.price < svc.normal_price) {
+                        const off = Math.round(((svc.normal_price - svc.price) / svc.normal_price) * 100);
+                        discountServiceBadge = `<span class="discount-percent top-0 z-10">${off}% OFF</span>`;
+                    }
                 // 🌟 UPDATED: Duration logic favors the new text string
                 const displayDuration = svc.service_duration ? svc.service_duration : '';
                 
@@ -197,6 +205,14 @@
 
                 card.innerHTML = `
                     <div class="relative aspect-[4/3] bg-slate-100 flex items-center justify-center overflow-hidden border-b border-slate-100">
+                        ${discountServiceBadge}
+
+                        <button class="wishlist-btn absolute top-7 right-2 p-1.5 bg-gradient-to-r from-[#FFF0F0] to-[#FFF0FC] backdrop-blur-sm rounded-full shadow-sm hover:scale-110 transition z-20 text-slate-400 flex items-center justify-center w-8 h-8 border border-slate-100/50" 
+                                data-item-id="${svc.id}" 
+                                onclick="window.toggleWishlist(event, '${svc.id}', 'service')">
+                            <i class="fa-regular text-red-500 fa-heart text-[15px] drop-shadow-sm transition-colors"></i>
+                        </button>
+                        
                         <img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
                         ${badge}
                     </div>
@@ -223,6 +239,7 @@
             });
             
             if(window.lucide) window.lucide.createIcons();
+            if(typeof window.renderWishlistIcons === 'function') window.renderWishlistIcons();
         }
 
         function stopLoadingUI() {

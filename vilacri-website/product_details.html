@@ -40,18 +40,60 @@
 <body>
 
     <script src="header.js"></script>
+    <div id="image-modal" class="fixed inset-0 z-[99999] bg-black/95 hidden flex-col transition-opacity duration-300 opacity-0">
+        <div class="flex justify-end p-4 md:p-6">
+            <button onclick="closeFullscreen()" class="text-white hover:text-red-400 transition bg-white/10 p-3 rounded-full shadow-lg">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+        <div class="flex-1 flex items-center justify-center p-4 overflow-hidden" onclick="closeFullscreen()">
+            <img id="fullscreen-img" src="" class="max-w-full max-h-full object-contain cursor-zoom-out drop-shadow-2xl">
+        </div>
+    </div>
     <div id="vilarci-header"></div>
 
-    <div class="loader-container" id="loader">
-                <div class="loaderout">
-                    <div class="loaderin1">
-                        <div class="loaderin2">
-                            <div class="loaderin3"></div>
-                        </div>
+    <div id="skeleton-loader" class="max-w-6xl mx-auto px-4 py-6 md:py-10 w-full animate-pulse">
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2">
+                
+                <div class="p-4 md:p-8 bg-slate-50 border-r border-slate-100 flex flex-col">
+                    <div class="aspect-square bg-slate-200 rounded-2xl flex-grow mb-4 border border-slate-100 w-full"></div>
+                    <div class="flex gap-3 overflow-hidden pb-2">
+                        <div class="w-16 h-16 bg-slate-200 rounded-xl shrink-0"></div>
+                        <div class="w-16 h-16 bg-slate-200 rounded-xl shrink-0"></div>
+                        <div class="w-16 h-16 bg-slate-200 rounded-xl shrink-0"></div>
+                        <div class="w-16 h-16 bg-slate-200 rounded-xl shrink-0 hidden sm:block"></div>
                     </div>
                 </div>
-                <p class="loader-p" id="loader-text">Please wait...</p>
+
+                <div class="p-5 md:p-8 space-y-6 flex flex-col justify-center">
+                    
+                    <div>
+                        <div class="h-6 w-20 bg-slate-200 rounded-md mb-3"></div>
+                        <div class="space-y-3 mb-4">
+                            <div class="h-8 md:h-10 w-full bg-slate-200 rounded-lg"></div>
+                            <div class="h-8 md:h-10 w-3/4 bg-slate-200 rounded-lg"></div>
+                        </div>
+                        <div class="h-16 w-48 bg-slate-200 rounded-2xl"></div>
+                    </div>
+
+                    <div class="h-16 w-full bg-slate-200 rounded-xl"></div>
+
+                    <div class="h-20 w-full bg-slate-200 rounded-xl mt-3"></div>
+
+                    <div class="border-t border-slate-100 pt-6">
+                        <div class="h-24 w-full bg-slate-200 rounded-xl"></div>
+                    </div>
+
+                    <div class="pt-2 space-y-3">
+                        <div class="h-4 w-1/3 bg-slate-200 rounded"></div>
+                        <div class="h-3 w-full bg-slate-200 rounded"></div>
+                        <div class="h-3 w-5/6 bg-slate-200 rounded"></div>
+                    </div>
+                </div>
             </div>
+        </div>
+    </div>
 
     <div id="error-screen" class="hidden flex flex-col items-center justify-center h-[70vh] text-center px-4">
         <div class="bg-red-50 p-5 rounded-full mb-4">
@@ -89,7 +131,16 @@
                         <span id="badge-label" class="absolute top-4 left-4 bg-red-500 text-white text-[10px] uppercase font-extrabold px-3 py-1.5 rounded-full hidden shadow-md z-10 tracking-wider">
                             SALE
                         </span>
-                        <img id="main-image" src="" class="w-full h-full object-contain p-6 md:p-10 transition-transform duration-500 hover:scale-105">
+
+                        <button id="main-wishlist-btn" class="wishlist-btn absolute top-4 right-4 p-2.5 bg-gradient-to-r from-[#FFF0F0] to-[#FFF0FC] backdrop-blur-sm rounded-full shadow-md hover:scale-110 transition z-20 text-slate-400 flex items-center justify-center w-11 h-11 border border-slate-100/50 hidden">
+                            <i class="fa-regular text-red-500 fa-heart text-[22px] drop-shadow-sm transition-colors"></i>
+                        </button>
+
+                        <img id="main-image" src="" class="w-full h-full object-contain p-6 md:p-10 transition-transform duration-500 group-hover:scale-105 cursor-zoom-in" onclick="openFullscreen()">
+                        
+                        <button onclick="openFullscreen()" class="absolute bottom-4 right-4 bg-white/80 backdrop-blur text-slate-800 p-2 rounded-xl shadow-md hover:bg-white hover:text-indigo-600 transition">
+                            <i data-lucide="maximize-2" class="w-5 h-5"></i>
+                        </button>
                     </div>
                     <div id="thumbnails" class="flex gap-3 overflow-x-auto no-scrollbar pb-2 hidden"></div>
                 </div>
@@ -434,6 +485,21 @@
         }
     }
 
+    function openFullscreen() {
+        const modal = document.getElementById('image-modal');
+        document.getElementById('fullscreen-img').src = document.getElementById('main-image').src;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => { modal.classList.remove('opacity-0'); modal.classList.add('opacity-100'); }, 10);
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeFullscreen() {
+        const modal = document.getElementById('image-modal');
+        modal.classList.remove('opacity-100'); modal.classList.add('opacity-0');
+        setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); document.body.style.overflow = 'auto'; }, 300);
+    }
+
     async function initPage() {
         lucide.createIcons();
         const urlParams = new URLSearchParams(window.location.search);
@@ -443,18 +509,27 @@
         let query = db.from('products').select('*');
         if (slug) query = query.eq('slug', slug);
         else if (idFallback) query = query.eq('id', idFallback);
-        else { document.getElementById('loader').classList.add('hidden'); document.getElementById('error-screen').classList.remove('hidden'); return; }
+        else { document.getElementById('skeleton-loader').classList.add('hidden'); document.getElementById('error-screen').classList.remove('hidden'); return; }
 
         const { data, error } = await query.single();
-        if (error || !data) { document.getElementById('loader').classList.add('hidden'); document.getElementById('error-screen').classList.remove('hidden'); return; }
+        if (error || !data) { document.getElementById('skeleton-loader').classList.add('hidden'); document.getElementById('error-screen').classList.remove('hidden'); return; }
 
         currentProduct = data;
-        shownProductIds.add(data.id); // Track to prevent suggesting itself
+        shownProductIds.add(data.id); 
 
-        // ✅ ADD THESE 3 LINES HERE ✅
+        // ✅ ATTACH IDs TO BUTTONS
         document.getElementById('add-to-cart-btn').setAttribute('data-product-id', data.id);
         document.getElementById('store-pickup-btn').setAttribute('data-product-id', data.id);
+        
+        // Activate Main Wishlist Button
+        const mainWishBtn = document.getElementById('main-wishlist-btn');
+        mainWishBtn.setAttribute('data-item-id', data.id);
+        mainWishBtn.setAttribute('onclick', `window.toggleWishlist(event, '${data.id}', 'product')`);
+        mainWishBtn.classList.remove('hidden');
+
         if(typeof window.renderCartBadges === 'function') window.renderCartBadges();
+        if(typeof window.renderWishlistIcons === 'function') window.renderWishlistIcons();
+
         // Track Recently Visited
         let recent = JSON.parse(localStorage.getItem('vilarci_recent') || "[]");
         recent = recent.filter(id => id !== data.id); 
@@ -462,23 +537,23 @@
         if(recent.length > 30) recent.pop(); 
         localStorage.setItem('vilarci_recent', JSON.stringify(recent));
 
+        // RENDER CORE UI
         renderUniversalData(data);
         renderTrustBanner(data); 
         
-        // 🌟 DYNAMIC ROUTING (No ID hacks)
         if (hasVariants(data)) renderFashionInterface(data);
         else if (hasBulkRules(data)) renderWeightableInterface(data);
         else renderPacketInterface(data);
 
-        await fetchSellerInfo(data.seller_id);
-        await checkDeliveryAvailability(data.seller_id);
-
-        document.getElementById('loader').classList.add('hidden');
+        // 🌟 INSTANT SWAP: Hide Skeleton, Show Product!
+        document.getElementById('skeleton-loader').classList.add('hidden');
         document.getElementById('product-container').classList.remove('hidden');
         document.getElementById('suggestions-wrapper').classList.remove('hidden');
         setTimeout(() => { document.getElementById('action-bar').classList.remove('translate-y-full'); }, 300);
-        
-        // Start suggestions
+
+        // 🌟 ASYNC FETCH: Delivery and suggestions load smoothly in background
+        fetchSellerInfo(data.seller_id);
+        checkDeliveryAvailability(data.seller_id);
         loadNextSuggestionStage();
     }
 
@@ -849,7 +924,7 @@
             
             if (mrp > price) {
                 const off = Math.round(((mrp - price) / mrp) * 100);
-                discountBadge = `<div class="discount-percent">${off}% OFF</div>`;
+                discountBadge = `<div class="discount-percent z-10">${off}% OFF</div>`;
             }
 
             let imgArray = [];
@@ -858,9 +933,15 @@
             let img = (imgArray && imgArray.length > 0) ? imgArray[0] : 'logo.png';
 
             html += `
-                
-                <div class="product-card" onclick="window.location.href='product_details.html?slug=${product.slug}'">
+                <div class="product-card relative" onclick="window.location.href='product_details.html?slug=${product.slug}'">
                     ${discountBadge}
+                    
+                    <button class="wishlist-btn absolute top-2 right-2 p-1.5 bg-gradient-to-r from-[#FFF0F0] to-[#FFF0FC] backdrop-blur-sm rounded-full shadow-sm hover:scale-110 transition z-20 text-slate-400 flex items-center justify-center w-8 h-8 border border-slate-100/50" 
+                            data-item-id="${product.id}" 
+                            onclick="window.toggleWishlist(event, '${product.id}', 'product')">
+                        <i class="fa-regular text-red-500 fa-heart text-[15px] drop-shadow-sm transition-colors"></i>
+                    </button>
+
                     <div class="img-box" style="height: 260px;"><img src="${img}" alt="${product.name}" loading="lazy"></div>
                     <div class="details">
                         <div>
@@ -872,9 +953,7 @@
                             ${mrp ? `<span class="mrp">₹${mrp}</span>` : ''}
                         </div>
                         <div class="bottom-btn">
-                            <button class="add-btn" 
-                                    data-product-id="${product.id}"
-                                    onclick="event.stopPropagation(); window.vilarciAddToCart('${product.id}', ${price}, '1 Unit', ${product.is_rapid_eligible});">
+                            <button class="add-btn" data-product-id="${product.id}" onclick="event.stopPropagation(); window.vilarciAddToCart('${product.id}', ${price}, '1 Unit', ${product.is_rapid_eligible});">
                                 <i class="fa-solid fa-cart-plus"></i>
                             </button>
                             <style>
@@ -893,11 +972,7 @@
                                         }
                                         #pick-up-btn:hover { background-color: #f00e0e; color: whitesmoke; }
                             </style>
-
-                            <button  id="pick-up-btn"
-                                    class="pickup-btn" 
-                                    data-product-id="${product.id}"
-                                    onclick="event.stopPropagation(); window.vilarciStorePickup('${product.id}', ${price}, '1 Unit', ${product.is_pickup_eligible});">
+                            <button id="pick-up-btn" class="pickup-btn" data-product-id="${product.id}" onclick="event.stopPropagation(); window.vilarciStorePickup('${product.id}', ${price}, '1 Unit', ${product.is_pickup_eligible});">
                                 Store Pickup <i class="fa-solid fa-motorcycle"></i>
                             </button>
                         </div>
@@ -907,6 +982,9 @@
         });
         grid.innerHTML += html;
         if(typeof window.renderCartBadges === 'function') window.renderCartBadges();
+        
+        // 🌟 Trigger the hearts!
+        if(typeof window.renderWishlistIcons === 'function') window.renderWishlistIcons();
     }
 
     window.addEventListener('scroll', () => {

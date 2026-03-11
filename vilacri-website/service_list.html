@@ -23,6 +23,8 @@
     <div id="vilarci-header"></div>
 
     <main class="flex-1 p-4 sm:p-6 lg:p-8">
+        <nav id="breadcrumb-container" class="text-sm font-medium text-slate-500 mb-3 hidden flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+        </nav>
         <div class="flex justify-between items-end mb-6">
             <div>
                 <span class="text-xs font-bold text-indigo-600 uppercase tracking-wide">Filtered Results</span>
@@ -30,11 +32,22 @@
             </div>
         </div>
 
+        <div id="skeleton-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse hidden">
+            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col h-[320px]"><div class="aspect-[4/3] bg-slate-200"></div><div class="p-4 flex flex-col flex-grow"><div class="h-5 bg-slate-200 rounded-md w-3/4 mb-3"></div><div class="h-4 bg-slate-200 rounded-md w-1/2 mb-auto"></div><div class="flex items-center justify-between mt-4"><div class="h-6 bg-slate-200 rounded-md w-1/3"></div><div class="h-8 w-8 bg-slate-200 rounded-md"></div></div></div></div>
+            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col h-[320px]"><div class="aspect-[4/3] bg-slate-200"></div><div class="p-4 flex flex-col flex-grow"><div class="h-5 bg-slate-200 rounded-md w-3/4 mb-3"></div><div class="h-4 bg-slate-200 rounded-md w-1/2 mb-auto"></div><div class="flex items-center justify-between mt-4"><div class="h-6 bg-slate-200 rounded-md w-1/3"></div><div class="h-8 w-8 bg-slate-200 rounded-md"></div></div></div></div>
+            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col h-[320px]"><div class="aspect-[4/3] bg-slate-200"></div><div class="p-4 flex flex-col flex-grow"><div class="h-5 bg-slate-200 rounded-md w-3/4 mb-3"></div><div class="h-4 bg-slate-200 rounded-md w-1/2 mb-auto"></div><div class="flex items-center justify-between mt-4"><div class="h-6 bg-slate-200 rounded-md w-1/3"></div><div class="h-8 w-8 bg-slate-200 rounded-md"></div></div></div></div>
+            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col h-[320px] hidden sm:flex"><div class="aspect-[4/3] bg-slate-200"></div><div class="p-4 flex flex-col flex-grow"><div class="h-5 bg-slate-200 rounded-md w-3/4 mb-3"></div><div class="h-4 bg-slate-200 rounded-md w-1/2 mb-auto"></div><div class="flex items-center justify-between mt-4"><div class="h-6 bg-slate-200 rounded-md w-1/3"></div><div class="h-8 w-8 bg-slate-200 rounded-md"></div></div></div></div>
+            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col h-[320px] hidden lg:flex"><div class="aspect-[4/3] bg-slate-200"></div><div class="p-4 flex flex-col flex-grow"><div class="h-5 bg-slate-200 rounded-md w-3/4 mb-3"></div><div class="h-4 bg-slate-200 rounded-md w-1/2 mb-auto"></div><div class="flex items-center justify-between mt-4"><div class="h-6 bg-slate-200 rounded-md w-1/3"></div><div class="h-8 w-8 bg-slate-200 rounded-md"></div></div></div></div>
+            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col h-[320px] hidden lg:flex"><div class="aspect-[4/3] bg-slate-200"></div><div class="p-4 flex flex-col flex-grow"><div class="h-5 bg-slate-200 rounded-md w-3/4 mb-3"></div><div class="h-4 bg-slate-200 rounded-md w-1/2 mb-auto"></div><div class="flex items-center justify-between mt-4"><div class="h-6 bg-slate-200 rounded-md w-1/3"></div><div class="h-8 w-8 bg-slate-200 rounded-md"></div></div></div></div>
+        </div>
+
+        <div id="services-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        </div>
         <div id="services-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             </div>
 
         <div id="loading-trigger" class="py-12 flex justify-center w-full">
-            <div id="spinner" class="animate-spin rounded-full h-10 w-10 border-4 border-indigo-100 border-t-indigo-600"></div>
+            <div id="spinner" ></div>
             <p id="end-message" class="hidden text-slate-400 text-sm font-medium">No more services found.</p>
         </div>
     </main>
@@ -67,8 +80,11 @@
                 loadedCount = 0;
                 allLoaded = false;
                 if(grid) grid.innerHTML = '';
-                document.getElementById('spinner').classList.remove('hidden');
+                document.getElementById('skeleton-grid').classList.remove('hidden'); // Show Skeleton
+                document.getElementById('spinner').classList.add('hidden'); // Hide infinite scroll spinner
                 document.getElementById('end-message').classList.add('hidden');
+            } else {
+                document.getElementById('spinner').classList.remove('hidden'); // Show bottom spinner on scroll
             }
 
             if (isLoading || allLoaded || !db) return;
@@ -173,6 +189,9 @@
                 console.error("Fetch Error:", err);
             } finally {
                 isLoading = false;
+                if (!isLoadMore) {
+                    document.getElementById('skeleton-grid').classList.add('hidden'); // Hide Skeleton
+                }
             }
         }
 
@@ -191,11 +210,22 @@
                     priceHtml += `<span class="ml-2 text-sm text-slate-400 line-through">₹${svc.normal_price}</span>`;
                 }
 
+                let discountServiceBadge = '';
+                    if (svc.normal_price && svc.price < svc.normal_price) {
+                        const off = Math.round(((svc.normal_price - svc.price) / svc.normal_price) * 100);
+                        discountServiceBadge = `<span class="discount-percent top-0 z-10">${off}% OFF</span>`;
+                    }
                 // ADD THIS LINE to safely escape the duration for the onclick function
                 const jsSafeDuration = (svc.service_duration || '1 Session').replace(/'/g, "\\'").replace(/"/g, '&' + 'quot;');
 
                 card.innerHTML = `
                     <div class="relative aspect-[4/3] bg-slate-100 flex items-center justify-center overflow-hidden">
+                        ${discountServiceBadge}
+                        <button class="wishlist-btn absolute top-7 right-2 p-1.5 bg-gradient-to-r from-[#FFF0F0] to-[#FFF0FC] backdrop-blur-sm rounded-full shadow-sm hover:scale-110 transition z-20 text-slate-400 flex items-center justify-center w-8 h-8 border border-slate-100/50" 
+                                data-item-id="${svc.id}" 
+                                onclick="window.toggleWishlist(event, '${svc.id}', 'service')">
+                            <i class="fa-regular text-red-500 fa-heart text-[15px] drop-shadow-sm transition-colors"></i>
+                        </button>
                         <img src="${imgUrl}" class="w-full h-full object-cover">
                         ${svc.badge_label ? `<span class="absolute top-2 left-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow">${svc.badge_label}</span>` : ''}
                     </div>
@@ -219,6 +249,7 @@
             });
             
             if(window.lucide) window.lucide.createIcons();
+            if(typeof window.renderWishlistIcons === 'function') window.renderWishlistIcons();
         }
 
         function stopLoadingUI() {
@@ -230,9 +261,53 @@
                 endMsg.classList.add('text-lg', 'text-slate-500'); 
             }
         }
+        // ==========================================
+        // 🌟 DYNAMIC BREADCRUMB ENGINE (SERVICES)
+        // ==========================================
+        async function buildBreadcrumbs() {
+            const bcContainer = document.getElementById('breadcrumb-container');
+            const pageTitle = document.getElementById('page-title');
+            let breadcrumbs = [{ name: 'Home', url: 'index.html' }, { name: 'Services', url: 'services.html' }];
+            
+            try {
+                if (subId) {
+                    // Fetch Sub-Category and its Parent Category
+                    const { data: subData } = await db.from('service_sub_categories').select('name, category_id').eq('id', subId).single();
+                    if (subData) {
+                        const { data: catData } = await db.from('service_categories').select('name').eq('id', subData.category_id).single();
+                        if (catData) breadcrumbs.push({ name: catData.name, url: `service_list.html?category_id=${subData.category_id}` });
+                        
+                        breadcrumbs.push({ name: subData.name, url: null });
+                        if (pageTitle) pageTitle.innerText = subData.name; // Dynamically update Title
+                    }
+                } else if (categoryId) {
+                    // Fetch Category only
+                    const { data: catData } = await db.from('service_categories').select('name').eq('id', categoryId).single();
+                    if (catData) {
+                        breadcrumbs.push({ name: catData.name, url: null });
+                        if (pageTitle) pageTitle.innerText = catData.name; // Dynamically update Title
+                    }
+                }
 
+                // Render the Breadcrumbs
+                if (breadcrumbs.length > 2) { 
+                    bcContainer.innerHTML = breadcrumbs.map((bc, i) => {
+                        if (i === breadcrumbs.length - 1 || !bc.url) {
+                            return `<span class="text-slate-800 font-bold">${bc.name}</span>`;
+                        }
+                        return `<a href="${bc.url}" class="hover:text-indigo-600 transition cursor-pointer">${bc.name}</a> <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 mt-0.5"></i>`;
+                    }).join('');
+                    bcContainer.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error("Breadcrumb Fetch Error:", err);
+            }
+        }
         // 6. INITIALIZATION & RELOAD LISTENER
         document.addEventListener('DOMContentLoaded', () => {
+            
+            buildBreadcrumbs(); // 🌟 Trigger the breadcrumb generation
+
             const observer = new IntersectionObserver((entries) => {
                 if (entries[0].isIntersecting) loadFilteredServices(true);
             }, { rootMargin: '100px' });
