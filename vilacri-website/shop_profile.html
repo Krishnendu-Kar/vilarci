@@ -67,49 +67,58 @@
 
         <div id="shop-container" class="hidden">
             
-            <div class="bg-gradient-to-r from-indigo-50 to-white border-b border-slate-200">
+            <div class="bg-gradient-to-r from-indigo-50 to-white border-b border-slate-200 relative">
                 <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
-                    <div class="flex flex-row items-start gap-4">
-                        <div class="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-2xl flex items-center justify-center border-2 border-indigo-100 shadow-md shrink-0">
-                            <span class="text-2xl sm:text-3xl font-extrabold text-indigo-600" id="shop-initial">S</span>
+                    
+                    <button onclick="shareShop()" class="absolute top-4 sm:top-6 right-4 sm:right-6 bg-white border border-slate-200 p-2 sm:px-4 sm:py-2 rounded-xl text-slate-600 hover:text-indigo-600 hover:border-indigo-300 transition shadow-sm flex items-center gap-2">
+                        <i data-lucide="share-2" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline text-sm font-bold">Share</span>
+                    </button>
+
+                    <div class="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
+                        <div class="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-2xl flex items-center justify-center border-2 border-indigo-100 shadow-md shrink-0">
+                            <span class="text-3xl sm:text-4xl font-extrabold text-indigo-600" id="shop-initial">S</span>
                         </div>
                         
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 mb-1">
-                                <h1 class="text-xl sm:text-3xl font-extrabold text-slate-900 truncate" id="shop-name">...</h1>
-                                <span id="verified-badge" class="hidden mt-1" title="Verified Seller">
-                                    <i data-lucide="badge-check" class="w-6 h-6 text-blue-500 fill-blue-100"></i>
+                        <div class="flex-1 min-w-0 w-full pt-1">
+                            <div class="flex items-center gap-2 mb-1.5">
+                                <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 truncate tracking-tight" id="shop-name">...</h1>
+                                <span id="verified-badge" class="hidden" title="Vilarci Verified">
+                                    <i data-lucide="badge-check" class="w-6 h-6 text-blue-500 fill-blue-50"></i>
                                 </span>
                             </div>
 
-                            <div class="flex flex-wrap items-center text-xs sm:text-sm text-slate-500 mb-3 gap-y-1 font-medium">
-                                <span class="flex items-center gap-1 mr-3">
-                                    <i data-lucide="map-pin" class="w-3.5 h-3.5"></i> 
-                                    <span id="shop-location">...</span>
-                                </span>
-                            </div>
-                            
-                            <div class="flex flex-wrap gap-2 items-center">
-                                <div class="flex items-center bg-green-50 px-2.5 py-1 rounded border border-green-100">
-                                    <span class="text-green-700 text-xs font-bold flex items-center gap-1">
-                                        4.8 <i data-lucide="star" class="w-3 h-3 fill-current"></i>
-                                    </span>
+                            <p id="shop-address-container" class="hidden flex items-start gap-1 text-xs text-slate-500 font-semibold mb-2 line-clamp-2">
+                                <i data-lucide="map-pin" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i>
+                                <span id="shop-address">...</span>
+                            </p>
+
+                            <p id="shop-short-desc" class="text-sm text-slate-600 font-medium mb-3 line-clamp-1">Welcome to our store!</p>
+
+                            <div class="flex flex-wrap items-center gap-2 mb-4" id="action-buttons-container">
                                 </div>
-                                <div id="direction" class="hidden px-3 py-1 bg-indigo-600 text-white text-xs font-bold rounded shadow-sm cursor-pointer hover:bg-indigo-700 transition items-center gap-1">
-                                    <i data-lucide="navigation" class="w-3 h-3"></i> 
-                                    <span class="hidden sm:inline">Direction</span>
-                                    <span class="sm:hidden">Map</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="shrink-0">
-                            <button class="bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition shadow-md flex items-center justify-center p-3 sm:px-5 sm:py-2.5" title="Contact Seller">
-                                <i data-lucide="message-circle" class="w-5 h-5 sm:w-4 sm:h-4 sm:mr-2"></i>
-                                <span class="hidden sm:inline text-sm font-bold">Contact</span>
-                            </button>
                         </div>
                     </div>
+
+                    <div class="mt-2 border-t border-slate-200/60 pt-4">
+                        <button onclick="toggleMoreInfo()" class="text-sm font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition">
+                            <span id="more-toggle-text">About this Shop</span>
+                            <i data-lucide="chevron-down" id="more-toggle-icon" class="w-4 h-4 transition-transform"></i>
+                        </button>
+                        
+                        <div id="shop-more-info" class="hidden mt-4 bg-white/50 rounded-xl p-4 sm:p-5 border border-slate-100 shadow-inner">
+                            <div class="flex items-center gap-2 text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-3">
+                                <i data-lucide="calendar-days" class="w-4 h-4"></i>
+                                <span id="shop-join-date">Loading...</span>
+                            </div>
+                            
+                            <p id="shop-long-desc" class="text-sm text-slate-700 leading-relaxed mb-5 font-medium whitespace-pre-line">...</p>
+                            
+                            <div id="shop-links-container" class="flex flex-wrap gap-2 hidden">
+                                </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
             
@@ -244,20 +253,111 @@
             const initial = (seller.store_name || seller.shop_name || 'S').charAt(0).toUpperCase();
             document.getElementById('shop-initial').innerText = initial;
             
-            document.getElementById('shop-location').innerText = seller.shop_direction ? seller.shop_direction : `Pincode: ${seller.pincode || 'N/A'}`;
+            // Text Details
+            document.getElementById('shop-short-desc').innerText = seller.short_description || "Quality products & trusted service.";
+            document.getElementById('shop-long-desc').innerText = seller.long_description || "This seller has not provided a detailed bio yet.";
             
-            // Direction Button
-            const dirBtn = document.getElementById('direction');
-            if (seller.direction && seller.direction.length > 0) {
-                dirBtn.onclick = () => window.open(seller.direction, '_blank');
-                dirBtn.classList.remove('hidden');
-                dirBtn.classList.add('flex');
+            // Show full address as plain text
+            if (seller.full_address) {
+                document.getElementById('shop-address').innerText = seller.full_address;
+                document.getElementById('shop-address-container').classList.remove('hidden');
+            }
+
+            // Join Date Calculation
+            if (seller.created_at) {
+                const date = new Date(seller.created_at);
+                const formattedDate = date.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+                document.getElementById('shop-join-date').innerText = `Seller since ${formattedDate}`;
+            }
+
+            // Generate Action Buttons
+            const actionsContainer = document.getElementById('action-buttons-container');
+            let buttonsHtml = '';
+
+            // 1. Call Button
+            if (seller.business_mobile) {
+                buttonsHtml += `<a href="tel:${seller.business_mobile}" class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition"><i data-lucide="phone" class="w-3.5 h-3.5"></i> Call</a>`;
+                
+                // 2. WhatsApp Button (Cleans number to ensure format is mostly correct)
+                const cleanPhone = seller.business_mobile.replace(/\D/g, '');
+                const waNumber = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+                buttonsHtml += `<a href="https://wa.me/${waNumber}?text=Hi, I found your shop on Vilarci." target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 bg-[#dcf8c6] hover:bg-[#c6e9af] text-[#075e54] rounded-lg text-xs font-bold transition"><i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp</a>`;
+            }
+
+            // 3. Email Button
+            if (seller.public_email) {
+                buttonsHtml += `<a href="mailto:${seller.public_email}" class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition"><i data-lucide="mail" class="w-3.5 h-3.5"></i> Email</a>`;
+            }
+
+            // 4. Direction Button (Direct link from shop_direction)
+            if (seller.shop_direction && seller.shop_direction.trim() !== '') {
+                // Ensure it has http/https if missing
+                const mapLink = seller.shop_direction.startsWith('http') ? seller.shop_direction : `https://${seller.shop_direction}`;
+                
+                buttonsHtml += `<a href="${mapLink}" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold transition"><i data-lucide="navigation" class="w-3.5 h-3.5"></i> Direction</a>`;
+            }
+
+            actionsContainer.innerHTML = buttonsHtml;
+
+            // Generate Up to 10 Links
+            const linksContainer = document.getElementById('shop-links-container');
+            if (seller.social_links) {
+                let linksArr = [];
+                if (Array.isArray(seller.social_links)) linksArr = seller.social_links;
+                else if (typeof seller.social_links === 'string') {
+                    try { linksArr = JSON.parse(seller.social_links); } catch(e) {}
+                }
+
+                if (linksArr.length > 0) {
+                    linksContainer.classList.remove('hidden');
+                    let linksHtml = '';
+                    // Limit to 10 safely
+                    linksArr.slice(0, 10).forEach(linkObj => {
+                        const url = linkObj.url.startsWith('http') ? linkObj.url : `https://${linkObj.url}`;
+                        linksHtml += `<a href="${url}" target="_blank" class="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-200 hover:border-indigo-400 hover:text-indigo-600 text-slate-600 rounded-full text-[11px] font-bold transition shadow-sm"><i data-lucide="link-2" class="w-3 h-3"></i> ${linkObj.title || 'Visit Link'}</a>`;
+                    });
+                    linksContainer.innerHTML = linksHtml;
+                }
             }
 
             if(seller.is_verified) {
                 document.getElementById('verified-badge').classList.remove('hidden');
             }
             if(window.lucide) window.lucide.createIcons();
+        }
+
+        // --- NEW HELPER FUNCTIONS FOR UI ---
+
+        function toggleMoreInfo() {
+            const infoBox = document.getElementById('shop-more-info');
+            const icon = document.getElementById('more-toggle-icon');
+            
+            if (infoBox.classList.contains('hidden')) {
+                infoBox.classList.remove('hidden');
+                icon.classList.add('rotate-180');
+            } else {
+                infoBox.classList.add('hidden');
+                icon.classList.remove('rotate-180');
+            }
+        }
+
+        function shareShop() {
+            // Dynamic URL generation using your current domain
+            const shopUrl = `${window.location.origin}${window.location.pathname}?slug=${shopSlug}`;
+            const shopName = document.getElementById('shop-name').innerText;
+
+            if (navigator.share) {
+                navigator.share({
+                    title: `${shopName} on Vilarci`,
+                    text: `Check out ${shopName}'s store and amazing products on Vilarci!`,
+                    url: shopUrl,
+                }).catch(console.error);
+            } else {
+                // Fallback: Copy to clipboard
+                navigator.clipboard.writeText(shopUrl).then(() => {
+                    Toastify({ text: "Link copied to clipboard!", duration: 2500, style: { background: "#4f46e5", borderRadius: "8px" } }).showToast();
+                });
+            }
         }
 
 // ==========================================
@@ -479,36 +579,48 @@
                 if (services.length < LIMIT) allServicesLoaded = true;
                 serviceOffset += services.length;
 
-                let html = services.map(s => {
-                    // 🌟 FIX: Updated to use images array and service_duration text
+               let html = services.map(s => {
                     const imgArray = s.images || [];
                     const img = imgArray.length > 0 ? imgArray[0] : 'logo.png';
                     const targetSlug = s.slug || s.id;
-                    const duration = s.service_duration ? `<div class="inline-flex items-center text-xs bg-slate-50 text-slate-500 mb-1 border border-dotted border-slate-300 rounded-lg px-2 py-1">
-                                                                <i class="fa-regular fa-clock mr-1"></i> ${s.service_duration}
-                                                            </div>` : '';
+                    
+                    // 🌟 SAFE STRINGS (Immune to apostrophes and markdown breaking)
+                    const safeName = (s.name || '').replace(/&/g, '&' + 'amp;').replace(/</g, '&' + 'lt;').replace(/>/g, '&' + 'gt;').replace(/"/g, '&' + 'quot;').replace(/'/g, '&' + '#039;');
+                    const safeDurationUI = s.service_duration ? s.service_duration.replace(/</g, '&' + 'lt;') : '1 Session';
+                    const uiDuration = `<div class="text-xs text-slate-500 mb-2 font-medium flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5"></i> ${safeDurationUI}</div>`;
+                    
+                    // Safe injection for the onClick handler
+                    const jsSafeDuration = (s.service_duration || '1 Session').replace(/'/g, "\\'").replace(/"/g, '&' + 'quot;');
 
                     return `
                     <div class="product-card" onclick="window.location.href='service_details.html?slug=${targetSlug}'">
                         <div class="img-box">
-                            <img src="${img}" alt="${s.name}" loading="lazy" class="max-h-full max-w-full object-contain rounded">
+                            <img src="${img}" alt="${safeName}" loading="lazy"">
                         </div>
-                        <div class="details inline-block p-3">
-                            <h4 class="product-name font-bold text-slate-800 text-sm mb-1 truncate">${s.name}</h4>
-                            ${duration}
-                            <div class="price-area mt-2 mb-3">
-                                <span class="price font-bold text-indigo-600 text-sm">₹${s.price || 0}</span>
-                                ${s.normal_price ? `<del class="text-slate-400 text-xs mr-1">₹${s.normal_price}</del>` : ''}
-                                
+                        <div class="details p-4>
+                            <h4 class="product-name">${safeName}</h4>
+                            ${uiDuration}
+                            <div class="mt-auto flex items-center justify-between">
+                                <div class="price-area inline-block">
+                                    <span class="price">₹${s.price || 0}</span>
+                                    <span class="ml-2 text-sm text-slate-400 line-through">₹${s.normal_price}</span>
+                                </div>
+                                <button class="add-btn" 
+                                        data-product-id="${s.id}"
+                                        onclick="event.stopPropagation(); requireAuth(() => { window.pendingCartData = { itemId: '${s.id}', amount: '${jsSafeDuration}', itemType: 'service' }; window.executeGlobalAdd('service'); });">
+                                    <i class="fa-solid fa-cart-plus"></i>
+                                </button>
                             </div>
-                           
                         </div>
                     </div>
+                </div>
                     `;
                 }).join('');
                 
                 grid.innerHTML += html;
-                
+                if(window.lucide) window.lucide.createIcons();
+                if(typeof window.renderCartBadges === 'function') window.renderCartBadges();
+
             } catch (err) {
                 console.error("Services Fetch Error:", err);
             } finally {

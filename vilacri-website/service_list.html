@@ -8,10 +8,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
+    <link rel="stylesheet" type="text/css" href="product-card.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style> body { font-family: 'Inter', sans-serif; } </style>
 </head>
@@ -121,7 +124,7 @@
                 // Start Building the Query (Cleaned up!)
             let query = db
                 .from('services')
-                .select('name, slug, price, normal_price, images, badge_label, service_duration')
+                .select('id,name, slug, price, normal_price, images, badge_label, service_duration')
                 .eq('is_active', true) 
                 .range(from, to)
                 .order('id', { ascending: true });
@@ -188,6 +191,9 @@
                     priceHtml += `<span class="ml-2 text-sm text-slate-400 line-through">₹${svc.normal_price}</span>`;
                 }
 
+                // ADD THIS LINE to safely escape the duration for the onclick function
+                const jsSafeDuration = (svc.service_duration || '1 Session').replace(/'/g, "\\'").replace(/"/g, '&' + 'quot;');
+
                 card.innerHTML = `
                     <div class="relative aspect-[4/3] bg-slate-100 flex items-center justify-center overflow-hidden">
                         <img src="${imgUrl}" class="w-full h-full object-cover">
@@ -200,7 +206,12 @@
                         </div>
                         <div class="mt-auto flex items-center justify-between">
                             <div>${priceHtml}</div>
-                            <button class="bg-indigo-50 text-indigo-600 p-2 rounded-lg hover:bg-indigo-100"><i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+                         
+                            <button class="add-btn" 
+                                data-product-id="${svc.id}"
+                                onclick="event.stopPropagation(); requireAuth(() => { window.pendingCartData = { itemId: '${svc.id}', amount: '${jsSafeDuration}', itemType: 'service' }; window.executeGlobalAdd('service'); });">
+                                <i class="fa-solid fa-cart-plus"></i>
+                            </button>
                         </div>
                     </div>
                 `;
