@@ -311,7 +311,7 @@
                 // 2. WhatsApp Button (Cleans number to ensure format is mostly correct)
                 const cleanPhone = seller.business_mobile.replace(/\D/g, '');
                 const waNumber = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
-                buttonsHtml += `<a href="https://wa.me/${waNumber}?text=Hi, I found your shop on Vilarci." target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 bg-[#dcf8c6] hover:bg-[#c6e9af] text-[#075e54] rounded-lg text-xs font-bold transition"><i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp</a>`;
+                buttonsHtml += `<a href="https://wa.me/${waNumber}?text=Hi, I found your shop on Vilarci." target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 bg-[#1ed362] hover:bg-[#c6e9af] text-[#f8f7f4] rounded-lg text-xs font-bold transition"><i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp</a>`;
             }
 
             // 3. Email Button
