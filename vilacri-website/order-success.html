@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Successful - Vilarci</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -14,36 +12,16 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         main { margin-top: 80px; }
-        
-        .success-animation {
-            animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-        @keyframes popIn {
-            0% { transform: scale(0.5); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .pulse-live {
-            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
-            animation: pulse-green 2s infinite;
-        }
-        @keyframes pulse-green {
-            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-            70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
-        }
-
-        .pin-box { font-family: monospace; letter-spacing: 4px; }
+        .success-animation { animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
-
     <div id="vilarci-header"></div>
 
-    <main class="max-w-4xl mx-auto px-4 py-8" id="main-content">
-        <div id="loading-state" class="text-center py-20">
+    <main class="max-w-xl mx-auto px-4 py-12" id="main-content">
+        <div class="text-center py-20">
             <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-red-600 mx-auto"></div>
-            <p class="text-slate-500 mt-6 font-bold text-lg">Locating your order...</p>
         </div>
     </main>
 
@@ -52,278 +30,55 @@
         const sb = window.supabaseClient;
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('order_id');
-        let sessionUser = null;
-        let realtimeSubscription = null;
 
-        async function initTracking() {
+        async function initSuccess() {
             lucide.createIcons();
-            
-            if (!orderId) {
-                showError("No Order ID provided.");
-                return;
-            }
+            if (!orderId) { window.location.href = 'index.html'; return; }
 
             const { data: { session } } = await sb.auth.getSession();
-            if (!session) { 
-                window.location.href = `user_login.html?redirect=order-success.html?order_id=${orderId}`; 
-                return; 
-            }
-            sessionUser = session.user;
+            if (!session) { window.location.href = "user_login.html"; return; }
 
-            await fetchAndRenderOrder();
-        }
-
-        async function fetchAndRenderOrder(retryCount = 0) {
             try {
-                // SECURE FETCH
+                // Fetch just the summary details, no sub-items needed here
                 const { data: order, error } = await sb.from('orders')
-                    .select(`
-                        id, grand_total, payment_method, payment_status, delivery_address, created_at,
-                        order_items (
-                            id, quantity, price_at_purchase, status, handover_code, requires_open_box, seller_id,
-                            products ( name, images, shops_public_587 ( store_name ) )
-                        )
-                    `)
+                    .select('id, grand_total, payment_method, created_at')
                     .eq('id', orderId)
-                    .eq('user_id', sessionUser.id)
+                    .eq('user_id', session.user.id)
                     .single();
 
-                if (error) {
-                    // SMART RETRY: If DB is syncing, wait 1 second and try again (up to 3 times)
-                    if (error.code === 'PGRST116' && retryCount < 3) {
-                        console.warn("Database syncing... Retrying fetch.");
-                        setTimeout(() => fetchAndRenderOrder(retryCount + 1), 1000);
-                        return;
-                    }
-                    throw error;
-                }
+                if (error) throw error;
 
-                if (!order) throw new Error("Order not found.");
+                document.getElementById('main-content').innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center shadow-sm border border-slate-200 success-animation">
+                        <div class="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i data-lucide="check-circle" class="w-12 h-12"></i>
+                        </div>
+                        <h1 class="text-3xl font-extrabold text-slate-900 mb-2">Order Placed!</h1>
+                        <p class="text-slate-500 font-medium mb-8">Thank you for shopping with Vilarci. Your order <span class="text-slate-800 font-bold">${order.id}</span> has been confirmed.</p>
+                        
+                        <div class="bg-slate-50 rounded-xl p-4 mb-8 inline-block mx-auto text-left">
+                            <p class="text-sm text-slate-500 mb-1">Amount to Pay: <strong class="text-slate-900 text-lg">₹${order.grand_total}</strong></p>
+                            <p class="text-sm text-slate-500">Method: <strong class="text-slate-900">${order.payment_method}</strong></p>
+                        </div>
 
-                renderUI(order);
-                setupRealtimeListener();
+                        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                            <button onclick="window.location.href='order_tracking.html?order_id=${order.id}'" class="px-8 py-3.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition w-full sm:w-auto shadow-md shadow-red-200">
+                                Track Order
+                            </button>
+                            <button onclick="window.location.href='orders.html'" class="px-8 py-3.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition w-full sm:w-auto">
+                                View All Orders
+                            </button>
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons();
 
             } catch (err) {
-                console.error("Tracking Fetch Error:", err);
-                showError("We are securing your order details. Please refresh the page in a moment.");
+                console.error(err);
+                window.location.href = 'orders.html';
             }
         }
-
-        function renderUI(order) {
-            const container = document.getElementById('main-content');
-            
-            // Format Date
-            const orderDate = new Date(order.created_at).toLocaleString('en-IN', { 
-                dateStyle: 'medium', timeStyle: 'short' 
-            });
-
-            // Format Address safely
-            const addr = order.delivery_address || {};
-            const addressString = addr.full_address || "Address unavailable";
-
-            // Determine Global Status (If all items delivered, order is delivered)
-            const allDelivered = order.order_items.every(item => item.status === 'Delivered');
-            const globalStatusColor = allDelivered ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700 pulse-live';
-            const globalStatusText = allDelivered ? 'Completed' : 'In Progress (Live)';
-
-            let html = `
-                <div class="bg-white rounded-2xl p-8 text-center shadow-sm border border-slate-200 mb-8 success-animation relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-500 to-amber-500"></div>
-                    <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-5">
-                        <i data-lucide="check-circle-2" class="w-10 h-10"></i>
-                    </div>
-                    <h1 class="text-3xl font-extrabold text-slate-900 mb-2">Order Confirmed!</h1>
-                    <p class="text-slate-500 font-medium mb-6">Your order <span class="text-slate-800 font-bold">${order.id}</span> has been securely placed.</p>
-                    
-                    <div class="flex flex-wrap justify-center gap-4 text-sm font-bold">
-                        <span class="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700"><i data-lucide="calendar" class="w-4 h-4 inline mb-0.5"></i> ${orderDate}</span>
-                        <span class="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700"><i data-lucide="credit-card" class="w-4 h-4 inline mb-0.5"></i> ${order.payment_method} (₹${order.grand_total})</span>
-                        <span class="px-4 py-2 rounded-lg ${globalStatusColor}">${globalStatusText}</span>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8 flex items-start gap-4">
-                    <div class="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center flex-shrink-0 text-slate-500">
-                        <i data-lucide="map-pin" class="w-6 h-6"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-slate-900 text-lg mb-1">Delivery Destination</h3>
-                        <p class="text-slate-600 text-sm leading-relaxed">${addressString}</p>
-                    </div>
-                </div>
-
-                <h2 class="text-2xl font-extrabold text-slate-900 mb-4">Item Tracking & Security PINs</h2>
-                <div class="space-y-6">
-            `;
-
-            // Render Sub-Orders (Items)
-            order.order_items.forEach(item => {
-                const product = item.products || {};
-                const sellerName = product.shops_public_587?.store_name || "Vilarci Merchant";
-                
-                // Parse image safely
-                let imgUrl = 'placeholder.jpg';
-                try {
-                    let parsedImages = product.images;
-                    if (typeof parsedImages === 'string') parsedImages = JSON.parse(parsedImages);
-                    if (Array.isArray(parsedImages) && parsedImages.length > 0) imgUrl = parsedImages[0];
-                } catch(e) {}
-
-                // Status Badge Logic
-                let statusHtml = getStatusBadgeHtml(item.status, item.id);
-
-                // Open Box Warning
-                const openBoxWarning = item.requires_open_box && item.status !== 'Delivered' ? `
-                    <div class="mt-4 bg-red-50 border border-red-200 p-3 rounded-lg flex gap-3 items-start">
-                        <i data-lucide="shield-alert" class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5"></i>
-                        <p class="text-xs text-red-800 font-bold leading-relaxed">
-                            HIGH VALUE ITEM: Do not share your PIN until the delivery partner physically opens the sealed box in front of you.
-                        </p>
-                    </div>
-                ` : '';
-
-                // PIN Display Logic
-                const pinDisplay = item.status === 'Delivered' ? `
-                    <div class="text-center p-3 bg-slate-50 rounded-xl border border-slate-200">
-                        <span class="text-xs font-bold text-slate-400 block mb-1">HANDOVER COMPLETE</span>
-                        <span class="text-lg font-bold text-slate-300 line-through">******</span>
-                    </div>
-                ` : item.status === 'Cancelled' ? '' : `
-                    <div class="text-center p-3 bg-amber-50 rounded-xl border border-amber-200 border-dashed">
-                        <span class="text-xs font-extrabold text-amber-600 block mb-1 uppercase tracking-wider">Secret PIN</span>
-                        <span id="pin-${item.id}" class="text-2xl font-black text-slate-900 pin-box tracking-widest">${item.handover_code}</span>
-                    </div>
-                `;
-
-                html += `
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="card-${item.id}">
-                        <div class="bg-slate-50 px-5 py-3 border-b border-slate-200 flex justify-between items-center">
-                            <span class="font-bold text-slate-700 text-sm"><i data-lucide="store" class="w-4 h-4 inline mb-0.5 text-slate-400"></i> ${sellerName}</span>
-                            <span class="text-xs font-bold text-slate-400">ID: ${item.id.split('-').pop()}</span>
-                        </div>
-                        
-                        <div class="p-5 flex flex-col md:flex-row gap-6 items-start md:items-center">
-                            <div class="flex-grow flex gap-4 w-full">
-                                <img src="${imgUrl}" class="w-20 h-20 object-contain bg-slate-50 rounded-lg border border-slate-200 p-2 mix-blend-multiply flex-shrink-0">
-                                <div class="flex-grow">
-                                    <h4 class="font-bold text-slate-900 text-base mb-1">${product.name || "Product"}</h4>
-                                    <p class="text-sm font-medium text-slate-500 mb-2">Qty: ${item.quantity} × ₹${item.price_at_purchase}</p>
-                                    ${statusHtml}
-                                </div>
-                            </div>
-                            
-                            <div class="w-full md:w-auto flex-shrink-0 md:min-w-[160px]">
-                                ${pinDisplay}
-                            </div>
-                        </div>
-                        ${openBoxWarning ? `<div class="px-5 pb-5 pt-0">${openBoxWarning}</div>` : ''}
-                    </div>
-                `;
-            });
-
-            html += `
-                </div>
-                <div class="mt-8 text-center">
-                    <button onclick="window.location.href='index.html'" class="px-8 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition">Continue Shopping</button>
-                </div>
-            `;
-
-            container.innerHTML = html;
-            if (window.lucide) window.lucide.createIcons();
-        }
-
-        // Helper function for Live Status Badges
-        function getStatusBadgeHtml(status, itemId) {
-            let colorClass = 'bg-slate-100 text-slate-700';
-            let icon = 'clock';
-            
-            if (status === 'Pending') { colorClass = 'bg-slate-100 text-slate-700'; icon = 'clock'; }
-            else if (status === 'Accepted') { colorClass = 'bg-blue-100 text-blue-700'; icon = 'thumbs-up'; }
-            else if (status === 'Out for Delivery') { colorClass = 'bg-amber-100 text-amber-700 pulse-live'; icon = 'bike'; }
-            else if (status === 'Delivered') { colorClass = 'bg-green-100 text-green-700'; icon = 'check-circle'; }
-            else if (status === 'Cancelled') { colorClass = 'bg-red-100 text-red-700'; icon = 'x-circle'; }
-
-            return `<span id="status-${itemId}" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${colorClass}">
-                        <i data-lucide="${icon}" class="w-3.5 h-3.5"></i> ${status}
-                    </span>`;
-        }
-
-        // ==========================================
-        // REAL-TIME SUPABASE LISTENER (The Magic)
-        // ==========================================
-        function setupRealtimeListener() {
-            // Unsubscribe if already listening
-            if (realtimeSubscription) {
-                sb.removeChannel(realtimeSubscription);
-            }
-
-            // Create a channel specifically for this exact order
-            realtimeSubscription = sb.channel(`track_order_${orderId}`)
-                .on(
-                    'postgres_changes',
-                    {
-                        event: 'UPDATE',
-                        schema: 'public',
-                        table: 'order_items',
-                        filter: `order_id=eq.${orderId}`
-                    },
-                    (payload) => {
-                        const updatedItem = payload.new;
-                        console.log("Live Update Received:", updatedItem);
-
-                        // 1. Update Status Badge
-                        const statusSpan = document.getElementById(`status-${updatedItem.id}`);
-                        if (statusSpan) {
-                            // Replace the badge entirely with new colors/icons
-                            statusSpan.outerHTML = getStatusBadgeHtml(updatedItem.status, updatedItem.id);
-                            if (window.lucide) window.lucide.createIcons();
-                            
-                            // Pop animation to grab user attention
-                            const newSpan = document.getElementById(`status-${updatedItem.id}`);
-                            newSpan.classList.add('success-animation');
-                        }
-
-                        // 2. Update PIN securely
-                        const pinSpan = document.getElementById(`pin-${updatedItem.id}`);
-                        if (pinSpan && updatedItem.status !== 'Delivered') {
-                            pinSpan.innerText = updatedItem.handover_code;
-                            // Flash yellow to indicate the PIN was dynamically regenerated
-                            pinSpan.parentElement.classList.add('bg-yellow-100');
-                            setTimeout(() => pinSpan.parentElement.classList.remove('bg-yellow-100'), 1000);
-                        }
-
-                        // 3. If delivered, refresh the whole page to update global UI state
-                        if (updatedItem.status === 'Delivered') {
-                            Toastify({ text: "An item was just delivered! 🎉", duration: 4000, style: { background: "#22c55e", borderRadius: "8px", fontWeight: "bold" } }).showToast();
-                            setTimeout(() => fetchAndRenderOrder(), 2000); 
-                        }
-                    }
-                )
-                .subscribe((status) => {
-                    console.log('Realtime Tracking Status:', status);
-                });
-        }
-
-        function showError(msg) {
-            document.getElementById('main-content').innerHTML = `
-                <div class="text-center py-20 bg-white rounded-2xl border border-red-200 shadow-sm max-w-lg mx-auto">
-                    <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i data-lucide="alert-triangle" class="w-8 h-8"></i>
-                    </div>
-                    <h2 class="text-xl font-extrabold text-slate-900 mb-2">Tracking Error</h2>
-                    <p class="text-slate-500 mb-6 font-medium">${msg}</p>
-                    <button onclick="window.location.href='index.html'" class="px-6 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition">Go to Homepage</button>
-                </div>
-            `;
-            if (window.lucide) window.lucide.createIcons();
-        }
-
-        document.addEventListener('DOMContentLoaded', initTracking);
-
-        // Cleanup connection when user leaves the page to save server resources
-        window.addEventListener('beforeunload', () => {
-            if (realtimeSubscription) sb.removeChannel(realtimeSubscription);
-        });
+        document.addEventListener('DOMContentLoaded', initSuccess);
     </script>
 </body>
 </html>

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Order - Vilarci</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        main { margin-top: 80px; }
+        .pulse-live { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); animation: pulse-green 2s infinite; }
+        @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
+        .pin-box { font-family: monospace; letter-spacing: 4px; }
+    </style>
+</head>
+<body>
+
+    <div id="vilarci-header"></div>
+
+    <main class="max-w-4xl mx-auto px-4 py-6" id="main-content">
+        <div class="text-center py-20">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-red-600 mx-auto"></div>
+            <p class="text-slate-500 mt-6 font-bold text-lg">Connecting to live tracking...</p>
+        </div>
+    </main>
+
+    <script src="header.js"></script>
+    <script>
+        const sb = window.supabaseClient;
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('order_id');
+        let sessionUser = null;
+        let realtimeSubscription = null;
+
+        async function initTracking() {
+            lucide.createIcons();
+            if (!orderId) { window.location.href = 'orders.html'; return; }
+
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) { window.location.href = `user_login.html?redirect=order_tracking.html?order_id=${orderId}`; return; }
+            sessionUser = session.user;
+
+            await fetchAndRenderOrder();
+        }
+
+        async function fetchAndRenderOrder(retryCount = 0) {
+            try {
+                // SECURE FETCH: Including 'slug' for product navigation
+                const { data: order, error } = await sb.from('orders')
+                    .select(`
+                        id, grand_total, payment_method, delivery_address, created_at,
+                        order_items (
+                            id, quantity, price_at_purchase, status, handover_code, requires_open_box, seller_id,
+                            products ( name, slug, images, shops_public_587 ( store_name ) )
+                        )
+                    `)
+                    .eq('id', orderId)
+                    .eq('user_id', sessionUser.id)
+                    .single();
+
+                if (error) {
+                    if (error.code === 'PGRST116' && retryCount < 3) {
+                        setTimeout(() => fetchAndRenderOrder(retryCount + 1), 1000);
+                        return;
+                    }
+                    throw error;
+                }
+
+                if (!order) throw new Error("Order not found.");
+
+                renderUI(order);
+                setupRealtimeListener();
+
+            } catch (err) {
+                document.getElementById('main-content').innerHTML = `<div class="text-center py-20 text-red-600 font-bold">Error loading tracking data.</div>`;
+            }
+        }
+
+        function renderUI(order) {
+            const container = document.getElementById('main-content');
+            const addr = order.delivery_address || {};
+            const addressString = addr.full_address || "Address unavailable";
+
+            let html = `
+                <div class="flex items-center gap-3 mb-6">
+                    <i data-lucide="arrow-left" class="w-6 h-6 text-slate-800 cursor-pointer" onclick="window.history.back()"></i>
+                    <h1 class="text-2xl font-extrabold text-slate-900">Order Details</h1>
+                </div>
+
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Order ID</p>
+                            <p class="text-sm font-semibold text-slate-900">${order.id}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total</p>
+                            <p class="text-sm font-bold text-slate-900">₹${order.grand_total}</p>
+                        </div>
+                    </div>
+                    <div class="border-t border-slate-100 pt-4">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Delivery to</p>
+                        <p class="text-sm text-slate-700 leading-relaxed">${addressString}</p>
+                    </div>
+                </div>
+
+                <h2 class="text-lg font-bold text-slate-900 mb-4 px-1">Items & Live PINs</h2>
+                <div class="space-y-4">
+            `;
+
+            order.order_items.forEach(item => {
+                const product = item.products || {};
+                const sellerName = product.shops_public_587?.store_name || "Vilarci Merchant";
+                const slug = product.slug || "";
+                
+                let imgUrl = 'placeholder.jpg';
+                try {
+                    let parsed = product.images;
+                    if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+                    if (Array.isArray(parsed) && parsed.length > 0) imgUrl = parsed[0];
+                } catch(e) {}
+
+                let statusHtml = getStatusBadgeHtml(item.status, item.id);
+
+                const openBoxWarning = item.requires_open_box && item.status !== 'Delivered' ? `
+                    <div class="mt-3 bg-red-50 border border-red-200 p-2.5 rounded-lg flex gap-2 items-start">
+                        <i data-lucide="shield-alert" class="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5"></i>
+                        <p class="text-[11px] text-red-800 font-bold">Open Box Required: Check item before sharing PIN.</p>
+                    </div>
+                ` : '';
+
+                const pinDisplay = item.status === 'Delivered' ? `
+                    <div class="text-center p-2 bg-slate-50 rounded-lg border border-slate-200 mt-3 md:mt-0">
+                        <span class="text-[10px] font-bold text-slate-400 block">DELIVERED</span>
+                    </div>
+                ` : item.status === 'Cancelled' ? '' : `
+                    <div class="text-center p-2 bg-amber-50 rounded-lg border border-amber-200 border-dashed mt-3 md:mt-0 min-w-[120px]">
+                        <span class="text-[10px] font-bold text-amber-600 block uppercase mb-0.5">Secret PIN</span>
+                        <span id="pin-${item.id}" class="text-lg font-black text-slate-900 pin-box transition-colors duration-300">${item.handover_code}</span>
+                    </div>
+                `;
+
+                html += `
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden p-4" id="card-${item.id}">
+                        <p class="text-xs font-bold text-slate-500 mb-3 border-b border-slate-100 pb-2"><i data-lucide="store" class="w-3 h-3 inline mb-0.5"></i> ${sellerName}</p>
+                        
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div class="flex gap-4 cursor-pointer" onclick="window.location.href='product_details.html?slug=${slug}'">
+                                <img src="${imgUrl}" class="w-16 h-16 object-contain bg-slate-50 rounded border border-slate-100 p-1 mix-blend-multiply">
+                                <div>
+                                    <h4 class="font-bold text-slate-900 text-sm mb-1 hover:text-red-600 transition line-clamp-2">${product.name || "Product"}</h4>
+                                    <p class="text-xs font-medium text-slate-500 mb-2">Qty: ${item.quantity} × ₹${item.price_at_purchase}</p>
+                                    ${statusHtml}
+                                </div>
+                            </div>
+                            
+                            ${pinDisplay}
+                        </div>
+                        ${openBoxWarning}
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+            container.innerHTML = html;
+            if (window.lucide) window.lucide.createIcons();
+        }
+
+        function getStatusBadgeHtml(status, itemId) {
+            let colorClass = 'bg-slate-100 text-slate-700';
+            let icon = 'clock';
+            
+            if (status === 'Pending') { colorClass = 'bg-slate-100 text-slate-700'; icon = 'clock'; }
+            else if (status === 'Accepted') { colorClass = 'bg-blue-100 text-blue-700'; icon = 'thumbs-up'; }
+            else if (status === 'Out for Delivery') { colorClass = 'bg-amber-100 text-amber-700 pulse-live'; icon = 'bike'; }
+            else if (status === 'Delivered') { colorClass = 'bg-green-100 text-green-700'; icon = 'check-circle'; }
+            else if (status === 'Cancelled') { colorClass = 'bg-red-100 text-red-700'; icon = 'x-circle'; }
+
+            return `<span id="status-${itemId}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold ${colorClass}">
+                        <i data-lucide="${icon}" class="w-3 h-3"></i> ${status}
+                    </span>`;
+        }
+
+        function setupRealtimeListener() {
+            if (realtimeSubscription) sb.removeChannel(realtimeSubscription);
+
+            realtimeSubscription = sb.channel(`track_order_${orderId}`)
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'order_items', filter: `order_id=eq.${orderId}` },
+                    (payload) => {
+                        const updatedItem = payload.new;
+                        
+                        const statusSpan = document.getElementById(`status-${updatedItem.id}`);
+                        if (statusSpan) {
+                            statusSpan.outerHTML = getStatusBadgeHtml(updatedItem.status, updatedItem.id);
+                            if (window.lucide) window.lucide.createIcons();
+                        }
+
+                        const pinSpan = document.getElementById(`pin-${updatedItem.id}`);
+                        if (pinSpan && updatedItem.status !== 'Delivered') {
+                            pinSpan.innerText = updatedItem.handover_code;
+                            pinSpan.parentElement.classList.add('bg-yellow-200');
+                            setTimeout(() => pinSpan.parentElement.classList.remove('bg-yellow-200'), 1500);
+                        }
+
+                        if (updatedItem.status === 'Delivered') {
+                            Toastify({ text: "An item was delivered! 🎉", duration: 4000, style: { background: "#22c55e", borderRadius: "8px" } }).showToast();
+                            setTimeout(() => fetchAndRenderOrder(), 2000); 
+                        }
+                    }
+                ).subscribe();
+        }
+
+        document.addEventListener('DOMContentLoaded', initTracking);
+        window.addEventListener('beforeunload', () => { if (realtimeSubscription) sb.removeChannel(realtimeSubscription); });
+    </script>
+</body>
+</html>
